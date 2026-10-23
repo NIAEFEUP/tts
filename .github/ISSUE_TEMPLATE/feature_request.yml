@@ -1,7 +1,7 @@
-name: "✨ Feature / Enhancement"
+name: '✨ Feature / Enhancement'
 description: Propose a new feature, improvement, or API addition for TTS
-title: "[FE/BE] Feat: <short imperative description>"
-labels: ["enhancement", "triage"]
+title: '[FE/BE] Feat: <short imperative description>'
+labels: ['enhancement', 'triage']
 body:
   - type: markdown
     attributes:
@@ -16,11 +16,11 @@ body:
       description: Which part of the monorepo does this affect?
       multiple: true
       options:
-        - "Frontend (React / Vite)"
-        - "Backend (API / Server logic)"
-        - "Database / Migrations"
-        - "CI / Infrastructure"
-        - "Documentation / Repo-wide"
+        - 'Frontend (React / Vite)'
+        - 'Backend (API / Server logic)'
+        - 'Database / Migrations'
+        - 'CI / Infrastructure'
+        - 'Documentation / Repo-wide'
     validations:
       required: true
 
@@ -29,7 +29,7 @@ body:
     attributes:
       label: Problem Statement / Context
       description: What user problem, limitation, or requirement does this address?
-      placeholder: "e.g., Students currently cannot easily view classroom capacities when building timetables..."
+      placeholder: 'e.g., Students currently cannot easily view classroom capacities when building timetables...'
     validations:
       required: true
 
@@ -38,7 +38,7 @@ body:
     attributes:
       label: Proposed Solution / Expected Outcome
       description: Describe what should be built or changed.
-      placeholder: "Add a badge displaying available vs. total capacity on class cards..."
+      placeholder: 'Add a badge displaying available vs. total capacity on class cards...'
     validations:
       required: true
 

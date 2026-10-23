@@ -11,21 +11,22 @@ This file provides guidance to AI coding assistants working on this project.
 
 ## Tech Stack
 
-| Layer | Stack |
-|-------|-------|
-| Runtime | Bun >= 1.4 |
-| Backend | Bun + Elysia + Prisma 8 (contract-first) + PostgreSQL 16 |
-| Frontend | React 19 + Vite 5 + Tailwind CSS v4 + React Router v6 |
-| Data fetching | SWR + Eden Treaty (type-safe API client) |
-| Real-time | Socket.IO |
-| UI primitives | Radix UI, Headless UI |
-| Validation | Zod + varlock (env vars) |
-| Formatting/Linting | Oxfmt + Oxlint (NOT Prettier/ESLint) |
-| SIGARRA SDK | OpenAPI 3.1 spec + Fern-generated TypeScript client |
+| Layer              | Stack                                                    |
+| ------------------ | -------------------------------------------------------- |
+| Runtime            | Bun >= 1.4                                               |
+| Backend            | Bun + Elysia + Prisma 8 (contract-first) + PostgreSQL 16 |
+| Frontend           | React 19 + Vite 5 + Tailwind CSS v4 + React Router v6    |
+| Data fetching      | SWR + Eden Treaty (type-safe API client)                 |
+| Real-time          | Socket.IO                                                |
+| UI primitives      | Radix UI, Headless UI                                    |
+| Validation         | Zod + varlock (env vars)                                 |
+| Formatting/Linting | Oxfmt + Oxlint (NOT Prettier/ESLint)                     |
+| SIGARRA SDK        | OpenAPI 3.1 spec + Fern-generated TypeScript client      |
 
 ## Commands
 
 ### Root
+
 ```bash
 bun install              # Install all workspace dependencies
 bun run lint             # Lint both apps
@@ -35,6 +36,7 @@ bun run format:check     # Check formatting only
 ```
 
 ### Backend (`apps/backend`)
+
 ```bash
 bun run dev              # Dev server (http://localhost:3000)
 bun run test             # Run tests
@@ -49,6 +51,7 @@ bun run migrate          # Apply pending migrations
 ```
 
 ### Frontend (`apps/frontend`)
+
 ```bash
 bun run dev              # Dev server (http://localhost:3100)
 bun run build            # typecheck + production build
@@ -57,12 +60,14 @@ bun run preview          # Preview production build
 ```
 
 ### SIGARRA SDK (`packages/sigarra`)
+
 ```bash
 bun run typecheck        # Typecheck only
 bun run generate         # Regenerate src/generated from openapi.json (needs Docker)
 ```
 
 ### Docker
+
 ```bash
 docker compose up -d --wait   # Start PostgreSQL
 docker compose down           # Stop (keeps data)
@@ -117,16 +122,19 @@ Dependencies point inward. Domain must never import from Application, Interface,
 ## Code Conventions
 
 ### Linting & Formatting
+
 - **Linter**: Oxlint (not ESLint)
 - **Formatter**: Oxfmt (not Prettier)
 - **Pre-commit hook**: Husky runs `oxfmt --check` and `oxlint` automatically
 
 ### TypeScript
+
 - **Backend**: Strict mode, target ES2022
 - **Frontend**: Strict mode disabled, target ES2015
 - **Path alias**: `@/*` maps to `./src/*` in both apps
 
 ### Naming
+
 - **Components**: PascalCase (`TimeTableSelector.tsx`)
 - **Hooks**: camelCase with `use` prefix (`useSession.tsx`)
 - **Contexts**: PascalCase with `Context` suffix (`SessionContext.tsx`)
@@ -134,6 +142,7 @@ Dependencies point inward. Domain must never import from Application, Interface,
 - **Utility files**: camelCase (`dateUtils.ts`)
 
 ### Style
+
 - Single quotes for strings
 - Semicolons at end of statements
 - Trailing commas in multi-line structures
@@ -146,10 +155,12 @@ Dependencies point inward. Domain must never import from Application, Interface,
 **Runner**: `bun:test` only — never `node:test` or `node:assert`. Run with `bun run test` in `apps/backend`.
 
 **Structure**:
+
 - One top-level `describe` per file, named after the unit under test (e.g. `'courses routes'`), with `it` for each case — `it` and `test` are aliases in `bun:test`; use `it` for consistency.
 - Use `expect` matchers (`toBe`, `toEqual`, `toMatch`), not `assert`.
 
 **Backend route tests**:
+
 - Group route tests by feature under `tests/interface/routes/` — `auth/`, `catalog/`, `users/`, …. The grouping is tests-side for now: `src/interface/routes/` still keeps catalog routes flat (`courses.routes.ts`, `faculties.routes.ts`), so don't expect a 1:1 mirror. Shared helpers live in `tests/interface/routes/support/` (not test files, so Bun does not run them).
 - Drive the real app with `createApp().handle(request)` — no listener and no database. Fake repositories stand in for the database, so tests assert real HTTP behaviour: status codes, error bodies, and query validation.
 - Reuse the shared helpers instead of re-declaring fixtures, config, or fakes:
@@ -192,6 +203,7 @@ React Context API with `CombinedProvider` pattern:
 - **CoursePickerContext / ClassSelectorContext**: Selection state
 
 **Persistence split**:
+
 - **localStorage**: Per-device settings (theme, language, locked toggles)
 - **Backend**: Cross-device planner state (picked courses, class choices)
 

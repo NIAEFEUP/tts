@@ -1,7 +1,7 @@
-name: "🐛 Bug Report"
+name: '🐛 Bug Report'
 description: Report a defect, error, or unexpected behavior in TTS
-title: "[FE/BE] Fix: <short imperative description>"
-labels: ["bug", "triage"]
+title: '[FE/BE] Fix: <short imperative description>'
+labels: ['bug', 'triage']
 body:
   - type: markdown
     attributes:
@@ -14,10 +14,10 @@ body:
     attributes:
       label: Affected Component
       options:
-        - "Frontend (UI / State)"
-        - "Backend (Endpoints / Auth)"
-        - "Database / Data consistency"
-        - "CI / Build pipeline"
+        - 'Frontend (UI / State)'
+        - 'Backend (Endpoints / Auth)'
+        - 'Database / Data consistency'
+        - 'CI / Build pipeline'
     validations:
       required: true
 
@@ -26,7 +26,7 @@ body:
     attributes:
       label: Bug Description
       description: Clear and concise description of what went wrong.
-      placeholder: "e.g., When attempting to export the timetable as ICS, the file download fails with a 500 error."
+      placeholder: 'e.g., When attempting to export the timetable as ICS, the file download fails with a 500 error.'
     validations:
       required: true
 
@@ -48,7 +48,7 @@ body:
     attributes:
       label: Expected Behavior
       description: What should have happened instead?
-      placeholder: "The .ics calendar file should download immediately."
+      placeholder: 'The .ics calendar file should download immediately.'
     validations:
       required: true
 
@@ -56,7 +56,7 @@ body:
     id: environment
     attributes:
       label: Environment / Browser
-      placeholder: "e.g., Chrome 124 on macOS, Firefox Mobile, or Docker dev environment"
+      placeholder: 'e.g., Chrome 124 on macOS, Firefox Mobile, or Docker dev environment'
     validations:
       required: false
 
