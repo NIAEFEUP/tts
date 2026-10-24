@@ -1,9 +1,9 @@
 import { t } from 'elysia'
 
 // Wire schemas shared by the catalog route groups (`/v1/faculties`,
-// `/v1/courses`, and `/v1/course-units`). Keeping the course shape here —
-// rather than inline per route — means every surface describes a course
-// identically and cannot drift.
+// `/v1/courses`, `/v1/course-units`, and `/v1/occurrences`). Keeping shapes
+// here — rather than inline per route — means every surface describes the same
+// resource identically and cannot drift.
 //
 // Error bodies (`{ error, code }`) use the shared `apiError` schema from
 // `@/interface/middleware/error-handler`; each route instance registers it as
@@ -41,4 +41,20 @@ export const occurrenceSchema = t.Object({
   ects: t.Number(),
   url: t.String(),
   hash: t.String(),
+})
+
+/** An occurrence joined with its course unit's human-readable fields. Used by
+ * `GET /v1/occurrences/:id`, which must return the unit's name and acronym
+ * alongside the occurrence data without forcing the client to make a second
+ * request to `/v1/course-units/:id`. */
+export const occurrenceWithUnitSchema = t.Object({
+  id: t.Number(),
+  courseUnitId: t.Number(),
+  courseId: t.Number(),
+  year: t.Number(),
+  ects: t.Number(),
+  url: t.String(),
+  hash: t.String(),
+  acronym: t.String(),
+  name: t.String(),
 })
