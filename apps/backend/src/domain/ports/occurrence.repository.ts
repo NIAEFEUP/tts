@@ -21,10 +21,33 @@ export type Occurrence = {
 }
 
 /**
+ * An occurrence joined with the fields of its abstract course unit. Returned
+ * by `findById` so the single-occurrence endpoint can include the unit's
+ * human-readable name and acronym without a separate round-trip.
+ */
+export type OccurrenceWithUnit = Occurrence & {
+  acronym: string
+  name: string
+}
+
+/**
+ * Optional filters for listing occurrences of a course. Both narrow the
+ * result when provided; omitting either returns occurrences for all values of
+ * that dimension.
+ */
+export type OccurrenceFilter = {
+  year?: number
+  /** 1 = first semester, 2 = second semester */
+  semester?: 1 | 2
+}
+
+/**
  * The repository contract. All methods return Promises because database
  * operations are async — they take time to complete.
  *
- *   findByCourseUnit(id)  → used by GET /v1/course-units/:id/occurrences
+ *   findByCourseUnit(id)            → used by GET /v1/course-units/:id/occurrences
+ *   findByCourse(courseId, filter)  → used by GET /v1/courses/:id/occurrences
+ *   findById(id, year)              → used by GET /v1/occurrences/:id
  */
 export type OccurrenceRepository = {
   /**
@@ -32,4 +55,18 @@ export type OccurrenceRepository = {
    * Ordered by year (newest first). An empty list is not an error.
    */
   findByCourseUnit(courseUnitId: number): Promise<Occurrence[]>
+
+  /**
+   * Occurrences for a course, optionally narrowed by academic year and/or
+   * semester. Ordered by year (newest first). An empty list is not an error.
+   */
+  findByCourse(courseId: number, filter?: OccurrenceFilter): Promise<Occurrence[]>
+
+  /**
+   * Single occurrence looked up by its composite primary key `(id, year)`.
+   * Returns `null` when no row matches — the route turns this into a 404.
+   * The result includes the course unit's `acronym` and `name` so the
+   * endpoint can return the enriched shape without a separate query.
+   */
+  findById(id: number, year: number): Promise<OccurrenceWithUnit | null>
 }
