@@ -22,8 +22,9 @@ import { occurrenceSchema, occurrenceWithUnitSchema } from './catalog.schemas'
 //   GET /v1/occurrences/:id          — single occurrence with course unit info
 //
 // Both are behind a session (`?`): anonymous callers get a 401 before the
-// handler runs. `semester` is validated as a union of literals so that values
-// outside {1, 2} are rejected with a 422 by the schema, not by the handler.
+// handler runs. `semester` is validated as `t.Integer({ minimum: 1, maximum: 2 })`
+// so the incoming URL string is coerced to a number and range-checked before
+// the handler runs — values outside {1, 2} are rejected with a 422.
 
 // Elysia does not propagate a parent instance's `decorate` types into a
 // standalone plugin, so the dependency is declared on the instance's own type.
@@ -55,8 +56,10 @@ export const occurrenceRoutes = ({ sessions }: OccurrenceRoutesDeps) =>
     // Lists occurrences for a course, optionally filtered by academic year and
     // semester. The course must exist first — an unknown id throws HttpError →
     // 404. A course with no matching occurrences answers an empty list, not a
-    // 404. `semester` is a literal union {1, 2}: any other value is rejected by
-    // the schema with a 422 before the handler runs.
+    // 404. `semester` uses `t.Integer({ minimum: 1, maximum: 2 })` rather than
+    // a literal union because query params arrive as strings and Elysia cannot
+    // coerce a string to a numeric literal — the integer schema coerces first,
+    // then validates the range.
     .get(
       '/courses/:id/occurrences',
       async ({ repositories, params, query }) => {
@@ -65,7 +68,8 @@ export const occurrenceRoutes = ({ sessions }: OccurrenceRoutesDeps) =>
 
         return repositories.occurrenceRepository.findByCourse(params.id, {
           year: query.year,
-          semester: query.semester,
+          // Cast is safe: the schema already validated the value is 1 or 2.
+          semester: query.semester as 1 | 2 | undefined,
         })
       },
       {
@@ -73,7 +77,7 @@ export const occurrenceRoutes = ({ sessions }: OccurrenceRoutesDeps) =>
         params: t.Object({ id: t.Integer() }),
         query: t.Object({
           year: t.Optional(t.Integer()),
-          semester: t.Optional(t.Union([t.Literal(1), t.Literal(2)])),
+          semester: t.Optional(t.Integer({ minimum: 1, maximum: 2 })),
         }),
         detail: { tags: ['courses'], summary: 'Occurrences of a course' },
       },
