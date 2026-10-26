@@ -350,10 +350,23 @@ Legacy mapping:
 | `GET` | `/users/me/enrollments` | `?` | My class enrollments |
 | `GET` | `/users/me/exchanges` | `?` | My exchange requests |
 | `GET` | `/users/me/eligible-occurrences` | `?` | Occurrences I am eligible to take / exchange |
-| `GET` | `/students/:nmec` | admin | Public student profile (name only) |
+| `GET` | `/students/:nmec` | `?` | Public student profile (name only) |
 | `GET` | `/students/:nmec/schedule` | admin / participant | Another student’s schedule |
 | `GET` | `/students/:nmec/photo` | `?` | Student photo URL |
 | `GET` | `/students/:nmec/courses/:courseId/metadata` | admin | `fest_id` metadata for a student in a course |
+
+### `/students/:nmec` — access and responses
+
+`:nmec` is normalised first, so `up202012345` and `202012345` name the same student. A *participant* is a student enrolled in at least one class of the same `Course` (degree) as the student being looked up; the student themself and any ADMIN / SUPERUSER also pass.
+
+| Endpoint | 200 body | Errors |
+|---|---|---|
+| `GET /students/:nmec` | `{ nmec, name }` | `404 student-not-found` |
+| `GET /students/:nmec/photo` | `{ url }` (the Sigarra photo URL; the image is not proxied) | `404 student-not-found` |
+| `GET /students/:nmec/schedule` | `{ nmec, classes: [{ classId, className, occurrenceId, occurrenceYear, courseUnit: { acronym, name }, slots: [{ id, lessonType, dayOfWeek, startMinute, durationMin, location }] }] }` | `404 student-not-found`, `403 forbidden` |
+| `GET /students/:nmec/courses/:courseId/metadata` | `{ nmec, courseId, festId }` | `403 forbidden`, `404 student-not-found`, `404 student-course-metadata-not-found` |
+
+The metadata route checks the role before looking the student up, so a non-admin gets `403` whether or not the student exists. `courseId` must be an integer, otherwise `422 validation-error`.
 
 ### `GET /users/me/exchanges` — query params
 

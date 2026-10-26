@@ -37,10 +37,14 @@ const DOCUMENTED: Array<[string, string, string, string]> = [
   ['/oidc-auth/logout/', 'post', 'auth-compat', 'Legacy logout'],
   ['/auth/info/', 'get', 'auth-compat', 'Legacy session info'],
   ['/sigarra_login/', 'post', 'auth-compat', 'Legacy dev login'],
+  ['/v1/students/{nmec}', 'get', 'students', 'Get a student profile'],
+  ['/v1/students/{nmec}/photo', 'get', 'students', 'Get a student photo URL'],
+  ['/v1/students/{nmec}/schedule', 'get', 'students', 'Get a student schedule'],
+  ['/v1/students/{nmec}/courses/{courseId}/metadata', 'get', 'students', 'Get a student course metadata'],
 ]
 
 describe('OpenAPI documentation', () => {
-  it('tags and summarises every auth and health route', async () => {
+  it('tags and summarises every auth, health and students route', async () => {
     const spec = await readSpec()
 
     for (const [path, method, tag, summary] of DOCUMENTED) {

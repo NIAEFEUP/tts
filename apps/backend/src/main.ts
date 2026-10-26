@@ -10,7 +10,9 @@ import { createRepositories } from '@/infrastructure/database/repositories'
 import { db } from '@/infrastructure/database/prisma'
 import { createSigarraOidcProvider } from '@/infrastructure/external/sigarra-oidc.provider'
 import { createSigarraDirectAuth } from '@/infrastructure/external/sigarra-direct-auth'
+import { createSigarraStudentPhoto } from '@/infrastructure/external/sigarra-student-photo'
 import type { Repositories } from '@/infrastructure/database/repositories'
+import type { StudentPhotoProvider } from '@/domain/ports/student-photo.provider'
 import type { AuthConfig } from '@/core/config/auth'
 
 /**
@@ -23,6 +25,7 @@ export type AppDependencies = {
   auth: Partial<{
     config: AuthConfig
   }>
+  studentPhotos: StudentPhotoProvider
 }
 
 export function createApp(dependencies: Partial<AppDependencies> = {}) {
@@ -69,6 +72,9 @@ export function createApp(dependencies: Partial<AppDependencies> = {}) {
         sessions: repositories.sessionRepository,
         sigarraDirect,
         config,
+        students: repositories.studentRepository,
+        schedules: repositories.scheduleRepository,
+        photos: dependencies.studentPhotos ?? createSigarraStudentPhoto(),
       }),
     )
     .get('/', () => ({ message: 'Hello from tts-be!' }))
