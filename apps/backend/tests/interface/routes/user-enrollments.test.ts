@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict'
-import { test } from 'node:test'
+import { expect, it } from 'bun:test'
 
 import type { AuthUser } from '@/core/auth/user'
 import type { EnrollmentRepository, StudentEnrollment } from '@/domain/ports/enrollment.repository'
@@ -73,15 +72,15 @@ const getEnrollments = (cookie?: string) =>
     }),
   )
 
-test('GET /users/me/enrollments returns the authenticated student enrollment details', async () => {
+it('GET /users/me/enrollments returns the authenticated student enrollment details', async () => {
   const response = await getEnrollments('session=valid-session')
 
-  assert.equal(response.status, 200)
-  assert.deepEqual(await response.json(), enrollments)
-  assert.equal(queriedUserId, USER.id)
+  expect(response.status).toBe(200)
+  expect(await response.json()).toEqual(enrollments)
+  expect(queriedUserId).toBe(USER.id)
 })
 
-test('GET /users/me/enrollments returns an empty list when the student has no enrollments', async () => {
+it('GET /users/me/enrollments returns an empty list when the student has no enrollments', async () => {
   const emptyApp = createApp({
     repositories: {
       enrollmentRepository: { findByUserId: async () => [] },
@@ -94,16 +93,16 @@ test('GET /users/me/enrollments returns an empty list when the student has no en
     }),
   )
 
-  assert.equal(response.status, 200)
-  assert.deepEqual(await response.json(), [])
+  expect(response.status).toBe(200)
+  expect(await response.json()).toEqual([])
 })
 
-test('GET /users/me/enrollments requires a valid session cookie', async () => {
+it('GET /users/me/enrollments requires a valid session cookie', async () => {
   for (const cookie of [undefined, 'session=invalid-session']) {
     const response = await getEnrollments(cookie)
 
-    assert.equal(response.status, 401)
-    assert.deepEqual(await response.json(), {
+    expect(response.status).toBe(401)
+    expect(await response.json()).toEqual({
       error: 'Authentication required',
       code: 'unauthorized',
     })
