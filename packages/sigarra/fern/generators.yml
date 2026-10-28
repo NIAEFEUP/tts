@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://schema.buildwithfern.dev/generators-yml.json
+#
+# Output paths are relative to this file.
+api:
+  specs:
+    - openapi: ../openapi.json
+      overrides: ./openapi-overrides.yml
+default-group: typescript-sdk
+groups:
+  typescript-sdk:
+    generators:
+      - name: fernapi/fern-typescript-sdk
+        version: 3.98.4
+        output:
+          location: local-file-system
+          path: ../src/generated
+        config:
+          namespaceExport: Sigarra

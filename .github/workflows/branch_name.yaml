@@ -1,0 +1,51 @@
+name: Branch Name Check
+
+on:
+  # `pull_request_target` gives PRs from forks a token that can comment.
+  # This is safe because the workflow never checks out or runs PR code.
+  pull_request_target:
+    types: [opened]
+    branches:
+      - beta
+
+permissions:
+  pull-requests: write
+
+jobs:
+  check-branch-name:
+    # Bots (Dependabot, Renovate, ...) don't choose their own branch names
+    if: github.event.pull_request.user.type != 'Bot'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check branch name against the naming convention
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.payload.pull_request.head.ref;
+            const pattern =
+              /^(?<user>[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*-?)\/(?<issue>\d+)-(?<slug>[a-z]+(?:-[a-z]+)*)$/;
+
+            if (pattern.test(branch)) {
+              core.info(`Branch name "${branch}" follows the naming convention.`);
+              return;
+            }
+
+            const body = [
+              `👋 Heads up: the branch name \`${branch}\` doesn't follow our branch naming convention.`,
+              '',
+              'Branch names should look like:',
+              '',
+              '- `<user>/<issue-number>-<short-description>` (e.g. `francisca/499-fix-navbar-overflow`)',
+              '',
+              'The description must be lowercase words (letters only) separated by hyphens.',
+              '',
+              "This check is informational only and doesn't block the PR: there's nothing you need to change here. It's just a reminder for future branches.",
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body,
+            });

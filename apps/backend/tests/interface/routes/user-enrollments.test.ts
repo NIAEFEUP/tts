@@ -68,7 +68,7 @@ const app = createApp({
 
 const getEnrollments = (cookie?: string) =>
   app.handle(
-    new Request('http://localhost/api/v1/users/me/enrollments', {
+    new Request('http://localhost/v1/users/me/enrollments', {
       headers: cookie ? { cookie } : {},
     }),
   )
@@ -89,7 +89,7 @@ test('GET /users/me/enrollments returns an empty list when the student has no en
     },
   })
   const response = await emptyApp.handle(
-    new Request('http://localhost/api/v1/users/me/enrollments', {
+    new Request('http://localhost/v1/users/me/enrollments', {
       headers: { cookie: 'session=valid-session' },
     }),
   )

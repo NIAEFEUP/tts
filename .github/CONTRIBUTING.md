@@ -255,6 +255,7 @@ infrastructure/  ← Database repositories, external service adapters
 
 - **Backend**: Add or update tests in `apps/backend/tests/`. Run with `bun run test`.
 - **Frontend**: Add or update tests in `apps/frontend/src/` (co-located `.test.tsx` files). Run with `bun run test`.
+- Backend test layout, shared helpers, and conventions: see [tech-stack.md §10 Testing](../apps/backend/docs/tech-stack.md#10-testing-bun-test) and [AGENTS.md § Testing](../AGENTS.md#testing).
 - Run the test suite before pushing.
 
 ### Do's and Don'ts

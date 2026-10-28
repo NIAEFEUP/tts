@@ -1,46 +1,30 @@
 import { describe, expect, it } from 'bun:test'
 import type { AuthUser } from '@/core/auth/user'
 import type { AuthConfig } from '@/core/config/auth'
-import type { DevAuthenticator } from '@/domain/ports/dev-authenticator'
-import type { SessionRepository } from '@/domain/ports/session.repository'
-import type { UserRepository } from '@/domain/ports/user.repository'
 import { authCompatRoutes } from '@/interface/routes/auth/auth-compat.routes'
+import {
+  TEST_SESSION_TOKEN,
+  TEST_USER,
+  createFakeDevAuthenticator,
+  createFakeSessions,
+  createFakeUsers,
+  createTestAuthConfig,
+  getCookie,
+} from '../support/auth-test-utils'
 
-const USER: AuthUser = { id: 'up202012345', name: 'Ana Silva', email: null, role: 'USER' }
+// The legacy frontend shims share the same fake repositories and config as the
+// canonical auth tests (`auth-test-utils`); only the routes under test differ.
 
-function config(overrides: Partial<AuthConfig> = {}): AuthConfig {
-  return {
-    oidcConfigured: true,
-    clientId: 'client',
-    clientSecret: 'secret',
-    redirectUri: 'http://localhost:3000/api/v1/auth/callback',
-    authorizeEndpoint: 'https://idp.test/authorize',
-    tokenEndpoint: 'https://idp.test/token',
-    userinfoEndpoint: 'https://idp.test/userinfo',
-    scopes: 'openid',
-    sessionTtlSeconds: 3600,
-    frontendUrl: 'http://localhost:3100',
-    allowedOrigins: ['http://localhost:3100'],
-    secureCookies: false,
-    devLoginEnabled: false,
-    devAccount: { username: '', password: '' },
-    ...overrides,
-  }
-}
+// Dev login has no email claim, hence `email: null`.
+const USER: AuthUser = { ...TEST_USER, email: null }
 
 function buildApp(overrides: Partial<AuthConfig> = {}) {
-  const users: UserRepository = {
-    upsertFromClaims: async () => USER,
-    findById: async () => USER,
-  }
-  const sessions: SessionRepository = {
-    issue: async () => 'tok-1',
-    resolve: async (token) => (token === 'tok-1' ? USER : null),
-    revoke: async () => {},
-  }
-  const sigarraDirect: DevAuthenticator = { authenticate: async () => ({ name: 'Ana Silva' }) }
-
-  return authCompatRoutes({ users, sessions, sigarraDirect, config: config(overrides) })
+  return authCompatRoutes({
+    users: createFakeUsers(USER),
+    sessions: createFakeSessions(USER),
+    sigarraDirect: createFakeDevAuthenticator(),
+    config: createTestAuthConfig(overrides),
+  })
 }
 
 describe('auth compat routes', () => {
@@ -52,8 +36,16 @@ describe('auth compat routes', () => {
 
     expect(res.status).toBe(302)
     expect(res.headers.get('location')).toBe(
-      'http://localhost/api/v1/auth/login?return_to=http%3A%2F%2Flocalhost%3A3100%2Fx',
+      'http://localhost/v1/auth/login?return_to=http%3A%2F%2Flocalhost%3A3100%2Fx',
     )
+  })
+
+  it('prepends the deployment mount prefix to the canonical login link', async () => {
+    const app = buildApp({ publicApiPrefix: '/api' })
+    const res = await app.handle(new Request('http://tts.niaefeup.pt/oidc-auth/authenticate/'))
+
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toBe('http://tts.niaefeup.pt/api/v1/auth/login')
   })
 
   it('keeps the https scheme when behind a TLS proxy', async () => {
@@ -64,12 +56,14 @@ describe('auth compat routes', () => {
       }),
     )
 
-    expect(res.headers.get('location')).toBe('https://tts-dev.niaefeup.pt/api/v1/auth/login')
+    expect(res.headers.get('location')).toBe('https://tts-dev.niaefeup.pt/v1/auth/login')
   })
 
   it('returns the legacy session shape at /auth/info/', async () => {
     const app = buildApp()
-    const res = await app.handle(new Request('http://localhost/auth/info/', { headers: { cookie: 'session=tok-1' } }))
+    const res = await app.handle(
+      new Request('http://localhost/auth/info/', { headers: { cookie: `session=${TEST_SESSION_TOKEN}` } }),
+    )
 
     expect(await res.json()).toEqual({
       signed: true,
@@ -111,6 +105,6 @@ describe('auth compat routes', () => {
     )
 
     expect(res.status).toBe(200)
-    expect(res.headers.getSetCookie().some((c) => c.startsWith('session='))).toBe(true)
+    expect(getCookie(res, 'session')).toBeTruthy()
   })
 })

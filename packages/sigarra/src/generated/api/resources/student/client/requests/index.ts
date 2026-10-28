@@ -1,0 +1,11 @@
+export type { GetAcademicPathStudentRequest } from "./GetAcademicPathStudentRequest.js";
+export type { GetCourseAcademicPathPageStudentRequest } from "./GetCourseAcademicPathPageStudentRequest.js";
+export type { GetCoursesPageStudentRequest } from "./GetCoursesPageStudentRequest.js";
+export type { GetCourseUnitEnrollmentsPageStudentRequest } from "./GetCourseUnitEnrollmentsPageStudentRequest.js";
+export type { GetCurrentCoursesStudentRequest } from "./GetCurrentCoursesStudentRequest.js";
+export type { GetExamsStudentRequest } from "./GetExamsStudentRequest.js";
+export type { GetFacultiesPageStudentRequest } from "./GetFacultiesPageStudentRequest.js";
+export type { GetPersonalInfoPageStudentRequest } from "./GetPersonalInfoPageStudentRequest.js";
+export type { GetProfileStudentRequest } from "./GetProfileStudentRequest.js";
+export type { GetSchedulePageStudentRequest } from "./GetSchedulePageStudentRequest.js";
+export type { GetScheduleStudentRequest } from "./GetScheduleStudentRequest.js";

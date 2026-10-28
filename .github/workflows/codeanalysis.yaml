@@ -5,7 +5,7 @@ on:
     branches:
       - develop
       - main
-      - monorepo
+      - beta
     types: [ready_for_review, synchronize, opened, reopened]
 
 jobs:
@@ -56,6 +56,10 @@ jobs:
 
       - name: Typecheck frontend
         working-directory: apps/frontend
+        run: bun run typecheck
+
+      - name: Typecheck sigarra
+        working-directory: packages/sigarra
         run: bun run typecheck
 
       - name: Lint

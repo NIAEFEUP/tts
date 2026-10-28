@@ -1,0 +1,17 @@
+{
+  "name": "@tts/sigarra",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "fern generate --local --force && bun scripts/patch-generated.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.2",
+    "fern-api": "5.144.3",
+    "typescript": "^6.0.3"
+  }
+}

@@ -1,0 +1,35 @@
+# Rejects the push when a new remote branch doesn't follow the naming convention
+# (branches that already exist on the remote can still be pushed to).
+# Format: <user>/<issue-number>-<short-description>
+# Keep in sync with .github/workflows/branch_name.yaml.
+pattern='^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*-?/[0-9]+-[a-z]+(-[a-z]+)*$'
+zero=0000000000000000000000000000000000000000
+status=0
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/*) ;;
+    *) continue ;;
+  esac
+
+  # Deleting a branch
+  [ "$local_sha" = "$zero" ] && continue
+
+  # Branch already exists on the remote, so it's grandfathered in
+  [ "$remote_sha" != "$zero" ] && continue
+
+  branch="${remote_ref#refs/heads/}"
+
+  case "$branch" in
+    main | develop | beta) continue ;;
+  esac
+
+  if ! printf '%s\n' "$branch" | grep -Eq "$pattern"; then
+    echo "error: branch name '$branch' doesn't follow the naming convention."
+    echo "  Expected: <user>/<issue-number>-<short-description>"
+    echo "  Example:  francisca/499-fix-navbar-overflow"
+    status=1
+  fi
+done
+
+exit $status

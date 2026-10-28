@@ -1,0 +1,64 @@
+name: "✨ Feature / Enhancement"
+description: Propose a new feature, improvement, or API addition for TTS
+title: "[FE/BE] Feat: <short imperative description>"
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a new feature for TTS! 
+        Please replace `[FE/BE]` in the title with the appropriate scope: `[FE]`, `[BE]`, `[API]`, `[DB]`, or omit if repo-wide.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component / Area
+      description: Which part of the monorepo does this affect?
+      multiple: true
+      options:
+        - "Frontend (React / Vite)"
+        - "Backend (API / Server logic)"
+        - "Database / Migrations"
+        - "CI / Infrastructure"
+        - "Documentation / Repo-wide"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement / Context
+      description: What user problem, limitation, or requirement does this address?
+      placeholder: "e.g., Students currently cannot easily view classroom capacities when building timetables..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution / Expected Outcome
+      description: Describe what should be built or changed.
+      placeholder: "Add a badge displaying available vs. total capacity on class cards..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What conditions must be met for this issue to be considered complete?
+      value: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+        - [ ] Unit / integration tests added or updated
+        - [ ] Relevant Wiki / documentation updated
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context & Mockups
+      description: Attach Figma links, screenshots, backend API schemas, or professor notes if applicable.
+    validations:
+      required: false

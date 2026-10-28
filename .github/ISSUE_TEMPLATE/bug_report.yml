@@ -1,0 +1,69 @@
+name: "🐛 Bug Report"
+description: Report a defect, error, or unexpected behavior in TTS
+title: "[FE/BE] Fix: <short imperative description>"
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please fill out this form to help us diagnose and fix the issue.
+        Update `[FE/BE]` in the issue title to reflect the area affected: `[FE]`, `[BE]`, `[API]`, or `[DB]`.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      options:
+        - "Frontend (UI / State)"
+        - "Backend (Endpoints / Auth)"
+        - "Database / Data consistency"
+        - "CI / Build pipeline"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Clear and concise description of what went wrong.
+      placeholder: "e.g., When attempting to export the timetable as ICS, the file download fails with a 500 error."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Detailed steps to reproduce the behavior.
+      value: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should have happened instead?
+      placeholder: "The .ics calendar file should download immediately."
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment / Browser
+      placeholder: "e.g., Chrome 124 on macOS, Firefox Mobile, or Docker dev environment"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs_screenshots
+    attributes:
+      label: Console Logs / Screenshots
+      description: Paste any browser console errors, backend stack traces, or relevant screenshots.
+    validations:
+      required: false

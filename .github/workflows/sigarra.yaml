@@ -1,0 +1,57 @@
+name: SIGARRA SDK
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+      - beta
+    paths:
+      - packages/sigarra/**
+      - bun.lock
+      - .github/workflows/sigarra.yaml
+
+permissions:
+  contents: read
+
+jobs:
+  check-sdk-up-to-date:
+    runs-on: ubuntu-latest
+    name: Check if generated SDK is up to date
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.1
+
+      - name: Cache dependencies
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Fern runs its TypeScript generator in a Docker container, which the
+      # GitHub-hosted runner provides.
+      - name: Generate SDK
+        working-directory: packages/sigarra
+        run: bun run generate
+
+      - name: Check for changes
+        run: |
+          if [ -n "$(git status --porcelain -- packages/sigarra)" ]; then
+            git status --short -- packages/sigarra
+            git diff -- packages/sigarra
+            echo "::error::The generated SDK is out of date. Run \`bun run generate\` in packages/sigarra and commit the result."
+            exit 1
+          fi

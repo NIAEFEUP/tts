@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - develop
-      - monorepo
+      - beta
 
 jobs:
   frontend:

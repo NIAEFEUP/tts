@@ -1,7 +1,7 @@
 import useSwr from 'swr'
 import api from '../api/backend'
 
-// The shape the components consume. `/api/v1/auth/me` returns the canonical
+// The shape the components consume. `/v1/auth/me` returns the canonical
 // user (`id`, `isAdmin`, …); map it onto the field names the rest of the app
 // still reads so only this hook changes.
 export type SessionUser = {
@@ -48,7 +48,7 @@ const useSession = () => {
     }
   }
 
-  const { data, isLoading, mutate, isValidating } = useSwr('api/v1/auth/me', trySession, {
+  const { data, isLoading, mutate, isValidating } = useSwr('v1/auth/me', trySession, {
     focusThrottleInterval: 1800000,
     revalidateOnMount: true,
   })

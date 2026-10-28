@@ -1,5 +1,6 @@
 import { Elysia } from 'elysia'
 import type { AuthUser } from '@/core/auth/user'
+import { httpError } from '@/interface/errors/errors'
 import { SESSION_COOKIE } from '@/interface/routes/auth/auth.utils'
 
 export type SessionResolver = (token: string) => Promise<AuthUser | null>
@@ -16,4 +17,20 @@ export function createAuthMiddleware({ resolveSession }: { resolveSession: Sessi
     const user = sessionToken ? await resolveSession(sessionToken) : null
     return { user, sessionToken }
   })
+}
+
+/**
+ * Same as `createAuthMiddleware`, but every route on the instance that mounts it
+ * requires a valid session: anonymous callers get a 401 before the handler runs.
+ * A protected route group mounts this instead of re-checking `user` by hand.
+ */
+export function createRequiredAuthMiddleware({ resolveSession }: { resolveSession: SessionResolver }) {
+  // A distinct plugin name keeps this out of the deduplicated `auth/session`
+  // plugin, and `scoped` lifts the guard to the instance that mounts it (the
+  // protected route group) without leaking to its own parent.
+  return new Elysia({ name: 'auth/required' })
+    .use(createAuthMiddleware({ resolveSession }))
+    .onBeforeHandle({ as: 'scoped' }, ({ user }) => {
+      if (!user) throw httpError.unauthorized()
+    })
 }

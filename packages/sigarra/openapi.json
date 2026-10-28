@@ -1,0 +1,4991 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SIGARRA",
+    "description": "SIGARRA, the academic information system of the University of Porto.\n\n## Authentication\n\nAuthenticated requests need two session cookies, `SI_SESSION` and `SI_SECURITY` (both are required). `HTTP_SESSION`, which HTML pages set when a request has none, has no effect on authentication or on responses. Sessions are bound to the IP address that created them (the one that logged in, or that called `/auth/oidc/token`): from any other address, requests are treated as unauthenticated, although the session keeps working from the original address. The calendar API (`/calendarios-api/`) is the exception: it accepts a session from any address. Sessions expire and there is no refresh endpoint: authenticate again to get new cookies. `GET /{faculty}/{language}/vld_validacao.sair` ends a session. There are three ways to get them:\n\n1. **Credentials.** `POST /{faculty}/{language}/vld_validacao.validacao` (the website's login form) with `p_user` and `p_pass` sets the cookies; `mob_val_geral.autentica` is a JSON alternative. Any faculty path works, including `up`. The cookies have no expiry date, but the session itself ends about 2 hours after logging in, regardless of activity (observed once; it matches the 2 hours of OIDC sessions).\n2. **OpenID Connect.** Get a token from the U.Porto identity provider, a Keycloak realm at `https://open-id.up.pt/realms/sigarra` (discovery: `/.well-known/openid-configuration`), then exchange it for the cookies at `GET /auth/oidc/token`. Each exchange creates a new session that lasts 2 hours, regardless of the token's own lifetime. Apps need their own client registered in that realm (redirect URIs are checked); [uni](https://github.com/NIAEFEUP/uni)'s tokens have the audiences `it-sigarra-oidc-bridge` and `catalogo-apis`. Access tokens last 15 minutes; with the `offline_access` scope, the refresh token does not expire. The password grant rejects U.Porto credentials (`invalid_grant`), so tokens have to be obtained through a browser (authorization code flow, with PKCE for public clients). The `uporto_data` scope adds U.Porto claims to the token and user info: `nmec` (student number, without `up`) and `ous` (faculty acronyms, e.g. `[\"FEUP\"]`).\n3. **SAML (browser only).** `GET /{faculty}/{language}/vld_validacao.federate_login` redirects to U.Porto's Shibboleth identity provider at `wayf.up.pt`; SIGARRA is the service provider `https://sigarra.up.pt/shibboleth`.\n\nWithout a valid session, JSON endpoints answer `403` with `{\"erro\", \"erro_msg\"}`, HTML pages answer `403` with an error page, and the calendar API answers `403` with an empty body. Some pages answer `200` with an error page instead; this is noted on each of them.\n\n## Other conventions\n\n- Pages under `/{faculty}/{language}/` are PL/SQL procedures: an unknown or missing parameter makes SIGARRA answer `404`.\n- Many JSON endpoints are served with an inaccurate content type; they are noted individually.",
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "https://sigarra.up.pt"
+    }
+  ],
+  "tags": [
+    {
+      "name": "auth",
+      "description": "Logging in (credentials, OpenID Connect, SAML) and out; obtains the session cookies."
+    },
+    {
+      "name": "calendar",
+      "description": "Calendar API (`/calendarios-api/`): schedule events and tables of students, course units and professors."
+    },
+    {
+      "name": "canteen",
+      "description": "Canteen menus."
+    },
+    {
+      "name": "course",
+      "description": "Degree programme pages: study plan and class vacancies."
+    },
+    {
+      "name": "courseUnit",
+      "description": "Course units (UCs): information, classes, enrolled students, files, occurrences, schedules and exams."
+    },
+    {
+      "name": "finances",
+      "description": "Current account, printing balance and Multibanco payment references."
+    },
+    {
+      "name": "home",
+      "description": "Faculty home page and the list of faculties."
+    },
+    {
+      "name": "parking",
+      "description": "Parking lot occupancy."
+    },
+    {
+      "name": "people",
+      "description": "People-related resources, such as photographs."
+    },
+    {
+      "name": "professor",
+      "description": "Professor pages and schedules."
+    },
+    {
+      "name": "student",
+      "description": "Student schedule, exams, academic path, profile, courses and enrolments."
+    },
+    {
+      "name": "summaries",
+      "description": "Class summaries: classes of a course unit, their lessons and lesson summaries."
+    }
+  ],
+  "paths": {
+    "/{faculty}/{language}/mob_hor_geral.estudante": {
+      "get": {
+        "operationId": "student-get-schedule",
+        "tags": [
+          "student"
+        ],
+        "summary": "Student schedule",
+        "description": "Weekly timetable of a student. Returns the weekly timetable of the week that contains `pv_semana_ini`; `pv_semana_fim` does not widen the range.",
+        "x-fern-sdk-group-name": "student",
+        "x-fern-sdk-method-name": "getSchedule",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_codigo",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_semana_ini",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Start of the period, as YYYYMMDD."
+          },
+          {
+            "name": "pv_semana_fim",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "End of the period, as YYYYMMDD."
+          }
+        ],
+        "deprecated": false,
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeeklySchedule"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/mob_fest_geral.exames": {
+      "get": {
+        "operationId": "student-get-exams",
+        "tags": [
+          "student"
+        ],
+        "summary": "Exams",
+        "description": "The authenticated user's exams.",
+        "x-fern-sdk-group-name": "student",
+        "x-fern-sdk-method-name": "getExams",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "name": "pv_codigo",
+            "in": "query",
+            "description": "Student number.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "ocorr_id": {
+                        "type": "integer",
+                        "description": "Occurrence ID."
+                      },
+                      "ocorr_nome": {
+                        "type": "string",
+                        "description": "Occurrence name."
+                      },
+                      "data": {
+                        "type": "string",
+                        "description": "ISO 8601"
+                      },
+                      "hora_inicio": {
+                        "type": "string",
+                        "description": "ISO 8601"
+                      },
+                      "hora_fim": {
+                        "type": "string",
+                        "description": "ISO 8601"
+                      },
+                      "duracao": {},
+                      "pfunc_id": {
+                        "type": "integer",
+                        "description": "Invigilator."
+                      },
+                      "tipo": {
+                        "type": "string",
+                        "description": "Exam type."
+                      },
+                      "tipo_descricao": {
+                        "type": "string",
+                        "description": "Description of the exam type."
+                      },
+                      "epoca": {
+                        "type": "string",
+                        "description": "Name of the exam season."
+                      },
+                      "salas": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "espaco_id": {
+                              "type": "integer"
+                            },
+                            "espaco_sigla": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/{faculty}/{language}/mob_fest_geral.percurso_academico": {
+      "get": {
+        "operationId": "student-get-academic-path",
+        "tags": [
+          "student"
+        ],
+        "summary": "Academic path",
+        "description": "The authenticated user's academic path.",
+        "x-fern-sdk-group-name": "student",
+        "x-fern-sdk-method-name": "getAcademicPath",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_codigo",
+            "in": "query",
+            "description": "Student number.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_ano_lectivo_min",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_ano_lectivo_max",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "fest_id": {
+                        "type": "integer"
+                      },
+                      "fest_tipo": {
+                        "type": "string"
+                      },
+                      "fest_tipo_descr": {
+                        "type": "string"
+                      },
+                      "cur_nome": {
+                        "type": "string"
+                      },
+                      "cur_name": {
+                        "type": "string"
+                      },
+                      "cur_sigla": {
+                        "type": "string"
+                      },
+                      "ano_curricular": {
+                        "type": "string"
+                      },
+                      "media": {
+                        "type": "number"
+                      },
+                      "inscricoes": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "ucurr_id": {
+                              "type": "integer"
+                            },
+                            "ucurr_codigo": {
+                              "type": "string"
+                            },
+                            "ucurr_sigla": {
+                              "type": "string"
+                            },
+                            "ucurr_nome": {
+                              "type": "string"
+                            },
+                            "ucurr_name": {
+                              "type": "string"
+                            },
+                            "a_lectivo": {
+                              "type": "integer"
+                            },
+                            "ano": {
+                              "type": "integer"
+                            },
+                            "ocorr_id": {
+                              "type": "integer"
+                            },
+                            "ucurr_tipo": {
+                              "type": "string"
+                            },
+                            "ucurr_duracao_tipo": {
+                              "type": "string"
+                            },
+                            "id": {
+                              "type": "integer"
+                            },
+                            "inst_id": {
+                              "type": "integer"
+                            },
+                            "comp_id": {
+                              "type": "integer"
+                            },
+                            "per_id": {
+                              "type": "integer"
+                            },
+                            "per_codigo": {
+                              "type": "string"
+                            },
+                            "per_nome": {
+                              "type": "string"
+                            },
+                            "tipo": {
+                              "type": "string"
+                            },
+                            "estado": {
+                              "type": "string"
+                            },
+                            "frequencia": {
+                              "type": "string"
+                            },
+                            "avaliacao": {
+                              "type": "string"
+                            },
+                            "resultado_melhor": {
+                              "type": "string"
+                            },
+                            "resultado_ects": {
+                              "type": "string"
+                            },
+                            "aval_a_lectivo": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "resultado_insc": {
+                              "type": "string"
+                            },
+                            "creditos_ucn": {
+                              "type": "null"
+                            },
+                            "creditos_ects": {
+                              "type": "number"
+                            },
+                            "n_ucurrs": {
+                              "type": "integer"
+                            },
+                            "tipo_ucurrs": {
+                              "type": "string"
+                            },
+                            "obr_opt": {
+                              "type": "string"
+                            },
+                            "regra_eq": {
+                              "type": "string"
+                            },
+                            "devedor": {
+                              "type": "string"
+                            },
+                            "incumpridor": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "ucurr_id",
+                            "ucurr_codigo",
+                            "ucurr_sigla",
+                            "ucurr_nome",
+                            "ucurr_name",
+                            "a_lectivo",
+                            "ano",
+                            "ocorr_id",
+                            "ucurr_tipo",
+                            "ucurr_duracao_tipo",
+                            "id",
+                            "inst_id",
+                            "comp_id",
+                            "per_id",
+                            "per_codigo",
+                            "per_nome",
+                            "tipo",
+                            "estado",
+                            "frequencia",
+                            "avaliacao",
+                            "resultado_melhor",
+                            "resultado_ects",
+                            "aval_a_lectivo",
+                            "resultado_insc",
+                            "creditos_ucn",
+                            "creditos_ects",
+                            "n_ucurrs",
+                            "tipo_ucurrs",
+                            "obr_opt",
+                            "regra_eq",
+                            "devedor",
+                            "incumpridor"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "fest_id",
+                      "fest_tipo",
+                      "fest_tipo_descr",
+                      "cur_nome",
+                      "cur_name",
+                      "cur_sigla",
+                      "ano_curricular",
+                      "media",
+                      "inscricoes"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/{faculty}/{language}/mob_fest_geral.perfil": {
+      "get": {
+        "operationId": "student-get-profile",
+        "tags": [
+          "student"
+        ],
+        "summary": "Profile",
+        "description": "The authenticated user's details.",
+        "x-fern-sdk-group-name": "student",
+        "x-fern-sdk-method-name": "getProfile",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_codigo",
+            "in": "query",
+            "description": "Student number.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "nome": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "email_alt": {
+                      "type": "string"
+                    },
+                    "pagina_web": {
+                      "type": "string"
+                    },
+                    "telemovel": {
+                      "type": "string"
+                    },
+                    "telefone": {
+                      "type": "string"
+                    },
+                    "cursos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fest_id": {
+                            "type": "integer"
+                          },
+                          "fest_tipo": {
+                            "type": "string"
+                          },
+                          "fest_tipo_descr": {
+                            "type": "string"
+                          },
+                          "cur_nome": {
+                            "type": "string"
+                          },
+                          "cur_name": {
+                            "type": "string"
+                          },
+                          "cur_sigla": {
+                            "type": "string"
+                          },
+                          "fest_a_lect_1_insc": {
+                            "type": "integer"
+                          },
+                          "fest_d_1_insc": {
+                            "type": "string"
+                          },
+                          "cur_id": {
+                            "type": "integer"
+                          },
+                          "est_alectivo": {
+                            "type": "integer"
+                          },
+                          "est_sig": {
+                            "type": "string"
+                          },
+                          "est_nome": {
+                            "type": "string"
+                          },
+                          "est_d_inicio": {
+                            "type": "string"
+                          },
+                          "est_d_fim": {
+                            "type": "string"
+                          },
+                          "inst_nome": {
+                            "type": "string"
+                          },
+                          "inst_sigla": {
+                            "type": "string"
+                          },
+                          "ano_curricular": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "fest_id",
+                          "fest_tipo",
+                          "fest_tipo_descr",
+                          "cur_nome",
+                          "cur_name",
+                          "cur_sigla",
+                          "fest_a_lect_1_insc",
+                          "fest_d_1_insc",
+                          "cur_id",
+                          "est_alectivo",
+                          "est_sig",
+                          "est_nome",
+                          "est_d_inicio",
+                          "est_d_fim",
+                          "inst_nome",
+                          "inst_sigla",
+                          "ano_curricular"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "codigo",
+                    "nome",
+                    "email",
+                    "email_alt",
+                    "pagina_web",
+                    "telemovel",
+                    "telefone",
+                    "cursos"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/{faculty}/{language}/mob_fest_geral.ucurr_inscricoes_corrente": {
+      "get": {
+        "operationId": "student-get-current-courses",
+        "tags": [
+          "student"
+        ],
+        "summary": "Courses and their course units",
+        "description": "Lists the courses the student is enrolled in, with their current course units.",
+        "x-fern-sdk-group-name": "student",
+        "x-fern-sdk-method-name": "getCurrentCourses",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_codigo",
+            "in": "query",
+            "description": "Student number.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "fest_id": {
+                        "type": "integer"
+                      },
+                      "fest_tipo": {
+                        "type": "string"
+                      },
+                      "fest_tipo_descr": {
+                        "type": "string"
+                      },
+                      "cur_nome": {
+                        "type": "string"
+                      },
+                      "cur_name": {
+                        "type": "string"
+                      },
+                      "cur_sigla": {
+                        "type": "string"
+                      },
+                      "ano_curricular": {
+                        "type": "string"
+                      },
+                      "inscricoes": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "ucurr_id": {
+                              "type": "integer"
+                            },
+                            "ucurr_codigo": {
+                              "type": "string"
+                            },
+                            "ucurr_sigla": {
+                              "type": "string"
+                            },
+                            "ucurr_nome": {
+                              "type": "string"
+                            },
+                            "ucurr_name": {
+                              "type": "string"
+                            },
+                            "a_lectivo": {
+                              "type": "integer"
+                            },
+                            "ano": {
+                              "type": "integer"
+                            },
+                            "ocorr_id": {
+                              "type": "integer"
+                            },
+                            "ucurr_tipo": {
+                              "type": "string"
+                            },
+                            "ucurr_duracao_tipo": {
+                              "type": "string"
+                            },
+                            "id": {
+                              "type": "integer"
+                            },
+                            "inst_id": {
+                              "type": "integer"
+                            },
+                            "comp_id": {
+                              "type": "integer"
+                            },
+                            "per_id": {
+                              "type": "integer"
+                            },
+                            "per_codigo": {
+                              "type": "string"
+                            },
+                            "per_nome": {
+                              "type": "string"
+                            },
+                            "tipo": {
+                              "type": "string"
+                            },
+                            "estado": {
+                              "type": "string"
+                            },
+                            "frequencia": {
+                              "type": "string"
+                            },
+                            "avaliacao": {
+                              "type": "string"
+                            },
+                            "resultado_melhor": {
+                              "type": "string"
+                            },
+                            "resultado_ects": {
+                              "type": "string"
+                            },
+                            "aval_a_lectivo": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "resultado_insc": {
+                              "type": "string"
+                            },
+                            "creditos_ucn": {
+                              "type": "null"
+                            },
+                            "creditos_ects": {
+                              "type": "number"
+                            },
+                            "n_ucurrs": {
+                              "type": "integer"
+                            },
+                            "tipo_ucurrs": {
+                              "type": "string"
+                            },
+                            "obr_opt": {
+                              "type": "string"
+                            },
+                            "regra_eq": {
+                              "type": "string"
+                            },
+                            "devedor": {
+                              "type": "string"
+                            },
+                            "incumpridor": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "ucurr_id",
+                            "ucurr_codigo",
+                            "ucurr_sigla",
+                            "ucurr_nome",
+                            "ucurr_name",
+                            "a_lectivo",
+                            "ano",
+                            "ocorr_id",
+                            "ucurr_tipo",
+                            "ucurr_duracao_tipo",
+                            "id",
+                            "inst_id",
+                            "comp_id",
+                            "per_id",
+                            "per_codigo",
+                            "per_nome",
+                            "tipo",
+                            "estado",
+                            "frequencia",
+                            "avaliacao",
+                            "resultado_melhor",
+                            "resultado_ects",
+                            "aval_a_lectivo",
+                            "resultado_insc",
+                            "creditos_ucn",
+                            "creditos_ects",
+                            "n_ucurrs",
+                            "tipo_ucurrs",
+                            "obr_opt",
+                            "regra_eq",
+                            "devedor",
+                            "incumpridor"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "fest_id",
+                      "fest_tipo",
+                      "fest_tipo_descr",
+                      "cur_nome",
+                      "cur_name",
+                      "cur_sigla",
+                      "ano_curricular",
+                      "inscricoes"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/{faculty}/{language}/mob_ucurr_geral.outras_ocorrencias": {
+      "get": {
+        "operationId": "course-unit-get-occurrences",
+        "tags": [
+          "courseUnit"
+        ],
+        "summary": "Course unit occurrences",
+        "description": "Lists the occurrences of a course unit, given one of its occurrences.",
+        "x-fern-sdk-group-name": "courseUnit",
+        "x-fern-sdk-method-name": "getOccurrences",
+        "parameters": [
+          {
+            "name": "pv_ocorrencia_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "484377"
+          },
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "nome": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "ano_letivo": {
+                        "type": "integer"
+                      },
+                      "data_inicio": {
+                        "type": "string"
+                      },
+                      "data_fim": {
+                        "type": "string"
+                      },
+                      "periodo_nome": {
+                        "type": "string"
+                      },
+                      "periodo_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "nome",
+                      "name",
+                      "ano_letivo",
+                      "data_inicio",
+                      "data_fim",
+                      "periodo_nome",
+                      "periodo_id"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "security": []
+      }
+    },
+    "/{faculty}/{language}/mob_ucurr_geral.perfil": {
+      "get": {
+        "operationId": "course-unit-get-info",
+        "tags": [
+          "courseUnit"
+        ],
+        "summary": "Course unit information",
+        "description": "Given an occurrence ID, returns the contents of its course unit.",
+        "x-fern-sdk-group-name": "courseUnit",
+        "x-fern-sdk-method-name": "getInfo",
+        "parameters": [
+          {
+            "name": "pv_ocorrencia_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "484377"
+          },
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "ucurr_id": {
+                      "type": "integer"
+                    },
+                    "nome": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "sigla": {
+                      "type": "string"
+                    },
+                    "areas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "nome": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "nome",
+                          "name"
+                        ]
+                      }
+                    },
+                    "ano_lectivo": {
+                      "type": "integer"
+                    },
+                    "pagina_elearning": {
+                      "type": "string"
+                    },
+                    "carga_horaria": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "tipo": {
+                            "type": "string"
+                          },
+                          "descricao": {
+                            "type": "string"
+                          },
+                          "horas": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "tipo",
+                          "descricao",
+                          "horas"
+                        ]
+                      }
+                    },
+                    "ds": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "tipo": {
+                            "type": "string"
+                          },
+                          "tipo_descricao": {
+                            "type": "string"
+                          },
+                          "num_turmas": {
+                            "type": "integer"
+                          },
+                          "num_horas": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
+                          "docentes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "doc_codigo": {
+                                  "type": "string"
+                                },
+                                "nome": {
+                                  "type": "string"
+                                },
+                                "horas": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "doc_codigo",
+                                "nome",
+                                "horas"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "tipo",
+                          "tipo_descricao",
+                          "num_turmas",
+                          "num_horas",
+                          "docentes"
+                        ]
+                      }
+                    },
+                    "responsabilidades": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "codigo": {
+                            "type": "string"
+                          },
+                          "nome": {
+                            "type": "string"
+                          },
+                          "papel": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "codigo",
+                          "nome",
+                          "papel"
+                        ]
+                      }
+                    },
+                    "estado": {
+                      "type": "string"
+                    },
+                    "lingua": {
+                      "type": "string"
+                    },
+                    "objectivos": {
+                      "type": "string"
+                    },
+                    "conteudo": {
+                      "type": "string"
+                    },
+                    "bibliografia": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "tipo": {
+                            "type": "string"
+                          },
+                          "tipo_descr": {
+                            "type": "string"
+                          },
+                          "autores": {
+                            "type": "string"
+                          },
+                          "titulo": {
+                            "type": "string"
+                          },
+                          "link": {
+                            "type": "string"
+                          },
+                          "editor": {
+                            "type": "string"
+                          },
+                          "ano": {
+                            "type": "string"
+                          },
+                          "isbn": {
+                            "type": "string"
+                          },
+                          "obs": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "tipo",
+                          "tipo_descr",
+                          "autores",
+                          "titulo",
+                          "link",
+                          "editor",
+                          "ano",
+                          "isbn",
+                          "obs"
+                        ]
+                      }
+                    },
+                    "bib_obs": {
+                      "type": "string"
+                    },
+                    "metodologia": {
+                      "type": "string"
+                    },
+                    "avaliacao": {
+                      "type": "string"
+                    },
+                    "software": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "nome": {
+                            "type": "null"
+                          },
+                          "descricao": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "nome",
+                          "descricao"
+                        ]
+                      }
+                    },
+                    "keywords": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "descricao": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "descricao"
+                        ]
+                      }
+                    },
+                    "modo_avaliacao": {
+                      "type": "string"
+                    },
+                    "comp_avaliacao": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "descricao": {
+                            "type": "string"
+                          },
+                          "tipo": {
+                            "type": "string"
+                          },
+                          "tipo_descr": {
+                            "type": "string"
+                          },
+                          "duracao": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
+                          "data_conclusao": {
+                            "type": "string"
+                          },
+                          "peso": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "descricao",
+                          "tipo",
+                          "tipo_descr",
+                          "duracao",
+                          "data_conclusao",
+                          "peso"
+                        ]
+                      }
+                    },
+                    "cond_frequencia": {
+                      "type": "string"
+                    },
+                    "for_avaliacao": {
+                      "type": "string"
+                    },
+                    "provas_avaliacao": {
+                      "type": "string"
+                    },
+                    "forma_avaliacao": {
+                      "type": "string"
+                    },
+                    "forma_melhoria": {
+                      "type": "string"
+                    },
+                    "observacoes": {
+                      "type": "string"
+                    },
+                    "pagina_web": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "codigo",
+                    "ucurr_id",
+                    "nome",
+                    "name",
+                    "sigla",
+                    "areas",
+                    "ano_lectivo",
+                    "pagina_elearning",
+                    "carga_horaria",
+                    "ds",
+                    "responsabilidades"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "security": []
+      }
+    },
+    "/{faculty}/{language}/mob_ucurr_geral.uc_inscritos": {
+      "get": {
+        "operationId": "course-unit-get-enrolled",
+        "tags": [
+          "courseUnit"
+        ],
+        "summary": "Course unit enrolled students",
+        "description": "Lists the people enrolled in a course unit.",
+        "x-fern-sdk-group-name": "courseUnit",
+        "x-fern-sdk-method-name": "getEnrolled",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_ocorrencia_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "484377"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "codigo": {
+                        "type": "string"
+                      },
+                      "nome": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "codigo",
+                      "nome"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/{faculty}/{language}/mob_ucurr_geral.uc_turmas": {
+      "get": {
+        "operationId": "course-unit-get-classes",
+        "tags": [
+          "courseUnit"
+        ],
+        "summary": "Course unit classes",
+        "x-fern-sdk-group-name": "courseUnit",
+        "x-fern-sdk-method-name": "getClasses",
+        "parameters": [
+          {
+            "name": "pv_ocorrencia_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "484377"
+          },
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "turmas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "turma_id": {
+                            "type": "integer"
+                          },
+                          "n_max_alunos": {
+                            "type": "null"
+                          }
+                        },
+                        "required": [
+                          "turma_id",
+                          "n_max_alunos"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "turmas"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "description": "For some occurrences (e.g. 2nd-semester ones), SIGARRA answers 200 with a malformed body: a leaked `Status: 404` CGI header followed by `{\"erro\", \"erro_msg\"}`."
+      }
+    },
+    "/{faculty}/{language}/mob_ucurr_geral.conteudos": {
+      "get": {
+        "operationId": "course-unit-get-files",
+        "tags": [
+          "courseUnit"
+        ],
+        "summary": "Course unit files",
+        "description": "Files (contents) of a course unit.",
+        "x-fern-sdk-group-name": "courseUnit",
+        "x-fern-sdk-method-name": "getFiles",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_ocorrencia_id",
+            "in": "query",
+            "description": "ID of the occurrence of the course unit whose files to get.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "484400"
+          }
+        ],
+        "deprecated": false,
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "codigo": {
+                        "type": "integer"
+                      },
+                      "nome": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "nivel": {
+                        "type": "integer"
+                      },
+                      "ficheiros": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "codigo": {
+                              "type": "integer"
+                            },
+                            "nome": {
+                              "type": "string"
+                            },
+                            "tipo": {
+                              "type": "string"
+                            },
+                            "url": {
+                              "type": "string"
+                            },
+                            "filename": {
+                              "type": "string"
+                            },
+                            "tamanho": {
+                              "type": "integer"
+                            },
+                            "data_actualizacao": {
+                              "type": "string"
+                            },
+                            "comentario": {
+                              "type": "string"
+                            },
+                            "descricao": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "codigo",
+                            "nome",
+                            "tipo",
+                            "url",
+                            "filename",
+                            "tamanho",
+                            "data_actualizacao",
+                            "comentario",
+                            "descricao"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "codigo",
+                      "nome",
+                      "name",
+                      "nivel",
+                      "ficheiros"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/conteudos_service.conteudos_cont": {
+      "get": {
+        "operationId": "course-unit-download-file",
+        "tags": [
+          "courseUnit"
+        ],
+        "summary": "Download file",
+        "description": "Without a valid session, SIGARRA answers `200` with an HTML error page (\"Erro!\") instead of the file.\n\nDownloads a file by its ID.",
+        "x-fern-sdk-group-name": "courseUnit",
+        "x-fern-sdk-method-name": "downloadFile",
+        "parameters": [
+          {
+            "name": "pct_id",
+            "in": "query",
+            "description": "The id of the document to be downloaded",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "515516"
+          },
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          }
+        ],
+        "deprecated": false,
+        "responses": {
+          "200": {
+            "description": "The file, with its own content type (e.g. `application/pdf`).",
+            "headers": {
+              "Content-Disposition": {
+                "description": "Contains the file name.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/mob_ucurr_geral.sum_turmas": {
+      "get": {
+        "operationId": "summaries-get-classes",
+        "tags": [
+          "summaries"
+        ],
+        "summary": "Classes of a course unit",
+        "description": "Lists the classes of a course unit occurrence.",
+        "x-fern-sdk-group-name": "summaries",
+        "x-fern-sdk-method-name": "getClasses",
+        "parameters": [
+          {
+            "name": "pv_ocorrencia_id",
+            "in": "query",
+            "description": "Course unit occurrence ID.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "484400"
+          },
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          }
+        ],
+        "deprecated": false,
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "turmas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "turma_id": {
+                            "type": "integer"
+                          },
+                          "tipo": {
+                            "type": "string"
+                          },
+                          "sigla": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "turma_id",
+                          "tipo",
+                          "sigla"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "turmas"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/mob_ucurr_geral.sum_aulas": {
+      "get": {
+        "operationId": "summaries-get-lessons",
+        "tags": [
+          "summaries"
+        ],
+        "summary": "Lessons of a class",
+        "description": "Lists all the lessons of a class, with the ID of each lesson's summary.",
+        "x-fern-sdk-group-name": "summaries",
+        "x-fern-sdk-method-name": "getLessons",
+        "parameters": [
+          {
+            "name": "pv_ocorrencia_id",
+            "in": "query",
+            "description": "Course unit occurrence ID.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "484400"
+          },
+          {
+            "name": "pv_turma_id",
+            "in": "query",
+            "description": "Class ID.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "824506"
+          },
+          {
+            "name": "pv_tipo_aula",
+            "in": "query",
+            "description": "Lesson type.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "TP"
+          },
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          }
+        ],
+        "deprecated": false,
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "n_aula": {
+                        "type": "integer"
+                      },
+                      "cod_sumario": {
+                        "type": "integer"
+                      },
+                      "data_prevista": {
+                        "type": "string"
+                      },
+                      "data_efectiva": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "n_aula",
+                      "cod_sumario",
+                      "data_prevista",
+                      "data_efectiva"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/mob_ucurr_geral.sumario": {
+      "get": {
+        "operationId": "summaries-get-summary",
+        "tags": [
+          "summaries"
+        ],
+        "summary": "Lesson summary",
+        "description": "Gets the summary of a specific lesson.",
+        "x-fern-sdk-group-name": "summaries",
+        "x-fern-sdk-method-name": "getSummary",
+        "parameters": [
+          {
+            "name": "pv_sumario_id",
+            "in": "query",
+            "description": "Summary ID.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "2146359"
+          },
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          }
+        ],
+        "deprecated": false,
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "n_aula": {
+                      "type": "integer"
+                    },
+                    "cod_sumario": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "data_prevista": {
+                      "type": "string"
+                    },
+                    "data_efectiva": {
+                      "type": "string"
+                    },
+                    "obs": {
+                      "type": "string"
+                    },
+                    "sumario": {
+                      "type": "string"
+                    },
+                    "doc_codigo": {
+                      "type": "string"
+                    },
+                    "n_alunos": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "n_aula",
+                    "cod_sumario",
+                    "data_prevista",
+                    "data_efectiva",
+                    "obs",
+                    "sumario",
+                    "doc_codigo",
+                    "n_alunos"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/instalacs_geral.ocupacao_parques": {
+      "get": {
+        "operationId": "parking-get-occupancy",
+        "tags": [
+          "parking"
+        ],
+        "summary": "Parking lot occupancy",
+        "x-fern-sdk-group-name": "parking",
+        "x-fern-sdk-method-name": "getOccupancy",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          }
+        ],
+        "deprecated": false,
+        "responses": {
+          "200": {
+            "description": "OK. JSON, despite being served as `text/html`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "itdc": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "versao": {
+                            "type": "string"
+                          },
+                          "dataresposta": {
+                            "type": "string"
+                          },
+                          "codigoresposta": {
+                            "type": "string"
+                          },
+                          "statementsql": {
+                            "type": "string"
+                          },
+                          "linhas": {
+                            "type": "string"
+                          },
+                          "erro": {
+                            "type": "string"
+                          },
+                          "resposta": {
+                            "type": "object",
+                            "properties": {
+                              "p1lotacao": {
+                                "type": "integer"
+                              },
+                              "p3lotacao": {
+                                "type": "integer"
+                              },
+                              "p4lotacao": {
+                                "type": "integer"
+                              },
+                              "data": {
+                                "type": "string"
+                              },
+                              "P1in": {
+                                "type": "integer"
+                              },
+                              "P1out": {
+                                "type": "integer"
+                              },
+                              "P3in": {
+                                "type": "integer"
+                              },
+                              "P3out": {
+                                "type": "integer"
+                              },
+                              "P4in": {
+                                "type": "integer"
+                              },
+                              "P4out": {
+                                "type": "integer"
+                              },
+                              "p1ocupados": {
+                                "type": "integer"
+                              },
+                              "p3ocupados": {
+                                "type": "integer"
+                              },
+                              "p4ocupados": {
+                                "type": "integer"
+                              },
+                              "p1livres": {
+                                "type": "integer"
+                              },
+                              "p3livres": {
+                                "type": "integer"
+                              },
+                              "p4livres": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "p1lotacao",
+                              "p3lotacao",
+                              "p4lotacao",
+                              "data",
+                              "P1in",
+                              "P1out",
+                              "P3in",
+                              "P3out",
+                              "P4in",
+                              "P4out",
+                              "p1ocupados",
+                              "p3ocupados",
+                              "p4ocupados",
+                              "p1livres",
+                              "p3livres",
+                              "p4livres"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "versao",
+                          "dataresposta",
+                          "codigoresposta",
+                          "statementsql",
+                          "linhas",
+                          "erro",
+                          "resposta"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "itdc"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/calendarios-api/api/v1/events/{faculty}/student/{nmec}/": {
+      "get": {
+        "operationId": "calendar-get-student-events",
+        "tags": [
+          "calendar"
+        ],
+        "summary": "Student schedule (v2)",
+        "description": "The session works from any IP address, not only the one that created it.\n\nA student's schedule, from SIGARRA's new schedule module.\n\nThe trailing slash is required: without it SIGARRA redirects to `/calendarios/...`, which returns 404. The URL for a student is in the `data-evt-source-url` and `data-table-source-url` attributes of `hor_geral.estudantes_view`.",
+        "x-fern-sdk-group-name": "calendar",
+        "x-fern-sdk-method-name": "getStudentEvents",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "name": "nmec",
+            "in": "path",
+            "required": true,
+            "description": "Student number.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "academic_year",
+            "in": "query",
+            "required": true,
+            "description": "First year of the academic year, e.g. `2023` for 2023/2024.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "pv_turma_ocorr",
+            "in": "query",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "description": "Classes to include, as `{FACULTY}_{ocorr_id}_{turma_id}` (e.g. `FEUP_518805_213039`). At least one is required.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "style": "form",
+            "explode": true,
+            "description": "Teaching periods to include.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEvents"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing `academic_year` or `pv_turma_ocorr`."
+          },
+          "403": {
+            "description": "No valid session. The body is empty."
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/calendarios-api/api/v1/caltable/{faculty}/student/{nmec}/": {
+      "get": {
+        "operationId": "calendar-get-student-table",
+        "tags": [
+          "calendar"
+        ],
+        "summary": "Student schedule table (v2)",
+        "description": "The session works from any IP address, not only the one that created it.\n\nA student's schedule, from SIGARRA's new schedule module, as an HTML table.\n\nThe trailing slash is required: without it SIGARRA redirects to `/calendarios/...`, which returns 404. The URL for a student is in the `data-evt-source-url` and `data-table-source-url` attributes of `hor_geral.estudantes_view`.",
+        "x-fern-sdk-group-name": "calendar",
+        "x-fern-sdk-method-name": "getStudentTable",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "name": "nmec",
+            "in": "path",
+            "required": true,
+            "description": "Student number.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "academic_year",
+            "in": "query",
+            "required": true,
+            "description": "First year of the academic year, e.g. `2023` for 2023/2024.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "pv_turma_ocorr",
+            "in": "query",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "description": "Classes to include, as `{FACULTY}_{ocorr_id}_{turma_id}` (e.g. `FEUP_518805_213039`). At least one is required.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "style": "form",
+            "explode": true,
+            "description": "Teaching periods to include.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An HTML `<table>` fragment.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing `academic_year` or `pv_turma_ocorr`."
+          },
+          "403": {
+            "description": "No valid session. The body is empty."
+          }
+        }
+      }
+    },
+    "/calendarios-api/api/v1/events/{faculty}/uc/{ocorr_id}/": {
+      "get": {
+        "operationId": "calendar-get-course-unit-events",
+        "tags": [
+          "calendar"
+        ],
+        "summary": "Course unit schedule (v2)",
+        "description": "The session works from any IP address, not only the one that created it.\n\nThe trailing slash is required. The URL is in the `data-evt-source-url` / `data-table-source-url` attributes of the corresponding `hor_geral.*_view` page.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "calendar",
+        "x-fern-sdk-method-name": "getCourseUnitEvents",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "name": "ocorr_id",
+            "in": "path",
+            "required": true,
+            "description": "Course unit occurrence ID.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "academic_year",
+            "in": "query",
+            "required": true,
+            "description": "First year of the academic year, e.g. `2023` for 2023/2024.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "description": "Teaching periods to include. `uni` sends 1–8.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEvents"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing `academic_year` or `period`."
+          },
+          "403": {
+            "description": "No valid session. The body is empty."
+          }
+        }
+      }
+    },
+    "/calendarios-api/api/v1/caltable/{faculty}/uc/{ocorr_id}/": {
+      "get": {
+        "operationId": "calendar-get-course-unit-table",
+        "tags": [
+          "calendar"
+        ],
+        "summary": "Course unit schedule table (v2)",
+        "description": "The session works from any IP address, not only the one that created it.\n\nThe trailing slash is required. The URL is in the `data-evt-source-url` / `data-table-source-url` attributes of the corresponding `hor_geral.*_view` page.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "calendar",
+        "x-fern-sdk-method-name": "getCourseUnitTable",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "name": "ocorr_id",
+            "in": "path",
+            "required": true,
+            "description": "Course unit occurrence ID.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "academic_year",
+            "in": "query",
+            "required": true,
+            "description": "First year of the academic year, e.g. `2023` for 2023/2024.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "description": "Teaching periods to include. `uni` sends 1–8.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An HTML `<table>` fragment.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing `academic_year` or `period`."
+          },
+          "403": {
+            "description": "No valid session. The body is empty."
+          }
+        }
+      }
+    },
+    "/calendarios-api/api/v1/events/{faculty}/doc/{doc_codigo}/": {
+      "get": {
+        "operationId": "calendar-get-professor-events",
+        "tags": [
+          "calendar"
+        ],
+        "summary": "Professor schedule (v2)",
+        "description": "The session works from any IP address, not only the one that created it.\n\nThe trailing slash is required. The URL is in the `data-evt-source-url` / `data-table-source-url` attributes of the corresponding `hor_geral.*_view` page.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "calendar",
+        "x-fern-sdk-method-name": "getProfessorEvents",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "name": "doc_codigo",
+            "in": "path",
+            "required": true,
+            "description": "Professor code.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "academic_year",
+            "in": "query",
+            "required": true,
+            "description": "First year of the academic year, e.g. `2023` for 2023/2024.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "description": "Teaching periods to include. `uni` sends 1–8.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarEvents"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing `academic_year` or `period`."
+          },
+          "403": {
+            "description": "No valid session. The body is empty."
+          }
+        }
+      }
+    },
+    "/calendarios-api/api/v1/caltable/{faculty}/doc/{doc_codigo}/": {
+      "get": {
+        "operationId": "calendar-get-professor-table",
+        "tags": [
+          "calendar"
+        ],
+        "summary": "Professor schedule table (v2)",
+        "description": "The session works from any IP address, not only the one that created it.\n\nThe trailing slash is required. The URL is in the `data-evt-source-url` / `data-table-source-url` attributes of the corresponding `hor_geral.*_view` page.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "calendar",
+        "x-fern-sdk-method-name": "getProfessorTable",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "name": "doc_codigo",
+            "in": "path",
+            "required": true,
+            "description": "Professor code.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "academic_year",
+            "in": "query",
+            "required": true,
+            "description": "First year of the academic year, e.g. `2023` for 2023/2024.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "description": "Teaching periods to include. `uni` sends 1–8.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An HTML `<table>` fragment.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing `academic_year` or `period`."
+          },
+          "403": {
+            "description": "No valid session. The body is empty."
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/mob_val_geral.autentica": {
+      "post": {
+        "operationId": "auth-login",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Login (credentials, JSON)",
+        "description": "Authenticates with a username and password and answers with JSON; on success, sets the session cookies.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "auth",
+        "x-fern-sdk-method-name": "login",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pv_login": {
+                    "type": "string",
+                    "description": "Username, e.g. `up20YYXXXXX`."
+                  },
+                  "pv_password": {
+                    "type": "string",
+                    "format": "password"
+                  }
+                },
+                "required": [
+                  "pv_login",
+                  "pv_password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated.",
+            "headers": {
+              "Set-Cookie": {
+                "description": "On success, `SI_SESSION` (`HttpOnly`) and `SI_SECURITY` (`Secure; HttpOnly`), without an expiry date.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Wrong username or password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "get": {
+        "operationId": "auth-login-with-query",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Login (credentials, JSON, query string)",
+        "description": "Same as `POST`, with the credentials in the query string. Prefer `POST`: URLs (and so the password) tend to end up in logs.\n\nUsed by [uporto-schedule-scrapper](https://github.com/NIAEFEUP/uporto-schedule-scrapper).",
+        "x-fern-sdk-group-name": "auth",
+        "x-fern-sdk-method-name": "loginWithQuery",
+        "security": [],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_login",
+            "in": "query",
+            "required": true,
+            "description": "Username, e.g. `up20YYXXXXX`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_password",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "password"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authenticated.",
+            "headers": {
+              "Set-Cookie": {
+                "description": "On success, `SI_SESSION` (`HttpOnly`) and `SI_SECURITY` (`Secure; HttpOnly`), without an expiry date.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Wrong username or password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/vld_validacao.validacao": {
+      "post": {
+        "operationId": "auth-login-page",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Login (credentials)",
+        "description": "Authenticates with a username and password; this is the website's login form (served by `vld_validacao.login`). Works on any faculty path, including `up`.\n\nOn success, sets `SI_SESSION` and `SI_SECURITY` (no expiry date; the session lasts about 2 hours) and redirects with a `<meta http-equiv=\"refresh\">` to `p_address` (`web_page.Inicial` by default). On failure, the reason is in `p.aviso-invalidado` (e.g. \"O conjunto utilizador/senha não é válido.\" for a wrong username or password, \"A sua conta encontra-se bloqueada.\" for a locked account, or an expired password). If the request already carries a valid session, the page is titled \"Problema encontrado\" (\"Problem found\"), `p.erro-nota` says \"Já se encontra autenticado com o utilizador <name>.\" (\"You are already authenticated as <name>.\"), and no new session is created.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "auth",
+        "x-fern-sdk-method-name": "loginPage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_user": {
+                    "type": "string",
+                    "description": "Username, with or without the `up` prefix (e.g. `up20YYXXXXX` or `20YYXXXXX`)."
+                  },
+                  "p_pass": {
+                    "type": "string",
+                    "format": "password"
+                  },
+                  "p_address": {
+                    "type": "string",
+                    "description": "Page to redirect to after logging in. Defaults to `web_page.Inicial`."
+                  },
+                  "p_app": {
+                    "type": "string"
+                  },
+                  "p_amo": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "p_user",
+                  "p_pass"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "HTML page. See the description for how to tell success from failure.",
+            "headers": {
+              "Set-Cookie": {
+                "description": "On success, `SI_SESSION` (`HttpOnly`) and `SI_SECURITY` (`Secure; HttpOnly`), without an expiry date.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/{faculty}/{language}/vld_validacao.sair": {
+      "get": {
+        "operationId": "auth-logout",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Logout",
+        "description": "Ends the session: its cookies stop working. Then redirects to `web_page.Inicial` with a `<meta http-equiv=\"refresh\">`. Answers the same without a session.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "auth",
+        "x-fern-sdk-method-name": "logout",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page that redirects to the home page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "siSession": [],
+            "siSecurity": []
+          }
+        ]
+      }
+    },
+    "/auth/oidc/token": {
+      "get": {
+        "operationId": "auth-oidc-token",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Login (OpenID Connect)",
+        "description": "Exchanges a token from the U.Porto identity provider (`https://open-id.up.pt/realms/sigarra`) for SIGARRA session cookies. Both access tokens and ID tokens are accepted. The session is bound to the IP address that makes this call, so call it from wherever the session will be used (e.g. a backend, not the browser that obtained the token). Each call creates a new session that lasts 2 hours (`exp` is 7200 s after the request), regardless of the token's own lifetime. [uni](https://github.com/NIAEFEUP/uni)'s tokens have the audience `it-sigarra-oidc-bridge`, likely the name of this service.\n\nAnswers `401` without a token and `403` with an invalid one. Only `GET` is allowed (`405` otherwise).\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "auth",
+        "x-fern-sdk-method-name": "oidcToken",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Authenticated.",
+            "headers": {
+              "Set-Cookie": {
+                "description": "`SI_SESSION` and `SI_SECURITY`, with `Domain=sigarra.up.pt` and an `Expires` matching `exp`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "exp",
+                    "result"
+                  ],
+                  "properties": {
+                    "exp": {
+                      "type": "integer",
+                      "description": "When the session cookies expire, as a Unix timestamp: 2 hours after the request."
+                    },
+                    "result": {
+                      "type": "string",
+                      "description": "`OK` on success."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing token."
+          },
+          "403": {
+            "description": "Invalid token.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "uportoOidc": []
+          }
+        ]
+      }
+    },
+    "/{faculty}/{language}/web_page.inicial": {
+      "get": {
+        "operationId": "home-get-home-page",
+        "tags": [
+          "home"
+        ],
+        "summary": "Home page",
+        "description": "Home page. When authenticated, `.autenticado .fotografia img` links to `fotografias_service.foto?pct_cod=<username>`, which `uni` uses to find the username.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "home",
+        "x-fern-sdk-method-name": "getHomePage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "siSession": [],
+            "siSecurity": []
+          }
+        ]
+      }
+    },
+    "/{faculty}/{language}/vld_entidades_geral.entidade_pagina": {
+      "get": {
+        "operationId": "student-get-faculties-page",
+        "tags": [
+          "student"
+        ],
+        "summary": "A person's faculties",
+        "description": "Without a valid session, SIGARRA answers `200` with a redirect page to another faculty instead of the list.\n\nLists the faculties a person belongs to (`#conteudoinner>ul a`, e.g. \"Faculdade de Engenharia (FEUP)\"). `uni` requests it with `faculty` set to `up`.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "student",
+        "x-fern-sdk-method-name": "getFacultiesPage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pct_codigo",
+            "in": "query",
+            "required": true,
+            "description": "Username.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/fest_geral.cursos_list": {
+      "get": {
+        "operationId": "student-get-courses-page",
+        "tags": [
+          "student"
+        ],
+        "summary": "A student's courses",
+        "description": "Lists a student's courses and links to each `fest_geral.curso_percurso_academico_view?pv_fest_id=`. `uni` also uses it to check whether the session is still valid.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "student",
+        "x-fern-sdk-method-name": "getCoursesPage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_num_unico",
+            "in": "query",
+            "required": true,
+            "description": "Student number.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/fest_geral.curso_percurso_academico_view": {
+      "get": {
+        "operationId": "student-get-course-academic-path-page",
+        "tags": [
+          "student"
+        ],
+        "summary": "Academic path in a course",
+        "description": "A student's academic path in a course: course units, grades and the course average.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "student",
+        "x-fern-sdk-method-name": "getCourseAcademicPathPage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_fest_id",
+            "in": "query",
+            "required": true,
+            "description": "Course enrolment ID (`fest_id`).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/fest_geral.ucurr_inscricoes_list": {
+      "get": {
+        "operationId": "student-get-course-unit-enrollments-page",
+        "tags": [
+          "student"
+        ],
+        "summary": "Course unit enrolments",
+        "description": "A student's course unit enrolments in a course.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "student",
+        "x-fern-sdk-method-name": "getCourseUnitEnrollmentsPage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_fest_id",
+            "in": "query",
+            "required": true,
+            "description": "Course enrolment ID (`fest_id`).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/fest_geral.info_pessoal_view": {
+      "get": {
+        "operationId": "student-get-personal-info-page",
+        "tags": [
+          "student"
+        ],
+        "summary": "Personal information",
+        "description": "Without a valid session, SIGARRA answers `200` with a one-line error (\"Erro - Não tem permissões de acesso a esta página.\", i.e. no permission to access the page).\n\nA student's personal details.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "student",
+        "x-fern-sdk-method-name": "getPersonalInfoPage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_num_unico",
+            "in": "query",
+            "required": true,
+            "description": "Student number.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_dummy",
+            "in": "query",
+            "required": true,
+            "description": "Required, but any value works (even empty). `uni` sends the current timestamp.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/hor_geral.estudantes_view": {
+      "get": {
+        "operationId": "student-get-schedule-page",
+        "tags": [
+          "student"
+        ],
+        "summary": "Student schedule page",
+        "description": "A student's schedule page. `#cal-shadow-container[data-evt-source-url]` has the URL for `calendar.getStudentEvents`.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "student",
+        "x-fern-sdk-method-name": "getSchedulePage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_num_unico",
+            "in": "query",
+            "required": true,
+            "description": "Student number.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_ano_lectivo",
+            "in": "query",
+            "required": true,
+            "description": "Academic year, e.g. `2023`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_periodos",
+            "in": "query",
+            "required": true,
+            "description": "`uni` sends `1`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/exa_geral.mapa_de_exames": {
+      "get": {
+        "operationId": "course-unit-get-exams-page",
+        "tags": [
+          "courseUnit"
+        ],
+        "summary": "Exam calendar",
+        "description": "Exam calendar of a course unit occurrence; exams are in `td.exame` cells.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "courseUnit",
+        "x-fern-sdk-method-name": "getExamsPage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "p_ocorr_id",
+            "in": "query",
+            "required": true,
+            "description": "Course unit occurrence ID.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/hor_geral.ucurr_view": {
+      "get": {
+        "operationId": "course-unit-get-schedule-page",
+        "tags": [
+          "courseUnit"
+        ],
+        "summary": "Course unit schedule page",
+        "description": "A course unit's schedule page. `#cal-shadow-container[data-evt-source-url]` has the URL for `calendar.getCourseUnitEvents`.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "courseUnit",
+        "x-fern-sdk-method-name": "getSchedulePage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_ocorrencia_id",
+            "in": "query",
+            "required": true,
+            "description": "Course unit occurrence ID.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_ano_lectivo",
+            "in": "query",
+            "required": true,
+            "description": "Academic year, e.g. `2023`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_periodos",
+            "in": "query",
+            "required": true,
+            "description": "`uni` sends `1`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/it_listagem.lista_cursos_disciplina": {
+      "get": {
+        "operationId": "course-unit-get-courses-page",
+        "tags": [
+          "courseUnit"
+        ],
+        "summary": "Courses of a course unit",
+        "description": "Lists the courses a course unit occurrence belongs to, with links to `it_listagem.lista_turma_disciplina` for each.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "courseUnit",
+        "x-fern-sdk-method-name": "getCoursesPage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_ocorrencia_id",
+            "in": "query",
+            "required": true,
+            "description": "Course unit occurrence ID.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/{faculty}/{language}/it_listagem.lista_turma_disciplina": {
+      "get": {
+        "operationId": "course-unit-get-classes-page",
+        "tags": [
+          "courseUnit"
+        ],
+        "summary": "Classes and students of a course unit",
+        "description": "Lists a course unit's classes and their students, for one course. `uni` follows the links in `it_listagem.lista_cursos_disciplina`.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "courseUnit",
+        "x-fern-sdk-method-name": "getClassesPage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_curso_id",
+            "in": "query",
+            "required": true,
+            "description": "Course ID.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_ocorrencia_id",
+            "in": "query",
+            "required": true,
+            "description": "Course unit occurrence ID.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_ano_lectivo",
+            "in": "query",
+            "required": true,
+            "description": "Academic year, e.g. `2023`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_periodo_id",
+            "in": "query",
+            "required": true,
+            "description": "Period ID.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_no_menu",
+            "in": "query",
+            "required": false,
+            "description": "Set to `1` to omit the page menu.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/func_geral.formview": {
+      "get": {
+        "operationId": "professor-get-profile-page",
+        "tags": [
+          "professor"
+        ],
+        "summary": "Staff member page",
+        "description": "Public, but shows more information with a valid session.\n\nA staff member's page. `uni` extracts the institutional email (from `mailto:` links or an obfuscated `onclick`) and offices (`instal_geral.espaco_view` links).\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "professor",
+        "x-fern-sdk-method-name": "getProfilePage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "p_codigo",
+            "in": "query",
+            "required": true,
+            "description": "Staff code.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "siSession": [],
+            "siSecurity": []
+          }
+        ]
+      }
+    },
+    "/{faculty}/{language}/hor_geral.docentes_view": {
+      "get": {
+        "operationId": "professor-get-schedule-page",
+        "tags": [
+          "professor"
+        ],
+        "summary": "Professor schedule page",
+        "description": "A professor's schedule page. `#cal-shadow-container[data-evt-source-url]` has the URL for `calendar.getProfessorEvents`.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "professor",
+        "x-fern-sdk-method-name": "getSchedulePage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_doc_codigo",
+            "in": "query",
+            "required": true,
+            "description": "Professor code.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_ano_lectivo",
+            "in": "query",
+            "required": true,
+            "description": "Academic year, e.g. `2023`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_periodos",
+            "in": "query",
+            "required": true,
+            "description": "`uni` sends `1`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/fotografias_service.foto": {
+      "get": {
+        "operationId": "people-get-photo",
+        "tags": [
+          "people"
+        ],
+        "summary": "Photo",
+        "description": "Without a valid session, SIGARRA answers `200` with a placeholder image.\n\nPhoto of a student or staff member.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "people",
+        "x-fern-sdk-method-name": "getPhoto",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pct_cod",
+            "in": "query",
+            "required": true,
+            "description": "Student number or staff code.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The photo (e.g. `image/png`).",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "siSession": [],
+            "siSecurity": []
+          }
+        ]
+      }
+    },
+    "/{faculty}/{language}/gpag_ccorrente_geral.conta_corrente_view": {
+      "get": {
+        "operationId": "finances-get-current-account-page",
+        "tags": [
+          "finances"
+        ],
+        "summary": "Current account",
+        "description": "A person's current account: unpaid fees, payment references and the account statement. `uni` also requests it on the `sasup` faculty for social services.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "finances",
+        "x-fern-sdk-method-name": "getCurrentAccountPage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pct_cod",
+            "in": "query",
+            "required": true,
+            "description": "Username.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/imp4_impressoes.atribs": {
+      "get": {
+        "operationId": "finances-get-printing-page",
+        "tags": [
+          "finances"
+        ],
+        "summary": "Printing balance",
+        "description": "Printing balance and history. `uni` requests it on `feup`.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "finances",
+        "x-fern-sdk-method-name": "getPrintingPage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "p_codigo",
+            "in": "query",
+            "required": true,
+            "description": "Username.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/gpag_ccorrentes_geral.gerar_mb": {
+      "post": {
+        "operationId": "finances-generate-mb-reference",
+        "tags": [
+          "finances"
+        ],
+        "summary": "Generate a Multibanco reference",
+        "description": "Creates a Multibanco payment reference, e.g. to top up the printing balance. **This creates a real payment reference.** Not verified live.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "finances",
+        "x-fern-sdk-method-name": "generateMbReference",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "p_tipo_id": {
+                    "type": "string",
+                    "description": "Reference type. `uni` sends `3` (printing)."
+                  },
+                  "pct_codigo": {
+                    "type": "string",
+                    "description": "Username."
+                  },
+                  "p_valor": {
+                    "type": "string",
+                    "description": "`uni` sends `1`."
+                  },
+                  "p_valor_livre": {
+                    "type": "string",
+                    "description": "Amount, with a decimal comma (e.g. `5,00`). Minimum 1,00 €."
+                  }
+                },
+                "required": [
+                  "p_tipo_id",
+                  "pct_codigo",
+                  "p_valor",
+                  "p_valor_livre"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/CANTINA.EMENTASHOW": {
+      "get": {
+        "operationId": "canteen-get-menus-page",
+        "tags": [
+          "canteen"
+        ],
+        "summary": "Canteen menus",
+        "description": "Canteen menus. `uni` requests it on `feup`.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
+        "x-fern-sdk-group-name": "canteen",
+        "x-fern-sdk-method-name": "getMenusPage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/{faculty}/{language}/vld_validacao.login": {
+      "get": {
+        "operationId": "auth-get-login-page",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Login form",
+        "description": "The login page: a credentials form that posts to `vld_validacao.validacao`, and a federated login form that submits to `vld_validacao.federate_login`.",
+        "x-fern-sdk-group-name": "auth",
+        "x-fern-sdk-method-name": "getLoginPage",
+        "security": [],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "p_address",
+            "in": "query",
+            "description": "Page to redirect to after logging in, e.g. `WEB_PAGE.INICIAL`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "p_app",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "p_amo",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/vld_validacao.federate_login": {
+      "get": {
+        "operationId": "auth-federated-login",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Login (SAML)",
+        "description": "Starts the browser login through U.Porto's Shibboleth identity provider: redirects to `https://wayf.up.pt/idp/profile/SAML2/Redirect/SSO` with a SAML `AuthnRequest`. SIGARRA receives the response at `/Shibboleth.sso/SAML2/POST`.",
+        "x-fern-sdk-group-name": "auth",
+        "x-fern-sdk-method-name": "federatedLogin",
+        "security": [],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "p_redirect",
+            "in": "query",
+            "required": true,
+            "description": "Page to return to after logging in, e.g. `WEB_PAGE.INICIAL`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to the identity provider.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/mob_hor_geral.ucurr": {
+      "get": {
+        "operationId": "course-unit-get-schedule",
+        "tags": [
+          "courseUnit"
+        ],
+        "summary": "Course unit schedule",
+        "description": "Weekly timetable of a course unit occurrence. Returns the weekly timetable of the week that contains `pv_semana_ini`; `pv_semana_fim` does not widen the range.",
+        "x-fern-sdk-group-name": "courseUnit",
+        "x-fern-sdk-method-name": "getSchedule",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_ocorrencia_id",
+            "in": "query",
+            "required": true,
+            "description": "Course unit occurrence ID.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_semana_ini",
+            "in": "query",
+            "required": true,
+            "description": "Start of the period, as YYYYMMDD.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_semana_fim",
+            "in": "query",
+            "required": true,
+            "description": "End of the period, as YYYYMMDD.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeeklySchedule"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/web_base.gera_pagina": {
+      "get": {
+        "operationId": "home-get-faculties-redirect",
+        "tags": [
+          "home"
+        ],
+        "summary": "List of faculties (redirect)",
+        "description": "Institutional page generator. Only `/up/pt/web_base.gera_pagina?p_pagina=escolas` (the list of faculties) still answers: it redirects (`301`) to `https://www.up.pt/portal/pt/conhecer/sobre-a-uporto/as-faculdades/`. Any other combination (another faculty, another page, or no `p_pagina`) is refused by the web server with a generic `403`.\n\nUsed by [uporto-schedule-scrapper](https://github.com/NIAEFEUP/uporto-schedule-scrapper).",
+        "x-fern-sdk-group-name": "home",
+        "x-fern-sdk-method-name": "getFacultiesRedirect",
+        "security": [],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "p_pagina",
+            "in": "query",
+            "required": true,
+            "description": "Page name. Only `escolas` works (with `faculty` = `up`).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "301": {
+            "description": "Redirect to the list of faculties on `www.up.pt`.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused by the web server (generic Apache page).",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/cur_geral.cur_view": {
+      "get": {
+        "operationId": "course-get-page",
+        "tags": [
+          "course"
+        ],
+        "summary": "Course page",
+        "description": "A course page: name, acronym (the \"Sigla:\" / \"Acronym:\" row), and a \"Planos de Estudos\" (study plans) section linking to `cur_geral.cur_planos_estudos_view`. An unknown course answers `200` with a \"Sem resultados\" (no results) page.\n\nUsed by [uporto-schedule-scrapper](https://github.com/NIAEFEUP/uporto-schedule-scrapper).",
+        "x-fern-sdk-group-name": "course",
+        "x-fern-sdk-method-name": "getPage",
+        "security": [],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_curso_id",
+            "in": "query",
+            "required": true,
+            "description": "Course ID.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_ano_lectivo",
+            "in": "query",
+            "required": false,
+            "description": "Academic year, e.g. `2023`. Defaults to the current one.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_origem",
+            "in": "query",
+            "required": false,
+            "description": "Where the link came from, e.g. `CUR`. Doesn't change the content.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_tipo_cur_sigla",
+            "in": "query",
+            "required": false,
+            "description": "Course type: `A` refresher course, `B` pre-Bologna bachelor's degree (*bacharelato*), `CF` complementary training course, `CFC` continuing education course, `VI` summer/winter course, `FL` free course or training, `D` doctorate, `E` specialisation, `EA` advanced studies, `EG` EUGLOH, `EIA` European Innovation Academy, `FC` continuing education, `L` bachelor's degree (*licenciatura*), `LV` free, `M` master's degree, `MI` integrated master's degree, `PD` postdoctoral programme, `UFC` continuing education unit, `UM` unit/module/training action.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/cur_geral.cur_planos_estudos_view": {
+      "get": {
+        "operationId": "course-get-study-plan-page",
+        "tags": [
+          "course"
+        ],
+        "summary": "Study plan",
+        "description": "A course's study plan. Each group of course units is a `div[id^=\"div_id_\"]` with an `h3` title and a `table.dadossz` whose rows link to `ucurr_geral.ficha_uc_view?pv_ocorrencia_id=`.\n\nUsed by [uporto-schedule-scrapper](https://github.com/NIAEFEUP/uporto-schedule-scrapper).",
+        "x-fern-sdk-group-name": "course",
+        "x-fern-sdk-method-name": "getStudyPlanPage",
+        "security": [],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_plano_id",
+            "in": "query",
+            "required": true,
+            "description": "Study plan ID, from the course page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_ano_lectivo",
+            "in": "query",
+            "required": true,
+            "description": "Academic year, e.g. `2023`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_tipo_cur_sigla",
+            "in": "query",
+            "required": false,
+            "description": "Course type: `A` refresher course, `B` pre-Bologna bachelor's degree (*bacharelato*), `CF` complementary training course, `CFC` continuing education course, `VI` summer/winter course, `FL` free course or training, `D` doctorate, `E` specialisation, `EA` advanced studies, `EG` EUGLOH, `EIA` European Innovation Academy, `FC` continuing education, `L` bachelor's degree (*licenciatura*), `LV` free, `M` master's degree, `MI` integrated master's degree, `PD` postdoctoral programme, `UFC` continuing education unit, `UM` unit/module/training action.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_origem",
+            "in": "query",
+            "required": false,
+            "description": "Where the link came from, e.g. `CUR`. Doesn't change the content.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/it_geral.vagas": {
+      "get": {
+        "operationId": "course-get-class-vacancies-page",
+        "tags": [
+          "course"
+        ],
+        "summary": "Class vacancies",
+        "description": "Vacancies in each class of a course's course units, for the current class enrolment period (e.g. \"Inscrições nas turmas 1º Semestre - 2026/2027\", the 1st semester's class enrolments). The data is a table with one row per course unit and pairs of columns (class, vacancies). The course doesn't need to belong to the faculty in the path.\n\nUsed by [uporto-schedule-scrapper](https://github.com/NIAEFEUP/uporto-schedule-scrapper).",
+        "x-fern-sdk-group-name": "course",
+        "x-fern-sdk-method-name": "getClassVacanciesPage",
+        "security": [],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_curso_id",
+            "in": "query",
+            "required": false,
+            "description": "Course ID. Without it, the page has no table.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_colunas",
+            "in": "query",
+            "required": false,
+            "description": "How many class columns per row, `3` to `9` (default `8`).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/ucurr_geral.pesquisa_ocorr_ucs_list": {
+      "get": {
+        "operationId": "course-unit-search-page",
+        "tags": [
+          "courseUnit"
+        ],
+        "summary": "Course unit search",
+        "description": "Search results for course unit occurrences (the form is `ucurr_geral.pesquisa_ucs`). Each result row (`table.dados .d`) links to `ucurr_geral.ficha_uc_view?pv_ocorrencia_id=`; results are paginated, and the last page is linked from `.paginar-saltar-barra-posicao`. All filters are optional.\n\nUsed by [uporto-schedule-scrapper](https://github.com/NIAEFEUP/uporto-schedule-scrapper).",
+        "x-fern-sdk-group-name": "courseUnit",
+        "x-fern-sdk-method-name": "searchPage",
+        "security": [],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_ano_lectivo",
+            "in": "query",
+            "required": false,
+            "description": "Academic year, e.g. `2023`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_curso_id",
+            "in": "query",
+            "required": false,
+            "description": "Course ID.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_curso_nome",
+            "in": "query",
+            "required": false,
+            "description": "Course name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_uc_codigo",
+            "in": "query",
+            "required": false,
+            "description": "Course unit code, e.g. `M.EIC001`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_uc_sigla",
+            "in": "query",
+            "required": false,
+            "description": "Course unit acronym, e.g. `AC`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_uc_nome",
+            "in": "query",
+            "required": false,
+            "description": "Course unit name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_uc_ano",
+            "in": "query",
+            "required": false,
+            "description": "Curricular year.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_uc_periodo",
+            "in": "query",
+            "required": false,
+            "description": "Period: `1` annual, `2` 1st semester, `3` 2nd semester, `4`–`7` 1st–4th trimester, `8` no period.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_doc_codigo",
+            "in": "query",
+            "required": false,
+            "description": "Teacher code.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_doc_sigla",
+            "in": "query",
+            "required": false,
+            "description": "Teacher acronym.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_doc_nome",
+            "in": "query",
+            "required": false,
+            "description": "Teacher name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_lingua",
+            "in": "query",
+            "required": false,
+            "description": "Teaching language.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_tipo_curso",
+            "in": "query",
+            "required": false,
+            "description": "Course type: `A` refresher course, `B` pre-Bologna bachelor's degree (*bacharelato*), `CF` complementary training course, `CFC` continuing education course, `VI` summer/winter course, `FL` free course or training, `D` doctorate, `E` specialisation, `EA` advanced studies, `EG` EUGLOH, `EIA` European Innovation Academy, `FC` continuing education, `L` bachelor's degree (*licenciatura*), `LV` free, `M` master's degree, `MI` integrated master's degree, `PD` postdoctoral programme, `UFC` continuing education unit, `UM` unit/module/training action.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_tipo_avaliacao",
+            "in": "query",
+            "required": false,
+            "description": "Assessment type.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pv_num_pag",
+            "in": "query",
+            "required": false,
+            "description": "Page number, from `1`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{faculty}/{language}/ucurr_geral.ficha_uc_view": {
+      "get": {
+        "operationId": "course-unit-get-sheet-page",
+        "tags": [
+          "courseUnit"
+        ],
+        "summary": "Course unit page",
+        "description": "A course unit occurrence's page: name, acronym (\"Sigla:\" / \"Acronym:\"), occurrence (`h2`, e.g. \"Ocorrência: 2023/2024 - 1S\"), and the \"Ciclos de Estudo/Cursos\" (study cycles/courses) table (course, curricular year, ECTS). With a valid session it also shows teaching responsibilities and hours, and navigation links (contents, students, schedule, classes, exams, …); in particular, the schedule link, `<a>Horário</a>`, links to `hor_geral.ucurr_view?pv_ocorrencia_id=` only with a session. An unknown occurrence answers `200` with a \"Sem Resultados\" (no results) page.\n\nUsed by [uporto-schedule-scrapper](https://github.com/NIAEFEUP/uporto-schedule-scrapper).",
+        "x-fern-sdk-group-name": "courseUnit",
+        "x-fern-sdk-method-name": "getSheetPage",
+        "security": [
+          {},
+          {
+            "siSession": [],
+            "siSecurity": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Faculty"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
+          },
+          {
+            "name": "pv_ocorrencia_id",
+            "in": "query",
+            "required": true,
+            "description": "Course unit occurrence ID.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML page.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CalendarEvents": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "start": {
+                  "type": "string"
+                },
+                "end": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "name"
+                  ]
+                },
+                "is_inst_req": {
+                  "type": "boolean"
+                },
+                "hour_start": {
+                  "type": "string"
+                },
+                "hour_end": {
+                  "type": "string"
+                },
+                "first_date": {
+                  "type": "string"
+                },
+                "last_date": {
+                  "type": "string"
+                },
+                "week_days": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "week_count": {
+                  "type": "integer"
+                },
+                "ucs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "acronym": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "sigarra_id": {
+                        "type": "integer"
+                      },
+                      "sigarra_url": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "acronym",
+                      "name",
+                      "sigarra_id",
+                      "sigarra_url"
+                    ]
+                  }
+                },
+                "classes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "acronym": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "sigarra_id": {
+                        "type": "integer"
+                      },
+                      "sigarra_url": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "acronym",
+                      "name",
+                      "sigarra_id",
+                      "sigarra_url"
+                    ]
+                  }
+                },
+                "persons": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "acronym": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "sigarra_id": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      },
+                      "sigarra_url": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "acronym",
+                      "name",
+                      "sigarra_id",
+                      "sigarra_url"
+                    ]
+                  }
+                },
+                "rooms": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "acronym": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "sigarra_id": {
+                        "type": "integer"
+                      },
+                      "sigarra_url": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "acronym",
+                      "name",
+                      "sigarra_id",
+                      "sigarra_url"
+                    ]
+                  }
+                },
+                "typology": {
+                  "type": "object",
+                  "properties": {
+                    "acronym": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "acronym",
+                    "name"
+                  ]
+                },
+                "css_class": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "start",
+                "end",
+                "id",
+                "name",
+                "state",
+                "is_inst_req",
+                "hour_start",
+                "hour_end",
+                "first_date",
+                "last_date",
+                "week_days",
+                "week_count",
+                "ucs",
+                "classes",
+                "persons",
+                "rooms",
+                "typology",
+                "css_class"
+              ]
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "legend": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "acronym": {
+                      "type": "string"
+                    },
+                    "color_class": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "acronym",
+                    "color_class"
+                  ]
+                }
+              },
+              "cal_type": {
+                "type": "string"
+              },
+              "cal_params": {
+                "type": "object",
+                "properties": {
+                  "locale": {
+                    "type": "string"
+                  },
+                  "academic_year_range": {
+                    "type": "object",
+                    "properties": {
+                      "start": {
+                        "type": "string"
+                      },
+                      "end": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "start",
+                      "end"
+                    ]
+                  },
+                  "day_time_range": {
+                    "type": "object",
+                    "properties": {
+                      "start": {
+                        "type": "string"
+                      },
+                      "end": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "start",
+                      "end"
+                    ]
+                  },
+                  "lunch_time_range": {
+                    "type": "object",
+                    "properties": {
+                      "start": {
+                        "type": "string"
+                      },
+                      "end": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "start",
+                      "end"
+                    ]
+                  }
+                },
+                "required": [
+                  "locale",
+                  "academic_year_range",
+                  "day_time_range",
+                  "lunch_time_range"
+                ]
+              },
+              "date_range": {
+                "type": "object",
+                "properties": {
+                  "start": {
+                    "type": "string"
+                  },
+                  "end": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "start",
+                  "end"
+                ]
+              },
+              "count": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "legend",
+              "cal_type",
+              "cal_params",
+              "date_range",
+              "count"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "erro",
+          "erro_msg"
+        ],
+        "properties": {
+          "erro": {
+            "type": "string",
+            "description": "Error type, e.g. `Autorização`."
+          },
+          "erro_msg": {
+            "type": "string",
+            "description": "Error message."
+          }
+        }
+      },
+      "WeeklySchedule": {
+        "type": "object",
+        "properties": {
+          "horario": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dia": {
+                  "type": "integer"
+                },
+                "hora_inicio": {
+                  "type": "integer"
+                },
+                "ucurr_sigla": {
+                  "type": "string"
+                },
+                "ocorrencia_id": {
+                  "type": "integer"
+                },
+                "tipo": {
+                  "type": "string"
+                },
+                "aula_id": {
+                  "type": "integer"
+                },
+                "aula_duracao": {
+                  "type": "integer"
+                },
+                "sala_sigla": {
+                  "type": "string"
+                },
+                "salas": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "espaco_id": {
+                        "type": "integer"
+                      },
+                      "espaco_nome": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "espaco_id",
+                      "espaco_nome"
+                    ]
+                  }
+                },
+                "doc_sigla": {
+                  "type": "string"
+                },
+                "docentes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "doc_codigo": {
+                        "type": "string"
+                      },
+                      "doc_nome": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "doc_codigo",
+                      "doc_nome"
+                    ]
+                  }
+                },
+                "turma_sigla": {
+                  "type": "string"
+                },
+                "turmas": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "turma_id": {
+                        "type": "integer"
+                      },
+                      "turma_sigla": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "turma_id",
+                      "turma_sigla"
+                    ]
+                  }
+                },
+                "periodo": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "dia",
+                "hora_inicio",
+                "ucurr_sigla",
+                "ocorrencia_id",
+                "tipo",
+                "aula_id",
+                "aula_duracao",
+                "sala_sigla",
+                "salas",
+                "doc_sigla",
+                "docentes",
+                "turma_sigla",
+                "turmas",
+                "periodo"
+              ]
+            }
+          },
+          "blocos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "semana_ini": {
+                  "type": "string"
+                },
+                "semana_fim": {
+                  "type": "string"
+                },
+                "bloco_codigo": {
+                  "type": "null"
+                },
+                "c_turma_id": {
+                  "type": "null"
+                },
+                "turmas_bloco": {
+                  "type": "string"
+                },
+                "turma_real": {
+                  "type": "string"
+                },
+                "periodo": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "semana_ini",
+                "semana_fim",
+                "bloco_codigo",
+                "c_turma_id",
+                "turmas_bloco",
+                "turma_real",
+                "periodo"
+              ]
+            }
+          }
+        },
+        "required": [
+          "horario"
+        ]
+      },
+      "LoginResult": {
+        "type": "object",
+        "required": [
+          "authenticated",
+          "codigo",
+          "tipo"
+        ],
+        "properties": {
+          "authenticated": {
+            "type": "boolean"
+          },
+          "codigo": {
+            "type": "string",
+            "description": "Username, without the `up` prefix (e.g. `20YYXXXXX`)."
+          },
+          "tipo": {
+            "type": "string",
+            "description": "User type: `A` for students. Values for other kinds of users haven't been observed."
+          }
+        }
+      }
+    },
+    "parameters": {
+      "Faculty": {
+        "name": "faculty",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "example": "feup"
+      },
+      "Language": {
+        "name": "language",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "example": "pt"
+      }
+    },
+    "securitySchemes": {
+      "siSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "SI_SESSION",
+        "description": "Session cookie. Must be sent together with `SI_SECURITY`. Only valid from the IP address that created the session (except for the calendar API)."
+      },
+      "siSecurity": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "SI_SECURITY",
+        "description": "Session cookie. Must be sent together with `SI_SESSION`. Only valid from the IP address that created the session (except for the calendar API)."
+      },
+      "uportoOidc": {
+        "type": "openIdConnect",
+        "openIdConnectUrl": "https://open-id.up.pt/realms/sigarra/.well-known/openid-configuration",
+        "description": "U.Porto identity provider. The access token (or ID token) is sent as `Authorization: Bearer <token>`."
+      }
+    }
+  },
+  "security": [
+    {
+      "siSession": [],
+      "siSecurity": []
+    }
+  ]
+}

@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict'
-import { test } from 'node:test'
+import { describe, expect, it } from 'bun:test'
 
 import { status, t } from 'elysia'
 
@@ -14,8 +13,7 @@ import { ErrorCode, httpError, HttpError, VALIDATION_ERROR_MESSAGE } from '@/int
 // own errors this same way. `createApp()` touches no database — dependencies
 // are injected per route — so this runs on a bare checkout.
 //
-// `node:test` + `node:assert` are used instead of `bun:test` so the same file
-// typechecks under `bun run typecheck` without a Bun types dependency.
+// `bun:test` keeps the runner identical to every other suite in `tests/`.
 
 import type { FacultyRepository } from '@/domain/ports/faculty.repository'
 
@@ -92,132 +90,134 @@ const captureConsole = async (fn: () => Promise<HttpResult>) => {
   }
 }
 
-test('a successful response is left untouched', async () => {
-  const { status, contentType, body } = await get('/ok')
+describe('error handler', () => {
+  it('a successful response is left untouched', async () => {
+    const { status, contentType, body } = await get('/ok')
 
-  assert.equal(status, 200)
-  assert.match(contentType, /^application\/json/)
-  assert.deepEqual(body, { message: 'Hello from tts-be!' })
-})
-
-test('routes that never fail keep working', async () => {
-  const { status } = await get('/health')
-
-  assert.equal(status, 200)
-})
-
-test('a thrown HttpError becomes { error, code } with the right status', async () => {
-  const { status, contentType, body } = await get('/thrown')
-
-  assert.equal(status, 404)
-  assert.match(contentType, /^application\/json/)
-  assert.deepEqual(body, { error: 'Faculty FEUP was not found', code: 'not-found' })
-})
-
-test('a domain code keeps its own status instead of failing as a 500', async () => {
-  const { status, body } = await get('/domain-code')
-
-  assert.equal(status, 404)
-  assert.deepEqual(body, {
-    error: 'Faculty with acronym FAKE was not found',
-    code: 'faculty-not-found',
+    expect(status).toBe(200)
+    expect(contentType).toMatch(/^application\/json/)
+    expect(body).toEqual({ message: 'Hello from tts-be!' })
   })
-})
 
-test('the generic factories map to their documented statuses', async () => {
-  const { status, body } = await get('/generic-code')
+  it('routes that never fail keep working', async () => {
+    const { status } = await get('/health')
 
-  assert.equal(status, 400)
-  assert.deepEqual(body, { error: 'page_size must be a positive integer', code: ErrorCode.badRequest })
-})
-
-test("input validation failures are the caller's fault: 422 validation-error", async () => {
-  const valid = await get('/validated?year=2025')
-  assert.equal(valid.status, 200)
-  assert.deepEqual(valid.body, { year: '2025' })
-
-  const invalid = await get('/validated')
-  assert.equal(invalid.status, 422)
-  assert.deepEqual(invalid.body, {
-    error: VALIDATION_ERROR_MESSAGE,
-    code: ErrorCode.validationError,
+    expect(status).toBe(200)
   })
-})
 
-test('a route failing its own response schema is a logged 500, not a 400', async () => {
-  const { response, logged } = await captureConsole(() => get('/bad-response'))
+  it('a thrown HttpError becomes { error, code } with the right status', async () => {
+    const { status, contentType, body } = await get('/thrown')
 
-  assert.equal(response.status, 500)
-  assert.deepEqual(response.body, { error: 'Something went wrong', code: ErrorCode.internalError })
-  assert.equal(logged.length, 1)
-  assert.match(logged[0], /Response validation failed/)
-})
-
-test('unexpected errors are logged server-side and never leaked', async () => {
-  const { response, logged } = await captureConsole(() => get('/boom'))
-
-  assert.equal(response.status, 500)
-  assert.deepEqual(response.body, { error: 'Something went wrong', code: ErrorCode.internalError })
-
-  // The cause lands in the logs...
-  assert.equal(logged.length, 1)
-  assert.match(logged[0], /ECONNREFUSED/)
-  // ...and never in the response body.
-  assert.equal(JSON.stringify(response.body).includes('ECONNREFUSED'), false)
-})
-
-test('a 5xx HttpError keeps its status and code but not its message', async () => {
-  const { response, logged } = await captureConsole(() => get('/driver-failure'))
-
-  assert.equal(response.status, 503)
-  assert.deepEqual(response.body, { error: 'Something went wrong', code: 'db-timeout' })
-  assert.equal(logged.length, 1)
-  assert.match(logged[0], /ETIMEDOUT/)
-})
-
-test('httpError.internal collapses to internal-error and still logs', async () => {
-  const { response, logged } = await captureConsole(() => get('/internal-factory'))
-
-  assert.equal(response.status, 500)
-  assert.deepEqual(response.body, { error: 'Something went wrong', code: ErrorCode.internalError })
-  assert.equal(logged.length, 1)
-  assert.match(logged[0], /ECONNREFUSED/)
-})
-
-test('an unmatched route returns 404 not-found instead of a 500', async () => {
-  const { status, body } = await get('/definitely-not-a-route')
-
-  assert.equal(status, 404)
-  assert.deepEqual(body, { error: 'Route not found', code: ErrorCode.notFound })
-})
-
-test("Elysia's throw status(n) keeps its status and derives the code", async () => {
-  const bare = await get('/status-bare')
-
-  assert.equal(bare.status, 401)
-  assert.deepEqual(bare.body, { error: 'Authentication required', code: ErrorCode.unauthorized })
-})
-
-test("throw status(n, body) keeps the route's own error body", async () => {
-  const withBody = await get('/status-body')
-
-  assert.equal(withBody.status, 403)
-  assert.deepEqual(withBody.body, { error: 'not an admin of this course', code: 'forbidden' })
-})
-
-test('a thrown status(422) answers the same body as Elysia validation', async () => {
-  const { status: result, body } = await get('/status-validation')
-
-  assert.equal(result, 422)
-  assert.deepEqual(body, {
-    error: VALIDATION_ERROR_MESSAGE,
-    code: ErrorCode.validationError,
+    expect(status).toBe(404)
+    expect(contentType).toMatch(/^application\/json/)
+    expect(body).toEqual({ error: 'Faculty FEUP was not found', code: 'not-found' })
   })
-})
 
-test('an unmapped status keeps its status but answers internal-error', async () => {
-  const { status: result, body } = await get('/status-unmapped')
+  it('a domain code keeps its own status instead of failing as a 500', async () => {
+    const { status, body } = await get('/domain-code')
 
-  assert.equal(result, 429)
-  assert.deepEqual(body, { error: 'Request failed', code: ErrorCode.internalError })
+    expect(status).toBe(404)
+    expect(body).toEqual({
+      error: 'Faculty with acronym FAKE was not found',
+      code: 'faculty-not-found',
+    })
+  })
+
+  it('the generic factories map to their documented statuses', async () => {
+    const { status, body } = await get('/generic-code')
+
+    expect(status).toBe(400)
+    expect(body).toEqual({ error: 'page_size must be a positive integer', code: ErrorCode.badRequest })
+  })
+
+  it("input validation failures are the caller's fault: 422 validation-error", async () => {
+    const valid = await get('/validated?year=2025')
+    expect(valid.status).toBe(200)
+    expect(valid.body).toEqual({ year: '2025' })
+
+    const invalid = await get('/validated')
+    expect(invalid.status).toBe(422)
+    expect(invalid.body).toEqual({
+      error: VALIDATION_ERROR_MESSAGE,
+      code: ErrorCode.validationError,
+    })
+  })
+
+  it('a route failing its own response schema is a logged 500, not a 400', async () => {
+    const { response, logged } = await captureConsole(() => get('/bad-response'))
+
+    expect(response.status).toBe(500)
+    expect(response.body).toEqual({ error: 'Something went wrong', code: ErrorCode.internalError })
+    expect(logged.length).toBe(1)
+    expect(logged[0]).toMatch(/Response validation failed/)
+  })
+
+  it('unexpected errors are logged server-side and never leaked', async () => {
+    const { response, logged } = await captureConsole(() => get('/boom'))
+
+    expect(response.status).toBe(500)
+    expect(response.body).toEqual({ error: 'Something went wrong', code: ErrorCode.internalError })
+
+    // The cause lands in the logs...
+    expect(logged.length).toBe(1)
+    expect(logged[0]).toMatch(/ECONNREFUSED/)
+    // ...and never in the response body.
+    expect(JSON.stringify(response.body).includes('ECONNREFUSED')).toBe(false)
+  })
+
+  it('a 5xx HttpError keeps its status and code but not its message', async () => {
+    const { response, logged } = await captureConsole(() => get('/driver-failure'))
+
+    expect(response.status).toBe(503)
+    expect(response.body).toEqual({ error: 'Something went wrong', code: 'db-timeout' })
+    expect(logged.length).toBe(1)
+    expect(logged[0]).toMatch(/ETIMEDOUT/)
+  })
+
+  it('httpError.internal collapses to internal-error and still logs', async () => {
+    const { response, logged } = await captureConsole(() => get('/internal-factory'))
+
+    expect(response.status).toBe(500)
+    expect(response.body).toEqual({ error: 'Something went wrong', code: ErrorCode.internalError })
+    expect(logged.length).toBe(1)
+    expect(logged[0]).toMatch(/ECONNREFUSED/)
+  })
+
+  it('an unmatched route returns 404 not-found instead of a 500', async () => {
+    const { status, body } = await get('/definitely-not-a-route')
+
+    expect(status).toBe(404)
+    expect(body).toEqual({ error: 'Route not found', code: ErrorCode.notFound })
+  })
+
+  it("Elysia's throw status(n) keeps its status and derives the code", async () => {
+    const bare = await get('/status-bare')
+
+    expect(bare.status).toBe(401)
+    expect(bare.body).toEqual({ error: 'Authentication required', code: ErrorCode.unauthorized })
+  })
+
+  it("throw status(n, body) keeps the route's own error body", async () => {
+    const withBody = await get('/status-body')
+
+    expect(withBody.status).toBe(403)
+    expect(withBody.body).toEqual({ error: 'not an admin of this course', code: 'forbidden' })
+  })
+
+  it('a thrown status(422) answers the same body as Elysia validation', async () => {
+    const { status: result, body } = await get('/status-validation')
+
+    expect(result).toBe(422)
+    expect(body).toEqual({
+      error: VALIDATION_ERROR_MESSAGE,
+      code: ErrorCode.validationError,
+    })
+  })
+
+  it('an unmapped status keeps its status but answers internal-error', async () => {
+    const { status: result, body } = await get('/status-unmapped')
+
+    expect(result).toBe(429)
+    expect(body).toEqual({ error: 'Request failed', code: ErrorCode.internalError })
+  })
 })

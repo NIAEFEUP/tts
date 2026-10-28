@@ -244,7 +244,7 @@ export const authMiddleware = new Elysia({ name: 'auth' })
 ```env
 SIGARRA_CLIENT_ID=your-client-id
 SIGARRA_CLIENT_SECRET=your-client-secret
-SIGARRA_REDIRECT_URI=https://tts.niaefeup.pt/api/auth/callback
+SIGARRA_REDIRECT_URI=https://tts.niaefeup.pt/api/v1/auth/callback
 SIGARRA_AUTH_ENDPOINT=https://open-id.up.pt/realms/sigarra/protocol/openid-connect/auth
 SIGARRA_TOKEN_ENDPOINT=https://open-id.up.pt/realms/sigarra/protocol/openid-connect/token
 SIGARRA_USERINFO_ENDPOINT=https://open-id.up.pt/realms/sigarra/protocol/openid-connect/userinfo
@@ -307,7 +307,7 @@ volumes:
 **If you prefer tRPC later:** Elysia has a tRPC adapter. You can migrate after launch.
 
 **Conventions:**
-- Prefix all routes with `/api/v1/`
+- Declare all routes under `/v1/` — the `/api` prefix seen in public URLs is added by the deployment (Niployments), not the app
 - Use standard HTTP methods (GET, POST, PUT, DELETE)
 - Return consistent error format: `{ error: string, code: string }`
 - Paginate list endpoints with `?page=1&limit=20`
@@ -321,34 +321,60 @@ volumes:
 - Jest-compatible API (familiar to frontend devs)
 - Fast
 
-**Structure:**
+**Structure:** tests mirror `src/` and live under `apps/backend/tests/`. Route tests drive the real app through `createApp().handle(request)` with fake repositories — no listener and no database.
+
 ```
-src/
-├── domain/
-│   └── entities/
-│       └── exchange.test.ts      # Unit tests for domain logic
-├── application/
-│   └── use-cases/
-│       └── exchange/
-│           └── create-direct-exchange.test.ts  # Unit tests with mocked ports
+tests/
+├── app/
+│   └── main.test.ts                    # composition root
+├── core/
+│   └── nmec.test.ts                    # pure helpers
+├── frontend-integration.test.ts        # cross-origin/CORS regression guard
 └── interface/
+    ├── middleware/
+    │   └── error-handler.test.ts
+    ├── plugins/
+    │   └── openapi.test.ts
     └── routes/
-        └── exchange.test.ts      # Integration tests with test DB
+        ├── support/                    # shared helpers, not test suites
+        │   ├── auth-test-utils.ts      # test user, config, session/IdP fakes
+        │   └── catalog-test-utils.ts   # catalog fixtures, fake repos, createCatalogApp()
+        ├── auth/
+        │   ├── auth.routes.test.ts
+        │   └── auth-compat.routes.test.ts
+        ├── catalog/
+        │   ├── courses.test.ts
+        │   ├── faculties.test.ts
+        │   ├── course-units.test.ts
+        │   └── occurrences.test.ts     # planned
+        └── ...                         # one folder per route group (users, exchanges, admin, …)
 ```
+
+Route tests are grouped by feature under `tests/interface/routes/`. That grouping is ahead of `src/interface/routes/`, which still keeps catalog routes flat (`courses.routes.ts`, `faculties.routes.ts`), so don't read the two trees as a 1:1 mirror. Shared fixtures and fakes go in `support/` (files are not named `*.test.ts`, so Bun never runs them as suites). One `describe` per file, `it` per case.
 
 **Example:**
 ```typescript
-// domain/entities/exchange.test.ts
-import { describe, expect, test } from 'bun:test'
-import { ExchangeRequest } from './exchange'
+// tests/interface/routes/catalog/courses.test.ts
+import { describe, expect, it } from 'bun:test'
 
-describe('ExchangeRequest', () => {
-  test('can be accepted by a participant', () => {
-    const exchange = new ExchangeRequest(1, 'direct', 'pending', [])
-    expect(exchange.canBeAcceptedBy('123456')).toBe(true)
+import { COURSES, createCatalogApp, registerCatalogAuthGuard } from '../support/catalog-test-utils'
+
+const { app, get } = createCatalogApp()
+
+describe('courses routes', () => {
+  registerCatalogAuthGuard(app, ['/v1/courses', '/v1/courses/22841'])
+
+  it('lists every course with the faculties that offer it', async () => {
+    const { status, contentType, body } = await get('/v1/courses')
+
+    expect(status).toBe(200)
+    expect(contentType).toMatch(/^application\/json/)
+    expect(body).toEqual(COURSES)
   })
 })
 ```
+
+Full conventions — runner, structure, shared helpers, and what not to duplicate — live in `AGENTS.md` → Testing.
 
 **Scripts:**
 ```json

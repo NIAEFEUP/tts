@@ -2,7 +2,7 @@
 
 **This document is the single source of truth for the TTS backend API.** It contains the complete endpoint inventory for the Elysia backend redo, with a description of what each endpoint does, its authentication requirements, and its request/response shapes where relevant.
 
-All routes are prefixed with `/api/v1` unless noted otherwise.
+All routes are served under `/v1` unless noted otherwise. The public URL also carries an `/api` prefix, which the deployment (Niployments) adds — it is **not** part of the route declarations in this codebase.
 
 This document maps the legacy Django routes (`apps/backend/legacy/django/university/urls.py`) to the new resource-oriented API where applicable.
 
@@ -89,21 +89,21 @@ them. It validates against Sigarra and sets the same session cookie as OIDC.
 Kept for older clients; the current frontend uses the canonical routes above, so
 these can be dropped once nothing references them.
 
-They are mounted at the **root**, not under `/api/v1`, because clients built their
+They are mounted at the **root**, not under `/v1`, because clients built their
 URLs from `BACKEND_URL` with an empty path prefix.
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| `GET` | `/oidc-auth/authenticate/` | public | 302 → `/api/v1/auth/login` |
+| `GET` | `/oidc-auth/authenticate/` | public | 302 → `/v1/auth/login` |
 | `POST` | `/oidc-auth/logout/` | `?` | Clears the session (ignores the legacy CSRF header) |
 | `GET` | `/auth/info/` | public | Legacy `{ signed, username, name, eligible_exchange, is_admin }` shape |
 | `POST` | `/sigarra_login/` | public | Dev-only local login bypass, gated by `DEV_LOGIN_ENABLED` |
 
 ### Flow
 
-1. Frontend redirects to `GET /api/v1/auth/login?return_to=<frontend-url>`.
-2. Backend redirects to Sigarra’s authorization endpoint with `/api/v1/auth/callback` as the callback.
-3. Sigarra redirects to `GET /api/v1/auth/callback?code=...&state=...`.
+1. Frontend redirects to `GET /v1/auth/login?return_to=<frontend-url>`.
+2. Backend redirects to Sigarra’s authorization endpoint with `/v1/auth/callback` as the callback.
+3. Sigarra redirects to `GET /v1/auth/callback?code=...&state=...`.
 4. Backend exchanges the code for tokens, fetches user info (NMEC, name, email), creates or updates the `User` row, creates a `Session`, sets an HTTP-only cookie, and redirects to `return_to`.
 
 ### `GET /auth/me` — response
@@ -175,6 +175,22 @@ Because a course can belong to multiple faculties, each course lists its faculty
 - `year` — academic year
 - `faculty` — faculty acronym
 
+### `GET /courses/:id/units` — response
+
+The abstract course units the course offers, ordered by acronym. An unknown course id answers `404 course-not-found`; a course that offers no units answers an empty list.
+
+```json
+[
+  {
+    "id": 42,
+    "courseId": 22841,
+    "acronym": "BD",
+    "name": "Bases de Dados",
+    "semester": 1
+  }
+]
+```
+
 ### `GET /courses/:id/occurrences` — query params
 
 - `year` — academic year
@@ -218,6 +234,28 @@ Backend resolves all occurrences for the course, validates no overlap, and creat
   "semester": 1
 }
 ```
+
+An unknown id answers `404 course-unit-not-found`.
+
+### `GET /course-units/:id/occurrences` — response
+
+Every concrete occurrence of the unit, across the courses and academic years it is taught in, newest year first. An unknown id answers `404 course-unit-not-found`; a unit with no occurrences answers an empty list.
+
+```json
+[
+  {
+    "id": 587177,
+    "courseUnitId": 42,
+    "courseId": 22841,
+    "year": 2025,
+    "ects": 6,
+    "url": "https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587177",
+    "hash": "abc..."
+  }
+]
+```
+
+`id` is the Sigarra occurrence id and is only unique per academic year — the row's real key is `(id, year)`.
 
 ---
 
@@ -597,9 +635,9 @@ These are called by the current frontend but should be removed once the frontend
 | Legacy route | New route | Notes |
 |---|---|---|
 | `GET /csrf/` | — | Not needed with HTTP-only session cookies + CORS; drop after frontend cleanup |
-| `GET /oidc-auth/authenticate/` | `GET /api/v1/auth/login` | Frontend login redirect |
-| `POST /oidc-auth/logout/` | `POST /api/v1/auth/logout` | Frontend logout |
-| `POST /sigarra_login/` | `POST /api/v1/auth/dev-login` | Dev-only; rename and guard behind env flag |
+| `GET /oidc-auth/authenticate/` | `GET /v1/auth/login` | Frontend login redirect |
+| `POST /oidc-auth/logout/` | `POST /v1/auth/logout` | Frontend logout |
+| `POST /sigarra_login/` | `POST /v1/auth/dev-login` | Dev-only; rename and guard behind env flag |
 
 ---
 
@@ -607,62 +645,62 @@ These are called by the current frontend but should be removed once the frontend
 
 | Legacy route | New route | Notes |
 |---|---|---|
-| `GET /faculty/` | `GET /api/v1/faculties` | |
-| `GET /course/<int:year>` | `GET /api/v1/courses?year=` | |
+| `GET /faculty/` | `GET /v1/faculties` | |
+| `GET /course/<int:year>` | `GET /v1/courses?year=` | |
 | `GET /course/<int:course_id>/groups` | — | Dropped: course groups removed |
 | `GET /course_group/<int:course_group_id>/course_units` | — | Dropped: course groups removed |
-| `GET /course_units/<int:course_id>/<int:year>/<int:semester>/` | `GET /api/v1/courses/:id/occurrences?year=&semester=` | |
-| `GET /info/` | `GET /api/v1/auth/me` | |
-| `GET /auth/info/` | `GET /api/v1/auth/me` | |
+| `GET /course_units/<int:course_id>/<int:year>/<int:semester>/` | `GET /v1/courses/:id/occurrences?year=&semester=` | |
+| `GET /info/` | `GET /v1/auth/me` | |
+| `GET /auth/info/` | `GET /v1/auth/me` | |
 | `GET /csrf/` | — | Drop after frontend cleanup |
-| `GET /student/schedule` | `GET /api/v1/users/me/schedule` | |
-| `PUT /student/schedule` | `PUT /api/v1/users/me/schedule/refresh` | |
-| `GET /student/exchange/sent/` | `GET /api/v1/users/me/exchanges?role=sent` | |
-| `GET /student/exchange/received/` | `GET /api/v1/users/me/exchanges?role=received` | |
-| `GET /student/<str:nmec>/<int:course_id>/metadata` | `GET /api/v1/students/:nmec/courses/:courseId/metadata` | |
-| `GET /student/course_units/eligible` | `GET /api/v1/users/me/eligible-occurrences` | |
-| `GET /student/exchange/eligible` | `GET /api/v1/users/me/eligible-occurrences` | ⚠️ Not a real legacy endpoint; frontend bug |
-| `GET /student/<str:nmec>/photo` | `GET /api/v1/students/:nmec/photo` | |
-| `GET /exchange/verify/<str:token>` | `POST /api/v1/exchanges/verify/:token` | |
+| `GET /student/schedule` | `GET /v1/users/me/schedule` | |
+| `PUT /student/schedule` | `PUT /v1/users/me/schedule/refresh` | |
+| `GET /student/exchange/sent/` | `GET /v1/users/me/exchanges?role=sent` | |
+| `GET /student/exchange/received/` | `GET /v1/users/me/exchanges?role=received` | |
+| `GET /student/<str:nmec>/<int:course_id>/metadata` | `GET /v1/students/:nmec/courses/:courseId/metadata` | |
+| `GET /student/course_units/eligible` | `GET /v1/users/me/eligible-occurrences` | |
+| `GET /student/exchange/eligible` | `GET /v1/users/me/eligible-occurrences` | ⚠️ Not a real legacy endpoint; frontend bug |
+| `GET /student/<str:nmec>/photo` | `GET /v1/students/:nmec/photo` | |
+| `GET /exchange/verify/<str:token>` | `POST /v1/exchanges/verify/:token` | |
 | `GET /student_data/<str:codigo>/` | — | Absorbed into `/auth/callback` or Sigarra adapter |
-| `GET /exchange/marketplace/` | `GET /api/v1/exchanges?type=MARKETPLACE` | |
-| `POST /exchange/marketplace/` | `POST /api/v1/exchanges` | body `type: MARKETPLACE` |
-| `POST /exchange/direct/` | `POST /api/v1/exchanges` | body `type: DIRECT` |
-| `POST /exchange/urgent/` | `POST /api/v1/exchanges` | body `type: URGENT` |
-| `GET /exchange/direct/<int:id>` | `GET /api/v1/exchanges/:id` | |
-| `PUT /exchange/direct/<int:id>` | `POST /api/v1/exchanges/:id/accept` | |
-| `GET /exchange/direct/validate/<int:id>` | `POST /api/v1/exchanges/:id/revalidate` | or `GET` |
-| `GET /exchange/direct/?page=&page_size=` | `GET /api/v1/admin/exchanges?type=DIRECT&page=&page_size=` | |
-| `GET /exchange/urgent/?page=&page_size=` | `GET /api/v1/admin/exchanges?type=URGENT&page=&page_size=` | |
-| `PUT /exchange/<str:request_type>/<int:id>/cancel/` | `DELETE /api/v1/exchanges/:id` | |
-| `PUT /exchange/urgent/` | `PUT /api/v1/exchanges/:id/message` | Update urgent request message |
+| `GET /exchange/marketplace/` | `GET /v1/exchanges?type=MARKETPLACE` | |
+| `POST /exchange/marketplace/` | `POST /v1/exchanges` | body `type: MARKETPLACE` |
+| `POST /exchange/direct/` | `POST /v1/exchanges` | body `type: DIRECT` |
+| `POST /exchange/urgent/` | `POST /v1/exchanges` | body `type: URGENT` |
+| `GET /exchange/direct/<int:id>` | `GET /v1/exchanges/:id` | |
+| `PUT /exchange/direct/<int:id>` | `POST /v1/exchanges/:id/accept` | |
+| `GET /exchange/direct/validate/<int:id>` | `POST /v1/exchanges/:id/revalidate` | or `GET` |
+| `GET /exchange/direct/?page=&page_size=` | `GET /v1/admin/exchanges?type=DIRECT&page=&page_size=` | |
+| `GET /exchange/urgent/?page=&page_size=` | `GET /v1/admin/exchanges?type=URGENT&page=&page_size=` | |
+| `PUT /exchange/<str:request_type>/<int:id>/cancel/` | `DELETE /v1/exchanges/:id` | |
+| `PUT /exchange/urgent/` | `PUT /v1/exchanges/:id/message` | Update urgent request message |
 | `GET /exchange/export/csv` | — | Dropped by decision |
-| `POST /exchange/related/` | `GET /api/v1/exchanges/:id/related` | |
-| `POST /exchange/<int:exchange_id>/revalidate/` | `POST /api/v1/exchanges/:id/revalidate` | |
-| `GET /course_unit/<int:course_unit_id>/exchange/metadata` | `GET /api/v1/occurrences/:id/exchange-metadata` | |
-| `GET /course_unit/<int:course_unit_id>/` | `GET /api/v1/occurrences/:id` | or `/course-units/:id` for the abstract template |
-| `GET /class/<int:course_unit_id>/` | `GET /api/v1/occurrences/:id/classes` | |
-| `GET /professors/<int:slot>/` | `GET /api/v1/slots/:id/professors` | |
-| `GET /course_unit/hash` | `GET /api/v1/occurrences/hashes` | |
-| `POST /course_unit/enrollment/` | `POST /api/v1/enrollment-requests` | |
-| `GET /course_unit/enrollment/?page=&page_size=` | `GET /api/v1/admin/enrollment-requests?page=&page_size=` | |
-| `GET /exchange/admin/courses/` | `GET /api/v1/admin/courses` | |
-| `GET /exchange/admin/course_units/` | `GET /api/v1/admin/occurrences` | |
+| `POST /exchange/related/` | `GET /v1/exchanges/:id/related` | |
+| `POST /exchange/<int:exchange_id>/revalidate/` | `POST /v1/exchanges/:id/revalidate` | |
+| `GET /course_unit/<int:course_unit_id>/exchange/metadata` | `GET /v1/occurrences/:id/exchange-metadata` | |
+| `GET /course_unit/<int:course_unit_id>/` | `GET /v1/occurrences/:id` | or `/course-units/:id` for the abstract template |
+| `GET /class/<int:course_unit_id>/` | `GET /v1/occurrences/:id/classes` | |
+| `GET /professors/<int:slot>/` | `GET /v1/slots/:id/professors` | |
+| `GET /course_unit/hash` | `GET /v1/occurrences/hashes` | |
+| `POST /course_unit/enrollment/` | `POST /v1/enrollment-requests` | |
+| `GET /course_unit/enrollment/?page=&page_size=` | `GET /v1/admin/enrollment-requests?page=&page_size=` | |
+| `GET /exchange/admin/courses/` | `GET /v1/admin/courses` | |
+| `GET /exchange/admin/course_units/` | `GET /v1/admin/occurrences` | |
 | `GET /exchange/admin/classes/` | — | Dropped by decision |
-| `GET /exchange/admin/statistics/` | `GET /api/v1/admin/exchanges/statistics` | |
-| `GET /exchange/admin/marketplace` | `GET /api/v1/admin/exchanges?type=MARKETPLACE` | or keep `/admin/marketplace` alias |
+| `GET /exchange/admin/statistics/` | `GET /v1/admin/exchanges/statistics` | |
+| `GET /exchange/admin/marketplace` | `GET /v1/admin/exchanges?type=MARKETPLACE` | or keep `/admin/marketplace` alias |
 | `GET /exchange/admin/course_unit/periods/` | — | Dropped by decision |
 | `GET /exchange/admin/courses/periods/` | — | Dropped by decision |
-| `POST /exchange/admin/course_unit/<int:course_unit_id>/period/` | `POST /api/v1/occurrences/:id/periods` | |
-| `POST /exchange/admin/course/<int:course_id>/period/` | `POST /api/v1/courses/:id/periods` | |
-| `PUT /exchange/admin/course_unit/<int:course_unit_id>/period/<int:period_id>/` | `PUT /api/v1/occurrences/:id/periods/:periodId` | |
-| `PUT /exchange/admin/course/<int:course_id>/period/<int:period_id>/` | `PUT /api/v1/courses/:id/periods/:periodId` | |
-| `PUT /exchange/admin/request/<str:request_type>/<int:id>/reject/` | `POST /api/v1/admin/exchanges/:id/reject` | |
-| `PUT /exchange/admin/request/<str:request_type>/<int:id>/accept/` | `POST /api/v1/admin/exchanges/:id/accept` | |
-| `PUT /exchange/admin/request/<str:request_type>/<int:id>/awaiting-information/` | `POST /api/v1/admin/exchanges/:id/awaiting-information` | |
-| `GET /oidc-auth/authenticate/` | `GET /api/v1/auth/login` | Frontend redirect |
-| `POST /oidc-auth/logout/` | `POST /api/v1/auth/logout` | |
-| `POST /sigarra_login/` | `POST /api/v1/auth/dev-login` | Dev-only |
+| `POST /exchange/admin/course_unit/<int:course_unit_id>/period/` | `POST /v1/occurrences/:id/periods` | |
+| `POST /exchange/admin/course/<int:course_id>/period/` | `POST /v1/courses/:id/periods` | |
+| `PUT /exchange/admin/course_unit/<int:course_unit_id>/period/<int:period_id>/` | `PUT /v1/occurrences/:id/periods/:periodId` | |
+| `PUT /exchange/admin/course/<int:course_id>/period/<int:period_id>/` | `PUT /v1/courses/:id/periods/:periodId` | |
+| `PUT /exchange/admin/request/<str:request_type>/<int:id>/reject/` | `POST /v1/admin/exchanges/:id/reject` | |
+| `PUT /exchange/admin/request/<str:request_type>/<int:id>/accept/` | `POST /v1/admin/exchanges/:id/accept` | |
+| `PUT /exchange/admin/request/<str:request_type>/<int:id>/awaiting-information/` | `POST /v1/admin/exchanges/:id/awaiting-information` | |
+| `GET /oidc-auth/authenticate/` | `GET /v1/auth/login` | Frontend redirect |
+| `POST /oidc-auth/logout/` | `POST /v1/auth/logout` | |
+| `POST /sigarra_login/` | `POST /v1/auth/dev-login` | Dev-only |
 
 ---
 

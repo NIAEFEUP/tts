@@ -1,4 +1,4 @@
-// Dev-only credential check against Sigarra, used by `POST /api/v1/auth/dev-login`
+// Dev-only credential check against Sigarra, used by `POST /v1/auth/dev-login`
 // and the `/sigarra_login/` shim when federated (OIDC) auth is off.
 //
 // Sigarra login mechanism (unchanged from the legacy backend): successful login

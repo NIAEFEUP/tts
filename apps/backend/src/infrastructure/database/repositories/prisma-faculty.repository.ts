@@ -2,10 +2,12 @@ import type { Db } from '@/infrastructure/database/prisma'
 
 import type { FacultyRepository } from '@/domain/ports/faculty.repository'
 
+import { loadCourses } from './course-mapper'
+
 /**
  * Prisma implementation of `FacultyRepository`. `FacultyCourse` is an explicit
- * many-to-many join, so resolving a faculty's courses takes three reads:
- * join rows, the courses they name, then each course's faculty acronyms.
+ * many-to-many join, so resolving a faculty's courses reads the join rows first
+ * and then delegates to the shared course mapper (see `course-mapper.ts`).
  *
  * This is a factory function: it receives a database connection and returns
  * an object matching the FacultyRepository interface. The route never calls
@@ -13,7 +15,7 @@ import type { FacultyRepository } from '@/domain/ports/faculty.repository'
  */
 export function createFacultyRepository({ db }: { db: Db }): FacultyRepository {
   return {
-    // GET /api/v1/faculties/ — fetch all faculties, sorted alphabetically.
+    // GET /v1/faculties/ — fetch all faculties, sorted alphabetically.
     async findAll() {
       // db.orm.public.Faculty accesses the Faculty table (Prisma 8 fluent API).
       // .orderBy().all() fetches all rows sorted by acronym ascending.
@@ -23,7 +25,7 @@ export function createFacultyRepository({ db }: { db: Db }): FacultyRepository {
       return rows.map((row) => ({ acronym: row.acronym, name: row.name }))
     },
 
-    // GET /api/v1/faculties/:acronym — fetch a single faculty by acronym.
+    // GET /v1/faculties/:acronym — fetch a single faculty by acronym.
     async findByAcronym(acronym) {
       // .where({ acronym }) filters to matching rows; .first() returns one or null.
       const row = await db.orm.public.Faculty.where({ acronym }).first()
@@ -32,7 +34,7 @@ export function createFacultyRepository({ db }: { db: Db }): FacultyRepository {
       return row ? { acronym: row.acronym, name: row.name } : null
     },
 
-    // GET /api/v1/faculties/:acronym/courses?year=2024 — fetch courses for a faculty.
+    // GET /v1/faculties/:acronym/courses?year=2024 — fetch courses for a faculty.
     //
     // Database relationship (many-to-many):
     //   Faculty ←──→ FacultyCourse (join table) ←──→ Course
@@ -44,60 +46,10 @@ export function createFacultyRepository({ db }: { db: Db }): FacultyRepository {
       // Early return: if no links exist, skip the remaining queries.
       if (courseIds.length === 0) return []
 
-      // Step 2: Fetch the actual Course rows (optionally filtered by year).
-      const rows = await selectCourses(db, courseIds, year)
-      if (rows.length === 0) return []
-
-      // Step 3: Get ALL faculty links for those courses — not just the one we
-      // searched for — because courses can be shared across multiple faculties.
-      const facultyLinks = await db.orm.public.FacultyCourse.where((link) =>
-        link.courseId.in(rows.map((row) => row.id)),
-      )
-        .orderBy((link) => link.facultyId.asc())
-        .all()
-
-      // Step 4: Group faculty acronyms by course ID.
-      // Builds a map: courseId → [facultyAcronym, ...]
-      // Example: Map { 1 → ["FEUP", "FCUP"], 2 → ["FEUP"] }
-      const facultiesByCourse = new Map<number, string[]>()
-      for (const link of facultyLinks) {
-        const faculties = facultiesByCourse.get(link.courseId)
-        if (faculties) faculties.push(link.facultyId)
-        else facultiesByCourse.set(link.courseId, [link.facultyId])
-      }
-
-      // Step 5: Assemble the response — map each course row to the Course shape,
-      // attaching the faculties array from the map.
-      // `?? []` means: if no faculties found for a course, use an empty array.
-      return rows.map((row) => ({
-        id: row.id,
-        acronym: row.acronym,
-        name: row.name,
-        courseType: row.courseType,
-        year: row.year,
-        url: row.url,
-        faculties: facultiesByCourse.get(row.id) ?? [],
-      }))
+      // Step 2+3: fetch the courses (optionally year-filtered) and attach the
+      // faculty acronyms of EACH course — not just the one we searched for —
+      // because courses can be shared across multiple faculties.
+      return loadCourses(db, { ids: courseIds, year })
     },
   }
-}
-
-/**
- * Helper: fetch Course rows by ID list, optionally filtered by academic year.
- * If `year` is undefined, returns all matching courses; otherwise adds a
- * `.where()` filter for that specific year.
- */
-async function selectCourses(db: Db, courseIds: number[], year?: number) {
-  const courses = db.orm.public.Course
-
-  return year === undefined
-    ? courses
-        .where((course) => course.id.in(courseIds))
-        .orderBy((course) => course.acronym.asc())
-        .all()
-    : courses
-        .where((course) => course.id.in(courseIds))
-        .where((course) => course.year.eq(year))
-        .orderBy((course) => course.acronym.asc())
-        .all()
 }

@@ -47,7 +47,7 @@ type EnrollmentRoutesDeps = {
 }
 
 export const enrollmentRoutes = (sessions: SessionRepository) =>
-  new Elysia<'/api/v1/users/me', EnrollmentRoutesDeps>({ prefix: '/api/v1/users/me' })
+  new Elysia<'/v1/users/me', EnrollmentRoutesDeps>({ prefix: '/v1/users/me' })
     .model({ ApiError: t.Object({ error: t.String(), code: t.String() }) })
     .use(createAuthMiddleware({ resolveSession: sessions.resolve }))
     .get(
