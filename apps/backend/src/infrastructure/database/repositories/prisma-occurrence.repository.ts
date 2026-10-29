@@ -32,31 +32,37 @@ export function createOccurrenceRepository({ db }: { db: Db }): OccurrenceReposi
     // traverses the `courseUnit` relation inside the predicate. Chained
     // `.where()` clauses AND-compose, so each optional filter is added only
     // when provided rather than building a single combined expression.
-async findByCourse(courseId, filter = {}) {
-  const { year, semester } = filter
+    async findByCourse(courseId, filter = {}) {
+      const { year, semester } = filter
 
-  let query = db.orm.public.Occurrence.where((occurrence) => occurrence.courseId.eq(courseId)).select(
-    'id', 'courseUnitId', 'courseId', 'year', 'ects', 'url', 'hash',
-  )
+      let query = db.orm.public.Occurrence.where((occurrence) => occurrence.courseId.eq(courseId)).select(
+        'id',
+        'courseUnitId',
+        'courseId',
+        'year',
+        'ects',
+        'url',
+        'hash',
+      )
 
-  if (year !== undefined) {
-    query = query.where((occurrence) => occurrence.year.eq(year))
-  }
+      if (year !== undefined) {
+        query = query.where((occurrence) => occurrence.year.eq(year))
+      }
 
-  if (semester !== undefined) {
-    // `semester` lives on CourseUnit, not Occurrence. Resolve the matching
-    // unit ids first, then filter the occurrence foreign key with `in`.
-    const courseUnits = await db.orm.public.CourseUnit.where((unit) =>
-      and(unit.courseId.eq(courseId), unit.semester.eq(semester)),
-    )
-      .select('id')
-      .all()
+      if (semester !== undefined) {
+        // `semester` lives on CourseUnit, not Occurrence. Resolve the matching
+        // unit ids first, then filter the occurrence foreign key with `in`.
+        const courseUnits = await db.orm.public.CourseUnit.where((unit) =>
+          and(unit.courseId.eq(courseId), unit.semester.eq(semester)),
+        )
+          .select('id')
+          .all()
 
-    query = query.where((occurrence) => occurrence.courseUnitId.in(courseUnits.map((unit) => unit.id)))
-  }
+        query = query.where((occurrence) => occurrence.courseUnitId.in(courseUnits.map((unit) => unit.id)))
+      }
 
-  return query.orderBy([(occurrence) => occurrence.year.desc(), (occurrence) => occurrence.id.asc()]).all()
-},
+      return query.orderBy([(occurrence) => occurrence.year.desc(), (occurrence) => occurrence.id.asc()]).all()
+    },
 
     // GET /v1/occurrences/:id — single occurrence by its composite primary
     // key `(id, year)`. Joined with `courseUnit` to attach the unit's name
