@@ -19,7 +19,7 @@ paths:
         - name: Authorization
           in: header
           required: true
-          description: "`Bearer <access token>`."
+          description: '`Bearer <access token>`.'
           schema:
             type: string
   /{faculty}/{language}/web_page.inicial:

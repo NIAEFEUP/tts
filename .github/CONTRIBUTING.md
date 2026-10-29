@@ -162,10 +162,10 @@ We follow the [Conventional Commits](https://www.conventionalcommits.org/) stand
 | `docs`     | Documentation changes only                        |
 | `test`     | Adding or updating tests                          |
 
-
 ### Scopes
 
 Use scopes to indicate which part of the monorepo is affected:
+
 - `fe`: Changes isolated to the frontend app.
 - `be`: Changes isolated to the backend service.
 - `api` / `db`: API route changes, migrations, or database queries.
@@ -191,16 +191,21 @@ fix(db): correct foreign key constraint on exchange requests
 ## Pull Request Workflow
 
 ### 1. Open as a Draft Early
+
 Open your PR as a **Draft** as soon as your first commit is pushed.
-* Draft PRs provide visibility into ongoing work without triggering review notifications.
-* Link the issue in the description using `Closes #<number>` (or `Fixes #<number>`).
+
+- Draft PRs provide visibility into ongoing work without triggering review notifications.
+- Link the issue in the description using `Closes #<number>` (or `Fixes #<number>`).
 
 ### 2. PR Review & Reviewers
-* Code owners (`@franpts2` and `@PedroLunet`) are automatically assigned when your PR is marked ready.
-* For full-stack PRs, ensure you describe both frontend and backend testing steps.
+
+- Code owners (`@franpts2` and `@PedroLunet`) are automatically assigned when your PR is marked ready.
+- For full-stack PRs, ensure you describe both frontend and backend testing steps.
 
 ### 3. Making it Ready for Review
+
 Before clicking **Ready for Review**:
+
 - [ ] Ensure your branch is rebased / up-to-date with your target branch.
 - [ ] Verify there are no merge conflicts.
 - [ ] Run both frontend and backend lint/test checks locally.

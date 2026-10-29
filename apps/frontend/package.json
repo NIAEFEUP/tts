@@ -3,6 +3,14 @@
   "version": "3.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix",
+    "preview": "vite preview"
+  },
   "dependencies": {
     "@blobatar/react": "^2.5.0",
     "@elysiajs/eden": "^1.4.9",
@@ -76,13 +84,15 @@
     "web-vitals": "^2.1.4",
     "zod": "^3.24.1"
   },
-  "scripts": {
-    "dev": "vite --host",
-    "build": "tsc -b && vite build",
-    "typecheck": "tsc -b",
-    "lint": "oxlint .",
-    "lint:fix": "oxlint . --fix",
-    "preview": "vite preview"
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.11",
+    "@tailwindcss/postcss": "^4.3.0",
+    "@varlock/vite-integration": "^1.5.2",
+    "postcss": "^8.5.14",
+    "tailwindcss": "^4.2.1",
+    "tts-be": "workspace:*",
+    "typescript": "^6.0.3",
+    "varlock": "^1.21.1"
   },
   "browserslist": {
     "production": [
@@ -95,15 +105,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "@tailwindcss/forms": "^0.5.11",
-    "@tailwindcss/postcss": "^4.3.0",
-    "@varlock/vite-integration": "^1.5.2",
-    "postcss": "^8.5.14",
-    "tailwindcss": "^4.2.1",
-    "tts-be": "workspace:*",
-    "typescript": "^6.0.3",
-    "varlock": "^1.21.1"
   }
 }

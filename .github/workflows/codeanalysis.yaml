@@ -64,3 +64,6 @@ jobs:
 
       - name: Lint
         run: bun run lint
+
+      - name: Check formatting
+        run: bun run format:check

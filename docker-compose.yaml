@@ -8,13 +8,13 @@ services:
     ports:
       # Bound to loopback only: dev credentials (tts/tts) must not be
       # reachable from other machines on the network.
-      - "127.0.0.1:5434:5432"
+      - '127.0.0.1:5434:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       # Lets `docker compose up -d --wait` block until Postgres actually
       # accepts connections, so the DB is ready before db:init / seeding.
-      test: ["CMD-SHELL", "pg_isready -U tts -d tts"]
+      test: ['CMD-SHELL', 'pg_isready -U tts -d tts']
       interval: 2s
       timeout: 3s
       retries: 30

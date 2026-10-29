@@ -42,12 +42,7 @@
           {
             "patterns": [
               {
-                "group": [
-                  "@/application/**",
-                  "@/interface/**",
-                  "@/domain/entities/**",
-                  "@/domain/value-objects/**"
-                ],
+                "group": ["@/application/**", "@/interface/**", "@/domain/entities/**", "@/domain/value-objects/**"],
                 "message": "Infrastructure layer can only import from domain/ports/ and core/."
               }
             ]

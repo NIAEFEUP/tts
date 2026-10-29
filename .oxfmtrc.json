@@ -3,5 +3,14 @@
   "printWidth": 120,
   "semi": false,
   "singleQuote": true,
-  "ignorePatterns": ["apps/frontend/src/env.d.ts", "packages/sigarra/src/generated"]
+  "ignorePatterns": [
+    ".agents/skills/**",
+    ".claude/skills/**",
+    ".cursor/skills/**",
+    ".devin/skills/**",
+    ".pi/skills/**",
+    "apps/backend/legacy/**",
+    "apps/frontend/src/env.d.ts",
+    "packages/sigarra/src/generated"
+  ]
 }
