@@ -9,10 +9,11 @@ import { HttpError } from '@/interface/errors/errors'
 // Imported as `type` only: the route never touches the database directly.
 import type { CourseRepository } from '@/domain/ports/course.repository'
 import type { CourseUnitRepository } from '@/domain/ports/course-unit.repository'
+import type { OccurrenceRepository } from '@/domain/ports/occurrence.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { apiError } from '@/interface/middleware/error-handler'
-import { courseSchema, courseUnitSchema } from './catalog.schemas'
+import { courseSchema, courseUnitSchema, occurrenceSchema } from './catalog.schemas'
 
 // Routes read `repositories` off the Elysia context — no infrastructure imports.
 // A missing course throws `HttpError('course-not-found')`; the global `onError`
@@ -26,7 +27,11 @@ import { courseSchema, courseUnitSchema } from './catalog.schemas'
 // to be available on the Elysia context."
 type CourseDependencies = {
   decorator: {
-    repositories: { courseRepository: CourseRepository; courseUnitRepository: CourseUnitRepository }
+    repositories: {
+      courseRepository: CourseRepository
+      courseUnitRepository: CourseUnitRepository
+      occurrenceRepository: OccurrenceRepository
+    }
   }
   store: {}
   derive: {}
@@ -100,5 +105,30 @@ export const courseRoutes = ({ sessions }: CourseRoutesDeps) =>
         response: { 200: t.Array(courseUnitSchema), 404: 'ApiError' },
         params: t.Object({ id: t.Integer() }),
         detail: { tags: ['courses'], summary: 'Course units of a course' },
+      },
+    )
+    // GET /v1/courses/22841/occurrences?year=2025&semester=1
+    // Lists occurrences for a course, optionally filtered by academic year and
+    // semester. The course must exist first; a course with no matches returns
+    // an empty list.
+    .get(
+      '/:id/occurrences',
+      async ({ repositories, params, query }) => {
+        const course = await repositories.courseRepository.findById(params.id)
+        if (!course) throw new HttpError('course-not-found', `Course ${params.id} not found`, 404)
+
+        return repositories.occurrenceRepository.findByCourse(params.id, {
+          year: query.year,
+          semester: query.semester as 1 | 2 | undefined,
+        })
+      },
+      {
+        response: { 200: t.Array(occurrenceSchema), 404: 'ApiError' },
+        params: t.Object({ id: t.Integer() }),
+        query: t.Object({
+          year: t.Optional(t.Integer()),
+          semester: t.Optional(t.Integer({ minimum: 1, maximum: 2 })),
+        }),
+        detail: { tags: ['courses'], summary: 'Occurrences of a course' },
       },
     )
