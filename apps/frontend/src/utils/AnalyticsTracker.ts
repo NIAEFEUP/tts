@@ -33,7 +33,7 @@ export class AnalyticsTracker {
     if (major) {
       trackEvent('Major Selected', { props: { major: major.name } })
       trackEvent('Faculty', {
-        props: { faculty: major.faculty_id.toUpperCase() },
+        props: { faculty: (major.faculties?.[0] ?? major.faculty_id ?? '').toUpperCase() },
       })
     }
   }

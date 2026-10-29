@@ -40,14 +40,6 @@ const apiRequest = async (route: string) => {
 }
 
 /**
- * Retrieves all UPorto majors.
- * @returns all majors from the backend
- */
-const getMajors = async () => {
-  return await apiRequest(`/course/${CURRENT_YEAR}`)
-}
-
-/**
  * Retrieves all course units for a major in a given semester
  * @param major major to get course units from
  * @returns course units array
@@ -144,7 +136,6 @@ const csrfTokenName = (): string => {
 }
 
 const api = {
-  getMajors,
   getCourses,
   getCoursesByMajorId,
   getCourseClass,

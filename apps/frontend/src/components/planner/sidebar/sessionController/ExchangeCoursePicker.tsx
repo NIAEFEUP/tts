@@ -9,9 +9,10 @@ import useLocalStorage from '../../../../hooks/useLocalStorage'
 type Props = {
   enrollCourses: CourseInfo[]
   setEnrollCourses: Dispatch<SetStateAction<CourseInfo[]>>
+  allowedAcronyms?: string[]
 }
 
-export const ExchangeCoursePicker = ({ enrollCourses, setEnrollCourses }: Props) => {
+export const ExchangeCoursePicker = ({ enrollCourses, setEnrollCourses, allowedAcronyms }: Props) => {
   const [checkboxedCourses, setCheckboxedCourses] = useState([])
   const [coursesInfo, setCoursesInfo] = useState<CourseInfo[]>([])
   const [modalOpen, setModalOpen] = useState<boolean>(false)
@@ -40,7 +41,7 @@ export const ExchangeCoursePicker = ({ enrollCourses, setEnrollCourses }: Props)
         setSelectedMajor: setSelectedMajor,
       }}
     >
-      <CoursePicker />
+      <CoursePicker allowedAcronyms={allowedAcronyms} />
     </CoursePickerContext.Provider>
   )
 }

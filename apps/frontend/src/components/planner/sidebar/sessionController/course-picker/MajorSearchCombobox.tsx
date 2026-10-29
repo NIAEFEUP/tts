@@ -3,13 +3,14 @@ import { CheckIcon, ChevronUpDownIcon } from '@heroicons//react/24/solid'
 import { Major } from '../../../../../@types'
 import MajorContext from '../../../../../contexts/MajorContext'
 import { cn } from '../../../../../utils'
-import { buttonStyle } from '../../../../ui/new/button'
+import { Button, buttonStyle } from '../../../../ui/new/button'
 import { Menu } from '../../../../ui/new/menu'
 import { AnalyticsTracker } from '../../../../../utils/AnalyticsTracker'
 
 interface Props {
   selectedMajor: Major | null
   setSelectedMajor: (major: Major | null) => void
+  allowedAcronyms?: string[]
 }
 
 /**
@@ -17,8 +18,8 @@ interface Props {
  * wants to select courses from. They can type the major or click on the rightmost corner to open
  * the list of possible majors.
  */
-const MajorSearchCombobox = ({ selectedMajor, setSelectedMajor }: Props) => {
-  const { majors } = useContext(MajorContext)
+const MajorSearchCombobox = ({ selectedMajor, setSelectedMajor, allowedAcronyms }: Props) => {
+  const { majors, majorsError, majorsLoading, retryMajors } = useContext(MajorContext)
   const [search, setSearch] = useState('')
 
   const match = (string: string, query: string) =>
@@ -33,13 +34,19 @@ const MajorSearchCombobox = ({ selectedMajor, setSelectedMajor }: Props) => {
       .includes(query.toLowerCase().replace(/\s+/g, ''))
 
   const filteredMajors = majors
-    ? majors.filter((major) => {
-        if (!search) return true
-        const searchWords = search.toLowerCase().replace(/\s+/g, ' ').trim().split(' ')
-        return searchWords.every(
-          (word) => match(major.name, word) || match(major.acronym, word) || match(major.faculty_id, word),
-        )
-      })
+    ? majors
+        .filter((major) => !allowedAcronyms || allowedAcronyms.includes(major.acronym))
+        .filter((major) => {
+          if (!search) return true
+          const searchWords = search.toLowerCase().replace(/\s+/g, ' ').trim().split(' ')
+          return searchWords.every(
+            (word) =>
+              match(major.name, word) ||
+              match(major.acronym, word) ||
+              match(major.faculty_id, word) ||
+              major.faculties.some((faculty) => match(faculty, word)),
+          )
+        })
     : []
 
   return (
@@ -68,24 +75,41 @@ const MajorSearchCombobox = ({ selectedMajor, setSelectedMajor }: Props) => {
           placeholder="Procurar curso..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          isLoading={majorsLoading}
         />
         <div className="overflow-y-auto overscroll-contain">
-          {selectedMajor && <Menu.Item onSelect={() => setSelectedMajor(null)}>Remover Seleção</Menu.Item>}
-          {filteredMajors.length === 0 && <Menu.Empty>Nenhum curso corresponde à tua pesquisa.</Menu.Empty>}
-          {filteredMajors.map((major) => (
-            <Menu.Item
-              key={major.id}
-              onSelect={() => {
-                setSelectedMajor(major.id === selectedMajor?.id ? null : major)
-                AnalyticsTracker.majorSelected(major)
-              }}
-            >
-              <span className="truncate">{`${major.name} (${major.acronym}) - ${major.faculty_id.toUpperCase()}`}</span>
-              <CheckIcon
-                className={cn('ml-auto h-4 w-4 shrink-0', selectedMajor?.id === major.id ? 'opacity-100' : 'opacity-0')}
-              />
-            </Menu.Item>
-          ))}
+          {majorsError ? (
+            <Menu.Empty className="flex flex-col items-center gap-3 py-4">
+              <span>Não foi possível carregar a lista de cursos.</span>
+              <Button variant="outline" size="sm" onClick={() => retryMajors()}>
+                Tentar novamente
+              </Button>
+            </Menu.Empty>
+          ) : (
+            <>
+              {selectedMajor && <Menu.Item onSelect={() => setSelectedMajor(null)}>Remover Seleção</Menu.Item>}
+              {!majorsLoading && filteredMajors.length === 0 && (
+                <Menu.Empty>Nenhum curso corresponde à tua pesquisa.</Menu.Empty>
+              )}
+              {filteredMajors.map((major) => (
+                <Menu.Item
+                  key={major.id}
+                  onSelect={() => {
+                    setSelectedMajor(major.id === selectedMajor?.id ? null : major)
+                    AnalyticsTracker.majorSelected(major)
+                  }}
+                >
+                  <span className="truncate">{`${major.name} (${major.acronym}) - ${major.faculties.map((faculty) => faculty.toUpperCase()).join(', ')}`}</span>
+                  <CheckIcon
+                    className={cn(
+                      'ml-auto h-4 w-4 shrink-0',
+                      selectedMajor?.id === major.id ? 'opacity-100' : 'opacity-0',
+                    )}
+                  />
+                </Menu.Item>
+              ))}
+            </>
+          )}
         </div>
       </Menu.Items>
     </Menu>

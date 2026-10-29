@@ -55,6 +55,11 @@ const getSchoolYear = () => {
     : `${year}/${(year + 1).toString().slice(2, 4)}`
 }
 
+const getAcademicYear = () => {
+  const date = new Date()
+  return date.getMonth() + 1 < 8 ? date.getFullYear() - 1 : date.getFullYear()
+}
+
 const convertWeekday = (dayNumber: number) => {
   if (dayNumber < 0 || dayNumber > 7) return null
 
@@ -414,6 +419,7 @@ export {
   getDisplayDate,
   getSemester,
   getSchoolYear,
+  getAcademicYear,
   convertWeekday,
   convertWeekdayLong,
   convertHour,

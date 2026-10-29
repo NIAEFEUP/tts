@@ -1,8 +1,5 @@
-import BackendAPI from '../api/backend'
-import { useEffect, useContext, useState } from 'react' // Adicionado useEffect aqui
+import { useEffect, useContext, useState } from 'react'
 import { Sidebar } from '../components/planner'
-import { Major } from '../@types'
-import MajorContext from '../contexts/MajorContext'
 import { useSidebarContext } from '../components/layout/SidebarPosition'
 import { SidebarProvider } from '../components/layout/SidebarPosition'
 import PlannerSchedule from '../components/planner/schedule/PlannerSchedule'
@@ -16,14 +13,10 @@ import { LoginButton } from '../components/auth/LoginButton'
 import { ShieldExclamationIcon } from '@heroicons/react/24/outline'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 const TimeTableSelectorPage = () => {
-  const { setMajors } = useContext(MajorContext)
-
-  // fetch majors when component is ready
+  // The catalog is loaded once in CombinedProvider; here we only make sure the
+  // layout is scrolled into view on mount.
   useEffect(() => {
     document.getElementById('layout').scrollIntoView()
-    BackendAPI.getMajors().then((majors: Major[]) => {
-      setMajors(majors)
-    })
   }, [])
 
   return (

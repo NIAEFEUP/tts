@@ -1,15 +1,19 @@
-import { Context, Dispatch, SetStateAction } from 'react'
+import { Context } from 'react'
 import { createContext } from 'react'
 import { Major } from '../@types'
 
 interface MajorContextContent {
   majors: Major[]
-  setMajors: Dispatch<SetStateAction<Major[]>>
+  majorsError: unknown
+  majorsLoading: boolean
+  retryMajors: () => void
 }
 
 const MajorContext: Context<MajorContextContent> = createContext({
   majors: [],
-  setMajors: () => {},
+  majorsError: null,
+  majorsLoading: false,
+  retryMajors: () => {},
 })
 
 export default MajorContext
