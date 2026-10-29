@@ -56,7 +56,7 @@ async findByCourse(courseId, filter = {}) {
   }
 
   return query.orderBy([(occurrence) => occurrence.year.desc(), (occurrence) => occurrence.id.asc()]).all()
-}
+},
 
     // GET /v1/occurrences/:id — single occurrence by its composite primary
     // key `(id, year)`. Joined with `courseUnit` to attach the unit's name
