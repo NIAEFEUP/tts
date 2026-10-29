@@ -6,6 +6,8 @@
 // where a course unit is actually taught. It owns the classes, schedule,
 // exchange periods, and admin scope that the abstract `CourseUnit` does not.
 
+import type { CourseUnitSemester } from './course-unit.repository'
+
 /**
  * A concrete offering of a course unit. `id` is the Sigarra occurrence id and
  * is only unique per academic year — the row's real key is `(id, year)`.
