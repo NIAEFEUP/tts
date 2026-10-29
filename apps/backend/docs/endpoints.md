@@ -355,6 +355,46 @@ Legacy mapping:
 | `GET` | `/students/:nmec/photo` | `?` | Student photo URL |
 | `GET` | `/students/:nmec/courses/:courseId/metadata` | admin | `fest_id` metadata for a student in a course |
 
+### `GET /users/me/enrollments` — response
+
+Returns an array containing one item per class enrollment. Each item includes
+the occurrence year and course-unit details (including semester), plus the
+class, schedule slots, and each slot's professors. A missing or invalid session
+returns `401 unauthorized`.
+
+```json
+[
+  {
+    "occurrence": {
+      "id": 12345,
+      "year": 2025,
+      "courseUnit": {
+        "id": 42,
+        "acronym": "BD",
+        "name": "Bases de Dados",
+        "semester": 1
+      }
+    },
+    "class": {
+      "id": 678,
+      "name": "1LEIC01",
+      "vacancies": 25,
+      "slots": [
+        {
+          "id": 901,
+          "lessonType": "TP",
+          "dayOfWeek": 2,
+          "startMinute": 540,
+          "durationMin": 120,
+          "location": "B108",
+          "professors": [{ "id": 123, "acronym": "AS", "name": "Ana Silva" }]
+        }
+      ]
+    }
+  }
+]
+```
+
 ### `GET /users/me/exchanges` — query params
 
 - `role` — `sent` | `received` | `all` (default `all`)
