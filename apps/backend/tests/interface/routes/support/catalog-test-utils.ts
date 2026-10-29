@@ -191,7 +191,7 @@ export function createFakeOccurrenceRepository({
           if (occurrence.courseId !== courseId) return false
           if (filter.year !== undefined && occurrence.year !== filter.year) return false
           if (filter.semester !== undefined) {
-            const unit = courseUnits.find((u) => u.id === occurrence.courseUnitId)
+            const unit = courseUnits.find((u) => u.id === occurrence.courseUnitId && u.courseId === courseId)
             if (!unit || unit.semester !== filter.semester) return false
           }
           return true
