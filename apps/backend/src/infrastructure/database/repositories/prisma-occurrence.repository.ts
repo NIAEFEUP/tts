@@ -78,7 +78,7 @@ export function createOccurrenceRepository({ db }: { db: Db }): OccurrenceReposi
       // protected by `onDelete: Cascade`, so it can never be null in practice.
       // The ORM still types included to-one relations as nullable, so a guard
       // is needed to satisfy the compiler.
-      if (!occurrence.courseUnit) return null
+      if (!occurrence.courseUnit) throw new Error(`Occurrence (${id}, ${year}) has no course unit`)
 
       return {
         id: occurrence.id,
