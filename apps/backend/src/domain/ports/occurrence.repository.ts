@@ -38,7 +38,8 @@ export type OccurrenceWithUnit = Occurrence & {
 export type OccurrenceFilter = {
   year?: number
   /** 1 = first semester, 2 = second semester */
-  semester?: 1 | 2
+  /** Which semester to keep — same union as `CourseUnit.semester`. */
+  semester?: CourseUnitSemester
 }
 
 /**
