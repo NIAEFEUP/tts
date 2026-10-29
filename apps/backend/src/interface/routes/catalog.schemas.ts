@@ -44,17 +44,8 @@ export const occurrenceSchema = t.Object({
 })
 
 /** An occurrence joined with its course unit's human-readable fields. Used by
- * `GET /v1/occurrences/:id`, which must return the unit's name and acronym
- * alongside the occurrence data without forcing the client to make a second
- * request to `/v1/course-units/:id`. */
-export const occurrenceWithUnitSchema = t.Object({
-  id: t.Number(),
-  courseUnitId: t.Number(),
-  courseId: t.Number(),
-  year: t.Number(),
-  ects: t.Number(),
-  url: t.String(),
-  hash: t.String(),
-  acronym: t.String(),
-  name: t.String(),
-})
+ * `GET /v1/occurrences/:id`. */
+export const occurrenceWithUnitSchema = t.Composite([
+  occurrenceSchema,
+  t.Object({ acronym: t.String(), name: t.String() }),
+])
