@@ -8,8 +8,8 @@ import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middle
 
 const professorSchema = t.Object({
   id: t.Number(),
-  acronym: t.Nullable(t.String()),
-  name: t.Nullable(t.String()),
+  acronym: t.Union([t.String(), t.Null()]),
+  name: t.Union([t.String(), t.Null()]),
 })
 
 const slotSchema = t.Object({
@@ -18,23 +18,25 @@ const slotSchema = t.Object({
   dayOfWeek: t.Number(),
   startMinute: t.Number(),
   durationMin: t.Number(),
-  location: t.Nullable(t.String()),
+  location: t.Union([t.String(), t.Null()]),
   professors: t.Array(professorSchema),
+})
+
+const occurrenceSchema = t.Object({
+  id: t.Number(),
+  year: t.Number(),
+  courseUnit: t.Object({
+    id: t.Number(),
+    acronym: t.String(),
+    name: t.String(),
+    semester: t.Number(),
+  }),
 })
 
 const scheduleEntrySchema = t.Object({
   classId: t.Number(),
   className: t.String(),
-  occurrence: t.Object({
-    id: t.Number(),
-    year: t.Number(),
-    courseUnit: t.Object({
-      id: t.Number(),
-      acronym: t.String(),
-      name: t.String(),
-      semester: t.Number(),
-    }),
-  }),
+  occurrence: occurrenceSchema,
   slots: t.Array(slotSchema),
 })
 
