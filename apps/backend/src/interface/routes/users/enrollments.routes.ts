@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
-import { occurrenceSchema,slotSchema } from '@/interface/routes/users/schemas'
+import { occurrenceSchema, slotSchema } from '@/interface/routes/users/schemas'
 import { createAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { httpError } from '@/interface/errors/errors'
 

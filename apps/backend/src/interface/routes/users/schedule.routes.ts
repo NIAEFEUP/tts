@@ -7,7 +7,6 @@ import { scheduleEntrySchema } from './schemas'
 import { httpError } from '@/interface/errors/errors'
 import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middleware'
 
-
 export type ScheduleRoutesDeps = {
   sessions: SessionRepository
 }
