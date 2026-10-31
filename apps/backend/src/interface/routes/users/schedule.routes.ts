@@ -1,0 +1,69 @@
+import { Elysia, t } from 'elysia'
+
+import { createGetSchedule } from '@/application/use-cases/schedule/get-schedule'
+import type { SessionRepository } from '@/domain/ports/session.repository'
+import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
+import { httpError } from '@/interface/errors/errors'
+import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middleware'
+
+const professorSchema = t.Object({
+  id: t.Number(),
+  acronym: t.Union([t.String(), t.Null()]),
+  name: t.Union([t.String(), t.Null()]),
+})
+
+const slotSchema = t.Object({
+  id: t.Number(),
+  lessonType: t.String(),
+  dayOfWeek: t.Number(),
+  startMinute: t.Number(),
+  durationMin: t.Number(),
+  location: t.Union([t.String(), t.Null()]),
+  professors: t.Array(professorSchema),
+})
+
+const occurrenceSchema = t.Object({
+  id: t.Number(),
+  year: t.Number(),
+  courseUnit: t.Object({
+    id: t.Number(),
+    acronym: t.String(),
+    name: t.String(),
+    semester: t.Number(),
+  }),
+})
+
+const scheduleEntrySchema = t.Object({
+  classId: t.Number(),
+  className: t.String(),
+  occurrence: occurrenceSchema,
+  slots: t.Array(slotSchema),
+})
+
+export type ScheduleRoutesDeps = {
+  sessions: SessionRepository
+}
+
+type ScheduleRoutesContext = {
+  decorator: { repositories: { enrollmentRepository: EnrollmentRepository } }
+  store: {}
+  derive: {}
+  resolve: {}
+}
+
+export const scheduleRoutes = ({ sessions }: ScheduleRoutesDeps) =>
+  new Elysia<'/v1/users/me', ScheduleRoutesContext>({ prefix: '/v1/users/me' })
+    .model({ ApiError: t.Object({ error: t.String(), code: t.String() }) })
+    .use(createRequiredAuthMiddleware({ resolveSession: sessions.resolve }))
+    .get(
+      '/schedule',
+      ({ user, repositories }) => {
+        if (!user) throw httpError.unauthorized()
+        const getSchedule = createGetSchedule({ enrollments: repositories.enrollmentRepository })
+        return getSchedule(user.id)
+      },
+      {
+        response: { 200: t.Array(scheduleEntrySchema), 401: 'ApiError' },
+        detail: { tags: ['users'], summary: 'Get my class schedule' },
+      },
+    )
