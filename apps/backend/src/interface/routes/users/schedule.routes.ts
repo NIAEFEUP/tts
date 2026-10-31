@@ -3,7 +3,7 @@ import { Elysia, t } from 'elysia'
 import { createGetSchedule } from '@/application/use-cases/schedule/get-schedule'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
-import { scheduleEntrySchema } from './schemas'
+import { scheduleEntrySchema } from '@/interface/routes/users/schemas'
 import { httpError } from '@/interface/errors/errors'
 import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middleware'
 
