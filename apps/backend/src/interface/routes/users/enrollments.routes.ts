@@ -1,41 +1,17 @@
 import { Elysia, t } from 'elysia'
 import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
+import { occurrenceSchema, slotSchema } from '@/interface/routes/users/schemas'
 import { createAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { httpError } from '@/interface/errors/errors'
 
 const enrollment = t.Object({
-  occurrence: t.Object({
-    id: t.Number(),
-    year: t.Number(),
-    courseUnit: t.Object({
-      id: t.Number(),
-      acronym: t.String(),
-      name: t.String(),
-      semester: t.Number(),
-    }),
-  }),
+  occurrence: occurrenceSchema,
   class: t.Object({
     id: t.Number(),
     name: t.String(),
     vacancies: t.Union([t.Number(), t.Null()]),
-    slots: t.Array(
-      t.Object({
-        id: t.Number(),
-        lessonType: t.String(),
-        dayOfWeek: t.Number(),
-        startMinute: t.Number(),
-        durationMin: t.Number(),
-        location: t.Union([t.String(), t.Null()]),
-        professors: t.Array(
-          t.Object({
-            id: t.Number(),
-            acronym: t.Union([t.String(), t.Null()]),
-            name: t.Union([t.String(), t.Null()]),
-          }),
-        ),
-      }),
-    ),
+    slots: t.Array(slotSchema),
   }),
 })
 
