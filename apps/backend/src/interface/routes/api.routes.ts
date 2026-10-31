@@ -1,7 +1,7 @@
 import { Elysia } from 'elysia'
 
 import { healthRoutes } from './health.routes'
-import { scheduleRoutes } from './schedule.routes'
+import { scheduleRoutes } from './users/schedule.routes'
 import { facultyRoutes } from './faculties.routes'
 import { courseRoutes } from './courses.routes'
 import { courseUnitRoutes } from './course-units.routes'
