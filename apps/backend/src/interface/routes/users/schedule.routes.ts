@@ -3,42 +3,10 @@ import { Elysia, t } from 'elysia'
 import { createGetSchedule } from '@/application/use-cases/schedule/get-schedule'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
+import { scheduleEntrySchema } from './schemas'
 import { httpError } from '@/interface/errors/errors'
 import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middleware'
 
-const professorSchema = t.Object({
-  id: t.Number(),
-  acronym: t.Union([t.String(), t.Null()]),
-  name: t.Union([t.String(), t.Null()]),
-})
-
-const slotSchema = t.Object({
-  id: t.Number(),
-  lessonType: t.String(),
-  dayOfWeek: t.Number(),
-  startMinute: t.Number(),
-  durationMin: t.Number(),
-  location: t.Union([t.String(), t.Null()]),
-  professors: t.Array(professorSchema),
-})
-
-const occurrenceSchema = t.Object({
-  id: t.Number(),
-  year: t.Number(),
-  courseUnit: t.Object({
-    id: t.Number(),
-    acronym: t.String(),
-    name: t.String(),
-    semester: t.Number(),
-  }),
-})
-
-const scheduleEntrySchema = t.Object({
-  classId: t.Number(),
-  className: t.String(),
-  occurrence: occurrenceSchema,
-  slots: t.Array(slotSchema),
-})
 
 export type ScheduleRoutesDeps = {
   sessions: SessionRepository
