@@ -102,3 +102,35 @@ it('GET /users/me/schedule requires a valid session cookie', async () => {
     expect(await response.json()).toEqual({ error: 'Authentication required', code: 'unauthorized' })
   }
 })
+
+it('GET /users/me/schedule keeps the enrollment order and serialises locations and professors', async () => {
+  const second: StudentEnrollment = {
+    occurrence: {
+      id: 99,
+      year: 2025,
+      courseUnit: { id: 7, acronym: 'PROG', name: 'Programação', semester: 1 },
+    },
+    class: {
+      id: 700,
+      name: '1LEIC02',
+      vacancies: null,
+      slots: [{ ...slot(10, 1, 480), location: 'B201', professors: [{ id: 5, acronym: 'JP', name: 'João Pinto' }] }],
+    },
+  }
+  const twoClassesApp = createApp({
+    repositories: {
+      enrollmentRepository: { findByUserId: async () => [...enrollments, second] },
+      sessionRepository,
+    },
+  })
+
+  const response = await getSchedule('session=valid-session', twoClassesApp)
+  const body = (await response.json()) as Array<{ classId: number; slots: Array<Record<string, unknown>> }>
+
+  expect(response.status).toBe(200)
+  expect(body.map((entry) => entry.classId)).toEqual([678, 700])
+  expect(body[1]?.slots[0]).toMatchObject({
+    location: 'B201',
+    professors: [{ id: 5, acronym: 'JP', name: 'João Pinto' }],
+  })
+})
