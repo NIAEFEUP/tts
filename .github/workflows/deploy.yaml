@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Wait for the Netlify Preview
-        uses: kamranayub/wait-for-netlify-action@v2.1.0
+        uses: kamranayub/wait-for-netlify-action@v2.1.1
         id: waitForNetlify
         continue-on-error: true
         with:
@@ -26,7 +26,7 @@ jobs:
 
       - name: Comment preview URL on PR
         if: github.event_name == 'pull_request' && steps.waitForNetlify.outputs.url != ''
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             github.rest.issues.createComment({

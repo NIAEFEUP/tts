@@ -14,10 +14,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
 
@@ -41,7 +41,7 @@ jobs:
           echo "::set-output name=release_version::$VERSION"
 
       - name: Create and Finalize Sentry Release
-        uses: getsentry/action-release@v1
+        uses: getsentry/action-release@v3
         with:
           environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
           version: ${{ steps.get_version.outputs.release_version }}
