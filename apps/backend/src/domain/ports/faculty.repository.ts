@@ -5,26 +5,12 @@
 // saying *how* they're done. Think of it like a power outlet standard: it defines
 // the shape of the plug, but doesn't care what's behind the wall.
 
+import type { Course } from '@/domain/ports/course.repository'
+
 /** A faculty identified by its Sigarra acronym. `name` is optional (null). */
 export type Faculty = {
   acronym: string
   name: string | null
-}
-
-/**
- * A degree offered by a faculty. `faculties` carries ALL offering faculty
- * acronyms because shared courses appear in multiple faculties.
- */
-export type Course = {
-  id: number
-  acronym: string
-  name: string
-  courseType: string
-  /** Academic year, e.g. 2025. */
-  year: number
-  url: string
-  /** All faculties that offer this course, e.g. ["FEUP", "FCUP"]. */
-  faculties: string[]
 }
 
 /**

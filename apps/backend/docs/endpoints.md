@@ -175,6 +175,22 @@ Because a course can belong to multiple faculties, each course lists its faculty
 - `year` — academic year
 - `faculty` — faculty acronym
 
+### `GET /courses/:id/units` — response
+
+The abstract course units the course offers, ordered by acronym. An unknown course id answers `404 course-not-found`; a course that offers no units answers an empty list.
+
+```json
+[
+  {
+    "id": 42,
+    "courseId": 22841,
+    "acronym": "BD",
+    "name": "Bases de Dados",
+    "semester": 1
+  }
+]
+```
+
 ### `GET /courses/:id/occurrences` — query params
 
 - `year` — academic year
@@ -218,6 +234,28 @@ Backend resolves all occurrences for the course, validates no overlap, and creat
   "semester": 1
 }
 ```
+
+An unknown id answers `404 course-unit-not-found`.
+
+### `GET /course-units/:id/occurrences` — response
+
+Every concrete occurrence of the unit, across the courses and academic years it is taught in, newest year first. An unknown id answers `404 course-unit-not-found`; a unit with no occurrences answers an empty list.
+
+```json
+[
+  {
+    "id": 587177,
+    "courseUnitId": 42,
+    "courseId": 22841,
+    "year": 2025,
+    "ects": 6,
+    "url": "https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587177",
+    "hash": "abc..."
+  }
+]
+```
+
+`id` is the Sigarra occurrence id and is only unique per academic year — the row's real key is `(id, year)`.
 
 ---
 
@@ -329,6 +367,88 @@ Legacy mapping:
 | `GET /students/:nmec/courses/:courseId/metadata` | `{ nmec, courseId, festId }` | `403 forbidden`, `404 student-not-found`, `404 student-course-metadata-not-found` |
 
 The metadata route checks the role before looking the student up, so a non-admin gets `403` whether or not the student exists. `courseId` must be an integer, otherwise `422 validation-error`.
+
+### `GET /users/me/enrollments` — response
+
+Returns an array containing one item per class enrollment. Each item includes
+the occurrence year and course-unit details (including semester), plus the
+class, schedule slots, and each slot's professors. A missing or invalid session
+returns `401 unauthorized`.
+
+```json
+[
+  {
+    "occurrence": {
+      "id": 12345,
+      "year": 2025,
+      "courseUnit": {
+        "id": 42,
+        "acronym": "BD",
+        "name": "Bases de Dados",
+        "semester": 1
+      }
+    },
+    "class": {
+      "id": 678,
+      "name": "1LEIC01",
+      "vacancies": 25,
+      "slots": [
+        {
+          "id": 901,
+          "lessonType": "TP",
+          "dayOfWeek": 2,
+          "startMinute": 540,
+          "durationMin": 120,
+          "location": "B108",
+          "professors": [{ "id": 123, "acronym": "AS", "name": "Ana Silva" }]
+        }
+      ]
+    }
+  }
+]
+```
+
+### `GET /users/me/schedule` — response
+
+Returns the authenticated student's class schedule, derived from their
+enrollments: one item per enrolled class, with the occurrence year, the
+course-unit details and the class's schedule slots (each with its professors).
+A missing or invalid session returns `401 unauthorized`.
+
+Ordering: items follow the order of the student's enrollments (by class id).
+Within each item, `slots` are sorted by `dayOfWeek` and then `startMinute`, so
+the client can render them without sorting. `dayOfWeek` is `0` for Sunday;
+`startMinute` is minutes since midnight (`540` = 09:00).
+
+```json
+[
+  {
+    "classId": 678,
+    "className": "1LEIC01",
+    "occurrence": {
+      "id": 12345,
+      "year": 2025,
+      "courseUnit": {
+        "id": 42,
+        "acronym": "BD",
+        "name": "Bases de Dados",
+        "semester": 1
+      }
+    },
+    "slots": [
+      {
+        "id": 901,
+        "lessonType": "TP",
+        "dayOfWeek": 2,
+        "startMinute": 540,
+        "durationMin": 120,
+        "location": "B108",
+        "professors": [{ "id": 123, "acronym": "AS", "name": "Ana Silva" }]
+      }
+    ]
+  }
+]
+```
 
 ### `GET /users/me/exchanges` — query params
 

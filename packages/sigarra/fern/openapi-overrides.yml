@@ -1,0 +1,39 @@
+# Fern-only adjustments; openapi.json stays the accurate description of SIGARRA.
+#
+# Fern can't generate cookie API keys (SI_SESSION / SI_SECURITY): it ignores them
+# and makes every endpoint require the only scheme left, uportoOidc. So, for the
+# SDK, drop authentication altogether (pass the session cookies through the
+# client's `headers` option) and give auth.oidcToken its token as a plain header.
+#
+# Endpoints whose session is optional declare `security` explicitly in
+# openapi.json, so they must be cleared here as well.
+security: []
+components:
+  securitySchemes:
+    uportoOidc: null
+paths:
+  /auth/oidc/token:
+    get:
+      security: []
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          description: "`Bearer <access token>`."
+          schema:
+            type: string
+  /{faculty}/{language}/web_page.inicial:
+    get:
+      security: []
+  /{faculty}/{language}/func_geral.formview:
+    get:
+      security: []
+  /{faculty}/{language}/fotografias_service.foto:
+    get:
+      security: []
+  /{faculty}/{language}/vld_validacao.sair:
+    get:
+      security: []
+  /{faculty}/{language}/ucurr_geral.ficha_uc_view:
+    get:
+      security: []

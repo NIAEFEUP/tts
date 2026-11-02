@@ -58,5 +58,9 @@ jobs:
         working-directory: apps/frontend
         run: bun run typecheck
 
+      - name: Typecheck sigarra
+        working-directory: packages/sigarra
+        run: bun run typecheck
+
       - name: Lint
         run: bun run lint

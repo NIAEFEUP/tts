@@ -2,14 +2,15 @@
   "name": "tts-monorepo",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
     "prepare": "husky",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
-    "format": "oxfmt apps/backend/src apps/frontend/src",
-    "format:check": "oxfmt --check apps/backend/src apps/frontend/src",
+    "format": "oxfmt apps/backend/src apps/backend/tests apps/frontend/src packages/sigarra/src/index.ts packages/sigarra/scripts",
+    "format:check": "oxfmt --check apps/backend/src apps/backend/tests apps/frontend/src packages/sigarra/src/index.ts packages/sigarra/scripts",
     "postinstall": "prisma skills sync || exit 0"
   },
   "devDependencies": {

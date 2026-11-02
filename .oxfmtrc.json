@@ -3,5 +3,5 @@
   "printWidth": 120,
   "semi": false,
   "singleQuote": true,
-  "ignorePatterns": ["apps/frontend/src/env.d.ts"]
+  "ignorePatterns": ["apps/frontend/src/env.d.ts", "packages/sigarra/src/generated"]
 }

@@ -6,7 +6,8 @@
     ".claude/skills/**",
     ".cursor/skills/**",
     ".devin/skills/**",
-    ".pi/skills/**"
+    ".pi/skills/**",
+    "packages/sigarra/src/generated"
   ],
   "categories": {
     "correctness": "error"

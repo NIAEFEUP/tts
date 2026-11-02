@@ -11,6 +11,7 @@ import type { FacultyRepository } from '@/domain/ports/faculty.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { apiError } from '@/interface/middleware/error-handler'
+import { courseSchema } from './catalog.schemas'
 
 // Schema for a faculty response. Elysia uses these to validate responses,
 // generate OpenAPI docs, and strip unexpected fields before sending.
@@ -18,18 +19,6 @@ import { apiError } from '@/interface/middleware/error-handler'
 const faculty = t.Object({
   acronym: t.String(),
   name: t.Union([t.String(), t.Null()]),
-})
-
-// Schema for a course response. `faculties` is an array because a course
-// can be offered by multiple faculties (shared courses).
-const course = t.Object({
-  id: t.Number(),
-  acronym: t.String(),
-  name: t.String(),
-  courseType: t.String(),
-  year: t.Number(),
-  url: t.String(),
-  faculties: t.Array(t.String()),
 })
 
 // Routes read `repositories` off the Elysia context — no infrastructure imports.
@@ -107,7 +96,7 @@ export const facultyRoutes = ({ sessions }: FacultyRoutesDeps) =>
         return repositories.facultyRepository.findCoursesByFaculty(params.acronym, year)
       },
       {
-        response: { 200: t.Array(course), 404: 'ApiError' },
+        response: { 200: t.Array(courseSchema), 404: 'ApiError' },
         detail: { tags: ['faculties'], summary: 'Courses offered by a faculty' },
         query: t.Object({ year: t.Optional(t.Integer()) }),
       },
