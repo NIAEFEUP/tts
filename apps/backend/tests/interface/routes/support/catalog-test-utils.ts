@@ -3,7 +3,7 @@ import { expect, it } from 'bun:test'
 import type { Course, CourseRepository } from '@/domain/ports/course.repository'
 import type { CourseUnit, CourseUnitRepository } from '@/domain/ports/course-unit.repository'
 import type { Faculty, FacultyRepository } from '@/domain/ports/faculty.repository'
-import type { Occurrence, OccurrenceRepository } from '@/domain/ports/occurrence.repository'
+import type { Occurrence, OccurrenceWithUnit, OccurrenceRepository } from '@/domain/ports/occurrence.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import { createApp } from '@/main'
 import type { App } from '@/main'
@@ -172,6 +172,7 @@ export function createFakeCourseUnitRepository({
 /** In-memory `OccurrenceRepository` over `occurrences` (defaults to `OCCURRENCES`). */
 export function createFakeOccurrenceRepository({
   occurrences = OCCURRENCES,
+  courseUnits = COURSE_UNITS,
 }: CatalogFixtures = {}): OccurrenceRepository {
   return {
     async findByCourseUnit(courseUnitId) {
@@ -179,6 +180,37 @@ export function createFakeOccurrenceRepository({
       return occurrences
         .filter((occurrence) => occurrence.courseUnitId === courseUnitId)
         .sort((a, b) => b.year - a.year || a.id - b.id)
+    },
+
+    async findByCourse(courseId, filter = {}) {
+      // `filter` returns a fresh array, so sorting never mutates the fixture.
+      // Semester lives on `CourseUnit`, so filtering by it requires a lookup
+      // — the same join the Prisma implementation does via a relation traversal.
+      return occurrences
+        .filter((occurrence) => {
+          if (occurrence.courseId !== courseId) return false
+          if (filter.year !== undefined && occurrence.year !== filter.year) return false
+          if (filter.semester !== undefined) {
+            const unit = courseUnits.find((u) => u.id === occurrence.courseUnitId && u.courseId === courseId)
+            if (!unit || unit.semester !== filter.semester) return false
+          }
+          return true
+        })
+        .sort((a, b) => b.year - a.year || a.id - b.id)
+    },
+
+    async findById(id, year): Promise<OccurrenceWithUnit | null> {
+      // Match on the composite primary key (id, year) — id alone is not unique
+      // because Sigarra reuses occurrence ids across academic years.
+      const occurrence = occurrences.find((o) => o.id === id && o.year === year)
+      if (!occurrence) return null
+
+      // Join the course unit to attach its name and acronym, mirroring the
+      // enriched shape the Prisma implementation returns.
+      const unit = courseUnits.find((u) => u.id === occurrence.courseUnitId)
+      if (!unit) return null
+
+      return { ...occurrence, acronym: unit.acronym, name: unit.name }
     },
   }
 }
