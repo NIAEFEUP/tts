@@ -13,17 +13,17 @@ import type { Major } from '../@types'
 const useCourses = ({ enabled }: { enabled: boolean }) => {
   const year = getAcademicYear()
 
-  const { data, error, mutate } = useSWR(
+  const { data, error, mutate, isValidating } = useSWR(
     enabled ? ['v1/courses', year] : null,
     () => catalogService.getCourses({ year }),
     {
       revalidateIfStale: false,
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-      // Retry transient failures quietly, but cap them so a down backend does
-      // not loop forever (which would keep producing fresh error objects).
-      shouldRetryOnError: true,
-      errorRetryCount: 3,
+      // Let the user retry manually instead of auto-retrying, which would
+      // fight the manual "Tentar novamente" button (a queued retry plus a
+      // click would fire overlapping requests).
+      shouldRetryOnError: false,
     },
   )
 
@@ -33,6 +33,7 @@ const useCourses = ({ enabled }: { enabled: boolean }) => {
     majors,
     error,
     loading: enabled && !data && !error,
+    isValidating,
     retry: mutate,
   }
 }

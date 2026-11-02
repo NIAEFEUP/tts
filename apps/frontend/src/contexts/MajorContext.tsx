@@ -6,6 +6,7 @@ interface MajorContextContent {
   majors: Major[]
   majorsError: unknown
   majorsLoading: boolean
+  majorsValidating: boolean
   retryMajors: () => void
 }
 
@@ -13,6 +14,7 @@ const MajorContext: Context<MajorContextContent> = createContext({
   majors: [],
   majorsError: null,
   majorsLoading: false,
+  majorsValidating: false,
   retryMajors: () => {},
 })
 

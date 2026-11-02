@@ -40,9 +40,10 @@ const CombinedProvider = ({ children }: Props) => {
     majors,
     error: majorsError,
     loading: majorsLoading,
+    isValidating: majorsValidating,
     retry: retryMajors,
   } = useCourses({
-    enabled: userSignedIn && !isSessionLoading,
+    enabled: userSignedIn,
   })
 
   const [conflictSeverity, setConflictSeverity] = useState<boolean>(false)
@@ -75,7 +76,7 @@ const CombinedProvider = ({ children }: Props) => {
       }}
     >
       <ThemeContext.Provider value={{ enabled, setEnabled }}>
-        <MajorContext.Provider value={{ majors, majorsError, majorsLoading, retryMajors }}>
+        <MajorContext.Provider value={{ majors, majorsError, majorsLoading, majorsValidating, retryMajors }}>
           <CourseContext.Provider
             value={{
               pickedCourses,
