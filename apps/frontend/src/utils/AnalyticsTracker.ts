@@ -32,8 +32,8 @@ export class AnalyticsTracker {
   static majorSelected = (major: Major) => {
     if (major) {
       trackEvent('Major Selected', { props: { major: major.name } })
-      trackEvent('Faculty', {
-        props: { faculty: (major.faculties?.[0] ?? '').toUpperCase() },
+      major.faculties.forEach((faculty) => {
+        trackEvent('Faculty', { props: { faculty: faculty.toUpperCase() } })
       })
     }
   }

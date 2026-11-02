@@ -7,7 +7,7 @@ interface MajorContextContent {
   majorsError: Error | null
   majorsLoading: boolean
   majorsValidating: boolean
-  retryMajors: () => void
+  retryMajors: () => Promise<unknown>
 }
 
 const MajorContext: Context<MajorContextContent> = createContext({
@@ -15,7 +15,7 @@ const MajorContext: Context<MajorContextContent> = createContext({
   majorsError: null,
   majorsLoading: false,
   majorsValidating: false,
-  retryMajors: () => {},
+  retryMajors: () => Promise.resolve(),
 })
 
 export default MajorContext
