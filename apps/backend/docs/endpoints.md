@@ -350,9 +350,9 @@ Legacy mapping:
 | `GET` | `/users/me/enrollments` | `?` | My class enrollments |
 | `GET` | `/users/me/exchanges` | `?` | My exchange requests |
 | `GET` | `/users/me/eligible-occurrences` | `?` | Occurrences I am eligible to take / exchange |
-| `GET` | `/students/:nmec` | admin | Public student profile (name only) |
-| `GET` | `/students/:nmec/schedule` | admin / participant | Another student’s schedule |
-| `GET` | `/students/:nmec/photo` | `?` | Student photo URL |
+| `GET` | `/students/:nmec` | any user | Public student profile (name only) |
+| `GET` | `/students/:nmec/schedule` | admin / self / classmate | Another student’s schedule |
+| `GET` | `/students/:nmec/photo` | any user | Redirect to the student photo |
 | `GET` | `/students/:nmec/courses/:courseId/metadata` | admin | `fest_id` metadata for a student in a course |
 
 ### `GET /users/me/enrollments` — response
@@ -436,6 +436,44 @@ the client can render them without sorting. `dayOfWeek` is `0` for Sunday;
   }
 ]
 ```
+
+### `/students/:nmec/*` — student lookup
+
+All four routes require a session (`401 unauthorized` otherwise). `:nmec` accepts
+both `202012345` and `up202012345`. Checks run in this order: `401`, then
+`404 student-not-found` (no such student), then `403 forbidden`. Errors use the
+usual `{ "error", "code" }` body.
+
+#### `GET /students/:nmec` — any signed-in user
+
+```json
+{ "name": "Ana Silva" }
+```
+
+#### `GET /students/:nmec/photo` — any signed-in user
+
+`302` to `https://sigarra.up.pt/feup/pt/fotografias_service.foto?pct_cod=<nmec>`,
+no body. Sigarra answers with a placeholder image unless the browser has its own
+Sigarra session.
+
+#### `GET /students/:nmec/schedule` — admin, the student, or a classmate
+
+Same response as [`GET /users/me/schedule`](#get-usersmeschedule--response), for
+the student in the path. A non-admin may read it when it is their own, or when
+they share an occurrence with the student: both have a class in an occurrence
+with the same `id` **and** `year` (Sigarra reuses ids across years). Otherwise
+`403 forbidden`.
+
+#### `GET /students/:nmec/courses/:courseId/metadata` — admin only
+
+```json
+{ "courseId": 22841, "festId": 123456 }
+```
+
+`courseId` must be an integer (`422 validation-error` otherwise). `404
+student-course-metadata-not-found` when no `fest_id` was scraped for that student
+and course (including an unknown course). Legacy returned a list of at most one
+item; this returns the item itself.
 
 ### `GET /users/me/exchanges` — query params
 

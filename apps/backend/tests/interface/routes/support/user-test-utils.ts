@@ -1,31 +1,148 @@
-import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
+import type { AuthUser } from '@/core/auth/user'
+import type { EnrollmentRepository, StudentEnrollment } from '@/domain/ports/enrollment.repository'
+import type {
+  StudentCourseMetadata,
+  StudentCourseMetadataRepository,
+} from '@/domain/ports/student-course-metadata.repository'
 import { createApp } from '@/main'
 
-import { TEST_SESSION_TOKEN, createFakeSessions } from './auth-test-utils'
+import { TEST_SESSION_TOKEN, createFakeSessions, createFakeUserDirectory } from './auth-test-utils'
 
-// Shared harness for the `/v1/users/me/*` route tests. Like `catalog-test-utils`,
-// it drives the real app through `app.handle(request)` with fake repositories:
-// no listener and no database.
+// Shared harness for the `/v1/users/*` and `/v1/students/*` route tests. Like
+// `catalog-test-utils`, it drives the real app through `app.handle(request)`
+// with fake repositories: no listener and no database.
 
 type GetOptions = {
   /** Cookie header to send. Defaults to the signed-in test session; `null` sends none. */
   cookie?: string | null
 }
 
-export function createUsersApp(enrollmentRepository: EnrollmentRepository) {
+async function send(app: ReturnType<typeof createApp>, path: string, cookie: string | null) {
+  // `redirect: 'manual'` is implicit: `app.handle` never follows a 302.
+  const response = await app.handle(new Request(`http://localhost${path}`, { headers: cookie ? { cookie } : {} }))
+  const contentType = response.headers.get('content-type')
+
+  return {
+    status: response.status,
+    contentType,
+    location: response.headers.get('location'),
+    // Redirects have no body, so only parse what says it is JSON.
+    body: contentType?.startsWith('application/json') ? ((await response.json()) as unknown) : null,
+  }
+}
+
+/**
+ * `enrollmentRepository` only needs `findByUserId`; `sharesOccurrence` defaults
+ * to "no", for the `/users/me/*` tests that never reach it.
+ */
+export function createUsersApp(
+  enrollmentRepository: Pick<EnrollmentRepository, 'findByUserId'> & Partial<EnrollmentRepository>,
+) {
   const app = createApp({
-    repositories: { enrollmentRepository, sessionRepository: createFakeSessions() },
+    repositories: {
+      enrollmentRepository: { sharesOccurrence: async () => false, ...enrollmentRepository },
+      sessionRepository: createFakeSessions(),
+    },
   })
 
-  const get = async (path: string, { cookie = `session=${TEST_SESSION_TOKEN}` }: GetOptions = {}) => {
-    const response = await app.handle(new Request(`http://localhost${path}`, { headers: cookie ? { cookie } : {} }))
-
-    return {
-      status: response.status,
-      contentType: response.headers.get('content-type'),
-      body: (await response.json()) as unknown,
-    }
-  }
+  const get = (path: string, { cookie = `session=${TEST_SESSION_TOKEN}` }: GetOptions = {}) => send(app, path, cookie)
 
   return { app, get }
 }
+
+// --- /v1/students --------------------------------------------------------
+//
+// Student NMECs are bare digits, as in `User.id`; `normalizeNmec` maps the
+// `up…` form onto them.
+
+const student = (id: string, name: string, role: AuthUser['role'] = 'USER'): AuthUser => ({
+  id,
+  name,
+  email: `up${id}@up.pt`,
+  role,
+})
+
+export const VIEWER = student('202000001', 'Vera Viewer')
+export const CLASSMATE = student('202000002', 'Carlos Classmate')
+export const STRANGER = student('202000003', 'Sara Stranger')
+export const STUDENT_ADMIN = student('202000004', 'Ana Admin', 'ADMIN')
+
+/** One enrollment in `(occurrenceId, year)`, in a class named after `classId`. */
+export function enrollmentIn(occurrenceId: number, year: number, classId: number): StudentEnrollment {
+  return {
+    occurrence: {
+      id: occurrenceId,
+      year,
+      courseUnit: { id: occurrenceId, acronym: `UC${occurrenceId}`, name: `Unit ${occurrenceId}`, semester: 1 },
+    },
+    class: { id: classId, name: `1LEIC0${classId}`, vacancies: null, slots: [] },
+  }
+}
+
+/**
+ * Enrollments by student. `sharesOccurrence` compares `(id, year)` pairs like
+ * the real repository, and every call is recorded so a test can assert that
+ * the admin and self shortcuts never reach it.
+ */
+export function createFakeEnrollments(byUser: Record<string, StudentEnrollment[]>) {
+  const sharesOccurrenceCalls: Array<[string, string]> = []
+  const keys = (userId: string) => (byUser[userId] ?? []).map(({ occurrence }) => `${occurrence.id}:${occurrence.year}`)
+
+  const repository: EnrollmentRepository = {
+    findByUserId: async (userId) => byUser[userId] ?? [],
+    sharesOccurrence: async (userIdA, userIdB) => {
+      sharesOccurrenceCalls.push([userIdA, userIdB])
+      const a = new Set(keys(userIdA))
+      return keys(userIdB).some((key) => a.has(key))
+    },
+  }
+
+  return { repository, sharesOccurrenceCalls }
+}
+
+export function createFakeStudentCourseMetadata(
+  rows: Array<StudentCourseMetadata & { nmec: string }>,
+): StudentCourseMetadataRepository {
+  return {
+    find: async (nmec, courseId) => {
+      const row = rows.find((candidate) => candidate.nmec === nmec && candidate.courseId === courseId)
+      return row ? { courseId: row.courseId, festId: row.festId } : null
+    },
+  }
+}
+
+type StudentsAppOptions = {
+  /** The signed-in caller. */
+  viewer?: AuthUser
+  /** Every student that exists. Defaults to the four fixtures above. */
+  users?: AuthUser[]
+  enrollments?: EnrollmentRepository
+  metadata?: StudentCourseMetadataRepository
+}
+
+export function createStudentsApp({
+  viewer = VIEWER,
+  users = [VIEWER, CLASSMATE, STRANGER, STUDENT_ADMIN],
+  enrollments = createFakeEnrollments({}).repository,
+  metadata = createFakeStudentCourseMetadata([]),
+}: StudentsAppOptions = {}) {
+  const app = createApp({
+    repositories: {
+      userRepository: createFakeUserDirectory(users),
+      enrollmentRepository: enrollments,
+      studentCourseMetadataRepository: metadata,
+      sessionRepository: createFakeSessions(viewer),
+    },
+  })
+
+  const get = (path: string, { cookie = `session=${TEST_SESSION_TOKEN}` }: GetOptions = {}) => send(app, path, cookie)
+
+  return { app, get }
+}
+
+/** Error bodies of the `/v1/students` routes, so tests assert shapes, not literals. */
+export const FORBIDDEN_BODY = { error: 'Not allowed', code: 'forbidden' }
+export const studentNotFoundBody = (nmec: string) => ({
+  error: `Student ${nmec} not found`,
+  code: 'student-not-found',
+})

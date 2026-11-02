@@ -1,8 +1,26 @@
 import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
 import type { Db } from '@/infrastructure/database/prisma'
+import { hasCommonOccurrence } from './shares-occurrence'
 
 export function createEnrollmentRepository({ db }: { db: Db }): EnrollmentRepository {
+  // The occurrence of every class the student is enrolled in: only id columns
+  // are read, no slots or professors.
+  const findOccurrenceKeys = async (userId: string) => {
+    const enrollments = await db.orm.public.Enrollment.where({ userId }).select('classId').all()
+    if (enrollments.length === 0) return []
+
+    const classIds = enrollments.map((enrollment) => enrollment.classId)
+    return db.orm.public.Class.where((classRow) => classRow.id.in(classIds))
+      .select('occurrenceId', 'occurrenceYear')
+      .all()
+  }
+
   return {
+    async sharesOccurrence(userIdA, userIdB) {
+      const [a, b] = await Promise.all([findOccurrenceKeys(userIdA), findOccurrenceKeys(userIdB)])
+      return hasCommonOccurrence(a, b)
+    },
+
     async findByUserId(userId) {
       const enrollments = await db.orm.public.Enrollment.where({ userId })
         .orderBy((enrollment) => enrollment.classId.asc())
