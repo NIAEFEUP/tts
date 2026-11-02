@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 
-import { isAdmin } from '@/core/auth/user'
 import { normalizeNmec } from '@/core/auth/nmec'
+import { createGetStudentCourseMetadata } from '@/application/use-cases/students/get-student-course-metadata'
 import { createGetStudentSchedule } from '@/application/use-cases/students/get-student-schedule'
 import { studentPhotoUrl } from '@/core/utils/student-photo-url'
 import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
@@ -99,10 +99,13 @@ export const studentRoutes = ({ sessions }: StudentRoutesDeps) =>
       async ({ params, user, findStudent, repositories }) => {
         if (!user) throw httpError.unauthorized()
         const student = await findStudent(params.nmec)
-        if (!isAdmin(user)) throw httpError.forbidden()
 
-        const metadata = await repositories.studentCourseMetadataRepository.find(student.id, params.courseId)
-        if (!metadata) {
+        const getStudentCourseMetadata = createGetStudentCourseMetadata({
+          metadata: repositories.studentCourseMetadataRepository,
+        })
+        const result = await getStudentCourseMetadata(user, student.id, params.courseId)
+        if (result.kind === 'forbidden') throw httpError.forbidden()
+        if (result.kind === 'not-found') {
           throw new HttpError(
             'student-course-metadata-not-found',
             `No metadata for student ${student.id} in course ${params.courseId}`,
@@ -110,7 +113,7 @@ export const studentRoutes = ({ sessions }: StudentRoutesDeps) =>
           )
         }
 
-        return metadata
+        return result.metadata
       },
       {
         params: t.Object({ nmec: t.String(), courseId: t.Integer() }),
