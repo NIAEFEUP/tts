@@ -1,18 +1,10 @@
 #!/usr/bin/env -S node
-import type { Contract as End } from '../../snapshots/b8cf88cef780e6a64cd5f17b631daf8ea2da908d6e3abc62b0300743cbb65fb5/contract';
-import endContract from '../../snapshots/b8cf88cef780e6a64cd5f17b631daf8ea2da908d6e3abc62b0300743cbb65fb5/contract.json' with { type: 'json' };
-import {
-  Migration,
-  MigrationCLI,
-  checkExpression,
-  col,
-  fn,
-  lit,
-  primaryKey,
-} from '@prisma/orm-postgres/migration';
+import type { Contract as End } from '../../snapshots/b8cf88cef780e6a64cd5f17b631daf8ea2da908d6e3abc62b0300743cbb65fb5/contract'
+import endContract from '../../snapshots/b8cf88cef780e6a64cd5f17b631daf8ea2da908d6e3abc62b0300743cbb65fb5/contract.json' with { type: 'json' }
+import { Migration, MigrationCLI, checkExpression, col, fn, lit, primaryKey } from '@prisma/orm-postgres/migration'
 
 export default class M extends Migration<never, End> {
-  override readonly endContractJson = endContract;
+  override readonly endContractJson = endContract
 
   override get operations() {
     return [
@@ -246,14 +238,8 @@ export default class M extends Migration<never, End> {
             'ExchangeRequest_adminState_check_49a4ff70',
             `"adminState" IN ('UNTREATED', 'TREATED', 'REJECTED', 'AWAITING_INFORMATION')`,
           ),
-          checkExpression(
-            'ExchangeRequest_status_check_a8137f16',
-            `"status" IN ('PENDING', 'ACCEPTED', 'CANCELLED')`,
-          ),
-          checkExpression(
-            'ExchangeRequest_type_check_a5efca2d',
-            `"type" IN ('DIRECT', 'MARKETPLACE', 'URGENT')`,
-          ),
+          checkExpression('ExchangeRequest_status_check_a8137f16', `"status" IN ('PENDING', 'ACCEPTED', 'CANCELLED')`),
+          checkExpression('ExchangeRequest_type_check_a5efca2d', `"type" IN ('DIRECT', 'MARKETPLACE', 'URGENT')`),
         ],
       }),
       this.createTable({
@@ -966,8 +952,8 @@ export default class M extends Migration<never, End> {
           onDelete: 'cascade',
         },
       }),
-    ];
+    ]
   }
 }
 
-MigrationCLI.run(import.meta.url, M);
+MigrationCLI.run(import.meta.url, M)

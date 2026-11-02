@@ -33,9 +33,7 @@
       {
         "description": "ensure table \"AdminCourse\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"AdminCourse\""
-        ]
+        "params": ["\"public\".\"AdminCourse\""]
       }
     ],
     "execute": [
@@ -49,9 +47,7 @@
       {
         "description": "verify table \"AdminCourse\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"AdminCourse\""
-        ]
+        "params": ["\"public\".\"AdminCourse\""]
       }
     ]
   },
@@ -72,9 +68,7 @@
       {
         "description": "ensure table \"AdminOccurrence\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"AdminOccurrence\""
-        ]
+        "params": ["\"public\".\"AdminOccurrence\""]
       }
     ],
     "execute": [
@@ -88,9 +82,7 @@
       {
         "description": "verify table \"AdminOccurrence\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"AdminOccurrence\""
-        ]
+        "params": ["\"public\".\"AdminOccurrence\""]
       }
     ]
   },
@@ -111,9 +103,7 @@
       {
         "description": "ensure table \"Class\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Class\""
-        ]
+        "params": ["\"public\".\"Class\""]
       }
     ],
     "execute": [
@@ -127,9 +117,7 @@
       {
         "description": "verify table \"Class\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Class\""
-        ]
+        "params": ["\"public\".\"Class\""]
       }
     ]
   },
@@ -150,9 +138,7 @@
       {
         "description": "ensure table \"Course\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Course\""
-        ]
+        "params": ["\"public\".\"Course\""]
       }
     ],
     "execute": [
@@ -166,9 +152,7 @@
       {
         "description": "verify table \"Course\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Course\""
-        ]
+        "params": ["\"public\".\"Course\""]
       }
     ]
   },
@@ -189,9 +173,7 @@
       {
         "description": "ensure table \"CourseUnit\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"CourseUnit\""
-        ]
+        "params": ["\"public\".\"CourseUnit\""]
       }
     ],
     "execute": [
@@ -205,9 +187,7 @@
       {
         "description": "verify table \"CourseUnit\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"CourseUnit\""
-        ]
+        "params": ["\"public\".\"CourseUnit\""]
       }
     ]
   },
@@ -228,9 +208,7 @@
       {
         "description": "ensure table \"Enrollment\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Enrollment\""
-        ]
+        "params": ["\"public\".\"Enrollment\""]
       }
     ],
     "execute": [
@@ -244,9 +222,7 @@
       {
         "description": "verify table \"Enrollment\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Enrollment\""
-        ]
+        "params": ["\"public\".\"Enrollment\""]
       }
     ]
   },
@@ -267,9 +243,7 @@
       {
         "description": "ensure table \"EnrollmentRequest\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"EnrollmentRequest\""
-        ]
+        "params": ["\"public\".\"EnrollmentRequest\""]
       }
     ],
     "execute": [
@@ -283,9 +257,7 @@
       {
         "description": "verify table \"EnrollmentRequest\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"EnrollmentRequest\""
-        ]
+        "params": ["\"public\".\"EnrollmentRequest\""]
       }
     ]
   },
@@ -306,9 +278,7 @@
       {
         "description": "ensure table \"EnrollmentRequestOption\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"EnrollmentRequestOption\""
-        ]
+        "params": ["\"public\".\"EnrollmentRequestOption\""]
       }
     ],
     "execute": [
@@ -322,9 +292,7 @@
       {
         "description": "verify table \"EnrollmentRequestOption\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"EnrollmentRequestOption\""
-        ]
+        "params": ["\"public\".\"EnrollmentRequestOption\""]
       }
     ]
   },
@@ -345,9 +313,7 @@
       {
         "description": "ensure table \"ExchangeItem\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeItem\""
-        ]
+        "params": ["\"public\".\"ExchangeItem\""]
       }
     ],
     "execute": [
@@ -361,9 +327,7 @@
       {
         "description": "verify table \"ExchangeItem\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeItem\""
-        ]
+        "params": ["\"public\".\"ExchangeItem\""]
       }
     ]
   },
@@ -384,9 +348,7 @@
       {
         "description": "ensure table \"ExchangePeriod\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangePeriod\""
-        ]
+        "params": ["\"public\".\"ExchangePeriod\""]
       }
     ],
     "execute": [
@@ -400,9 +362,7 @@
       {
         "description": "verify table \"ExchangePeriod\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangePeriod\""
-        ]
+        "params": ["\"public\".\"ExchangePeriod\""]
       }
     ]
   },
@@ -423,9 +383,7 @@
       {
         "description": "ensure table \"ExchangeRequest\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeRequest\""
-        ]
+        "params": ["\"public\".\"ExchangeRequest\""]
       }
     ],
     "execute": [
@@ -439,9 +397,7 @@
       {
         "description": "verify table \"ExchangeRequest\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeRequest\""
-        ]
+        "params": ["\"public\".\"ExchangeRequest\""]
       }
     ]
   },
@@ -462,9 +418,7 @@
       {
         "description": "ensure table \"Faculty\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Faculty\""
-        ]
+        "params": ["\"public\".\"Faculty\""]
       }
     ],
     "execute": [
@@ -478,9 +432,7 @@
       {
         "description": "verify table \"Faculty\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Faculty\""
-        ]
+        "params": ["\"public\".\"Faculty\""]
       }
     ]
   },
@@ -501,9 +453,7 @@
       {
         "description": "ensure table \"FacultyCourse\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"FacultyCourse\""
-        ]
+        "params": ["\"public\".\"FacultyCourse\""]
       }
     ],
     "execute": [
@@ -517,9 +467,7 @@
       {
         "description": "verify table \"FacultyCourse\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"FacultyCourse\""
-        ]
+        "params": ["\"public\".\"FacultyCourse\""]
       }
     ]
   },
@@ -540,9 +488,7 @@
       {
         "description": "ensure table \"Occurrence\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Occurrence\""
-        ]
+        "params": ["\"public\".\"Occurrence\""]
       }
     ],
     "execute": [
@@ -556,9 +502,7 @@
       {
         "description": "verify table \"Occurrence\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Occurrence\""
-        ]
+        "params": ["\"public\".\"Occurrence\""]
       }
     ]
   },
@@ -579,9 +523,7 @@
       {
         "description": "ensure table \"PlannerState\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"PlannerState\""
-        ]
+        "params": ["\"public\".\"PlannerState\""]
       }
     ],
     "execute": [
@@ -595,9 +537,7 @@
       {
         "description": "verify table \"PlannerState\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"PlannerState\""
-        ]
+        "params": ["\"public\".\"PlannerState\""]
       }
     ]
   },
@@ -618,9 +558,7 @@
       {
         "description": "ensure table \"Professor\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Professor\""
-        ]
+        "params": ["\"public\".\"Professor\""]
       }
     ],
     "execute": [
@@ -634,9 +572,7 @@
       {
         "description": "verify table \"Professor\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Professor\""
-        ]
+        "params": ["\"public\".\"Professor\""]
       }
     ]
   },
@@ -657,9 +593,7 @@
       {
         "description": "ensure table \"ScheduleSlot\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ScheduleSlot\""
-        ]
+        "params": ["\"public\".\"ScheduleSlot\""]
       }
     ],
     "execute": [
@@ -673,9 +607,7 @@
       {
         "description": "verify table \"ScheduleSlot\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ScheduleSlot\""
-        ]
+        "params": ["\"public\".\"ScheduleSlot\""]
       }
     ]
   },
@@ -696,9 +628,7 @@
       {
         "description": "ensure table \"Session\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Session\""
-        ]
+        "params": ["\"public\".\"Session\""]
       }
     ],
     "execute": [
@@ -712,9 +642,7 @@
       {
         "description": "verify table \"Session\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Session\""
-        ]
+        "params": ["\"public\".\"Session\""]
       }
     ]
   },
@@ -735,9 +663,7 @@
       {
         "description": "ensure table \"SlotClass\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"SlotClass\""
-        ]
+        "params": ["\"public\".\"SlotClass\""]
       }
     ],
     "execute": [
@@ -751,9 +677,7 @@
       {
         "description": "verify table \"SlotClass\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"SlotClass\""
-        ]
+        "params": ["\"public\".\"SlotClass\""]
       }
     ]
   },
@@ -774,9 +698,7 @@
       {
         "description": "ensure table \"SlotProfessor\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"SlotProfessor\""
-        ]
+        "params": ["\"public\".\"SlotProfessor\""]
       }
     ],
     "execute": [
@@ -790,9 +712,7 @@
       {
         "description": "verify table \"SlotProfessor\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"SlotProfessor\""
-        ]
+        "params": ["\"public\".\"SlotProfessor\""]
       }
     ]
   },
@@ -813,9 +733,7 @@
       {
         "description": "ensure table \"StudentCourseMetadata\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"StudentCourseMetadata\""
-        ]
+        "params": ["\"public\".\"StudentCourseMetadata\""]
       }
     ],
     "execute": [
@@ -829,9 +747,7 @@
       {
         "description": "verify table \"StudentCourseMetadata\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"StudentCourseMetadata\""
-        ]
+        "params": ["\"public\".\"StudentCourseMetadata\""]
       }
     ]
   },
@@ -852,9 +768,7 @@
       {
         "description": "ensure table \"User\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"User\""
-        ]
+        "params": ["\"public\".\"User\""]
       }
     ],
     "execute": [
@@ -868,9 +782,7 @@
       {
         "description": "verify table \"User\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"User\""
-        ]
+        "params": ["\"public\".\"User\""]
       }
     ]
   },
@@ -891,11 +803,7 @@
       {
         "description": "ensure constraint \"Class_name_occurrenceId_occurrenceYear_key\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Class_name_occurrenceId_occurrenceYear_key",
-          "public",
-          "\"public\".\"Class\""
-        ]
+        "params": ["Class_name_occurrenceId_occurrenceYear_key", "public", "\"public\".\"Class\""]
       }
     ],
     "execute": [
@@ -908,11 +816,7 @@
       {
         "description": "verify constraint \"Class_name_occurrenceId_occurrenceYear_key\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Class_name_occurrenceId_occurrenceYear_key",
-          "public",
-          "\"public\".\"Class\""
-        ]
+        "params": ["Class_name_occurrenceId_occurrenceYear_key", "public", "\"public\".\"Class\""]
       }
     ]
   },
@@ -933,11 +837,7 @@
       {
         "description": "ensure constraint \"Class_id_occurrenceId_occurrenceYear_key\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Class_id_occurrenceId_occurrenceYear_key",
-          "public",
-          "\"public\".\"Class\""
-        ]
+        "params": ["Class_id_occurrenceId_occurrenceYear_key", "public", "\"public\".\"Class\""]
       }
     ],
     "execute": [
@@ -950,11 +850,7 @@
       {
         "description": "verify constraint \"Class_id_occurrenceId_occurrenceYear_key\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Class_id_occurrenceId_occurrenceYear_key",
-          "public",
-          "\"public\".\"Class\""
-        ]
+        "params": ["Class_id_occurrenceId_occurrenceYear_key", "public", "\"public\".\"Class\""]
       }
     ]
   },
@@ -975,11 +871,7 @@
       {
         "description": "ensure constraint \"Occurrence_courseUnitId_year_courseId_key\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Occurrence_courseUnitId_year_courseId_key",
-          "public",
-          "\"public\".\"Occurrence\""
-        ]
+        "params": ["Occurrence_courseUnitId_year_courseId_key", "public", "\"public\".\"Occurrence\""]
       }
     ],
     "execute": [
@@ -992,11 +884,7 @@
       {
         "description": "verify constraint \"Occurrence_courseUnitId_year_courseId_key\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Occurrence_courseUnitId_year_courseId_key",
-          "public",
-          "\"public\".\"Occurrence\""
-        ]
+        "params": ["Occurrence_courseUnitId_year_courseId_key", "public", "\"public\".\"Occurrence\""]
       }
     ]
   },
@@ -1017,11 +905,7 @@
       {
         "description": "ensure constraint \"User_email_key\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "User_email_key",
-          "public",
-          "\"public\".\"User\""
-        ]
+        "params": ["User_email_key", "public", "\"public\".\"User\""]
       }
     ],
     "execute": [
@@ -1034,11 +918,7 @@
       {
         "description": "verify constraint \"User_email_key\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "User_email_key",
-          "public",
-          "\"public\".\"User\""
-        ]
+        "params": ["User_email_key", "public", "\"public\".\"User\""]
       }
     ]
   },
@@ -1059,9 +939,7 @@
       {
         "description": "ensure index \"AdminCourse_courseId_idx_12f72d2a\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"AdminCourse_courseId_idx_12f72d2a\""
-        ]
+        "params": ["\"public\".\"AdminCourse_courseId_idx_12f72d2a\""]
       }
     ],
     "execute": [
@@ -1075,9 +953,7 @@
       {
         "description": "verify index \"AdminCourse_courseId_idx_12f72d2a\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"AdminCourse_courseId_idx_12f72d2a\""
-        ]
+        "params": ["\"public\".\"AdminCourse_courseId_idx_12f72d2a\""]
       }
     ]
   },
@@ -1098,9 +974,7 @@
       {
         "description": "ensure index \"AdminCourse_userId_idx_a489d58a\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"AdminCourse_userId_idx_a489d58a\""
-        ]
+        "params": ["\"public\".\"AdminCourse_userId_idx_a489d58a\""]
       }
     ],
     "execute": [
@@ -1114,9 +988,7 @@
       {
         "description": "verify index \"AdminCourse_userId_idx_a489d58a\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"AdminCourse_userId_idx_a489d58a\""
-        ]
+        "params": ["\"public\".\"AdminCourse_userId_idx_a489d58a\""]
       }
     ]
   },
@@ -1137,9 +1009,7 @@
       {
         "description": "ensure index \"AdminOccurrence_occurrenceId_occurrenceYear_idx_0f44eca6\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"AdminOccurrence_occurrenceId_occurrenceYear_idx_0f44eca6\""
-        ]
+        "params": ["\"public\".\"AdminOccurrence_occurrenceId_occurrenceYear_idx_0f44eca6\""]
       }
     ],
     "execute": [
@@ -1153,9 +1023,7 @@
       {
         "description": "verify index \"AdminOccurrence_occurrenceId_occurrenceYear_idx_0f44eca6\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"AdminOccurrence_occurrenceId_occurrenceYear_idx_0f44eca6\""
-        ]
+        "params": ["\"public\".\"AdminOccurrence_occurrenceId_occurrenceYear_idx_0f44eca6\""]
       }
     ]
   },
@@ -1176,9 +1044,7 @@
       {
         "description": "ensure index \"AdminOccurrence_userId_idx_a489d58a\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"AdminOccurrence_userId_idx_a489d58a\""
-        ]
+        "params": ["\"public\".\"AdminOccurrence_userId_idx_a489d58a\""]
       }
     ],
     "execute": [
@@ -1192,9 +1058,7 @@
       {
         "description": "verify index \"AdminOccurrence_userId_idx_a489d58a\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"AdminOccurrence_userId_idx_a489d58a\""
-        ]
+        "params": ["\"public\".\"AdminOccurrence_userId_idx_a489d58a\""]
       }
     ]
   },
@@ -1215,9 +1079,7 @@
       {
         "description": "ensure index \"Class_occurrenceId_occurrenceYear_idx_0f44eca6\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Class_occurrenceId_occurrenceYear_idx_0f44eca6\""
-        ]
+        "params": ["\"public\".\"Class_occurrenceId_occurrenceYear_idx_0f44eca6\""]
       }
     ],
     "execute": [
@@ -1231,9 +1093,7 @@
       {
         "description": "verify index \"Class_occurrenceId_occurrenceYear_idx_0f44eca6\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Class_occurrenceId_occurrenceYear_idx_0f44eca6\""
-        ]
+        "params": ["\"public\".\"Class_occurrenceId_occurrenceYear_idx_0f44eca6\""]
       }
     ]
   },
@@ -1254,9 +1114,7 @@
       {
         "description": "ensure index \"Course_year_idx_0af80557\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Course_year_idx_0af80557\""
-        ]
+        "params": ["\"public\".\"Course_year_idx_0af80557\""]
       }
     ],
     "execute": [
@@ -1270,9 +1128,7 @@
       {
         "description": "verify index \"Course_year_idx_0af80557\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Course_year_idx_0af80557\""
-        ]
+        "params": ["\"public\".\"Course_year_idx_0af80557\""]
       }
     ]
   },
@@ -1293,9 +1149,7 @@
       {
         "description": "ensure index \"CourseUnit_courseId_idx_12f72d2a\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"CourseUnit_courseId_idx_12f72d2a\""
-        ]
+        "params": ["\"public\".\"CourseUnit_courseId_idx_12f72d2a\""]
       }
     ],
     "execute": [
@@ -1309,9 +1163,7 @@
       {
         "description": "verify index \"CourseUnit_courseId_idx_12f72d2a\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"CourseUnit_courseId_idx_12f72d2a\""
-        ]
+        "params": ["\"public\".\"CourseUnit_courseId_idx_12f72d2a\""]
       }
     ]
   },
@@ -1332,9 +1184,7 @@
       {
         "description": "ensure index \"Enrollment_classId_idx_0089e5e7\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Enrollment_classId_idx_0089e5e7\""
-        ]
+        "params": ["\"public\".\"Enrollment_classId_idx_0089e5e7\""]
       }
     ],
     "execute": [
@@ -1348,9 +1198,7 @@
       {
         "description": "verify index \"Enrollment_classId_idx_0089e5e7\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Enrollment_classId_idx_0089e5e7\""
-        ]
+        "params": ["\"public\".\"Enrollment_classId_idx_0089e5e7\""]
       }
     ]
   },
@@ -1371,9 +1219,7 @@
       {
         "description": "ensure index \"Enrollment_userId_idx_a489d58a\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Enrollment_userId_idx_a489d58a\""
-        ]
+        "params": ["\"public\".\"Enrollment_userId_idx_a489d58a\""]
       }
     ],
     "execute": [
@@ -1387,9 +1233,7 @@
       {
         "description": "verify index \"Enrollment_userId_idx_a489d58a\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Enrollment_userId_idx_a489d58a\""
-        ]
+        "params": ["\"public\".\"Enrollment_userId_idx_a489d58a\""]
       }
     ]
   },
@@ -1410,9 +1254,7 @@
       {
         "description": "ensure index \"EnrollmentRequest_userId_idx_a489d58a\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"EnrollmentRequest_userId_idx_a489d58a\""
-        ]
+        "params": ["\"public\".\"EnrollmentRequest_userId_idx_a489d58a\""]
       }
     ],
     "execute": [
@@ -1426,9 +1268,7 @@
       {
         "description": "verify index \"EnrollmentRequest_userId_idx_a489d58a\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"EnrollmentRequest_userId_idx_a489d58a\""
-        ]
+        "params": ["\"public\".\"EnrollmentRequest_userId_idx_a489d58a\""]
       }
     ]
   },
@@ -1449,9 +1289,7 @@
       {
         "description": "ensure index \"EnrollmentRequestOption_occurrenceId_occurrenceYear_id_0f44eca6\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"EnrollmentRequestOption_occurrenceId_occurrenceYear_id_0f44eca6\""
-        ]
+        "params": ["\"public\".\"EnrollmentRequestOption_occurrenceId_occurrenceYear_id_0f44eca6\""]
       }
     ],
     "execute": [
@@ -1465,9 +1303,7 @@
       {
         "description": "verify index \"EnrollmentRequestOption_occurrenceId_occurrenceYear_id_0f44eca6\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"EnrollmentRequestOption_occurrenceId_occurrenceYear_id_0f44eca6\""
-        ]
+        "params": ["\"public\".\"EnrollmentRequestOption_occurrenceId_occurrenceYear_id_0f44eca6\""]
       }
     ]
   },
@@ -1488,9 +1324,7 @@
       {
         "description": "ensure index \"EnrollmentRequestOption_requestId_idx_fd667f92\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"EnrollmentRequestOption_requestId_idx_fd667f92\""
-        ]
+        "params": ["\"public\".\"EnrollmentRequestOption_requestId_idx_fd667f92\""]
       }
     ],
     "execute": [
@@ -1504,9 +1338,7 @@
       {
         "description": "verify index \"EnrollmentRequestOption_requestId_idx_fd667f92\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"EnrollmentRequestOption_requestId_idx_fd667f92\""
-        ]
+        "params": ["\"public\".\"EnrollmentRequestOption_requestId_idx_fd667f92\""]
       }
     ]
   },
@@ -1527,9 +1359,7 @@
       {
         "description": "ensure index \"ExchangeItem_fromClassId_occurrenceId_occurrenceYear_i_a94b3366\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeItem_fromClassId_occurrenceId_occurrenceYear_i_a94b3366\""
-        ]
+        "params": ["\"public\".\"ExchangeItem_fromClassId_occurrenceId_occurrenceYear_i_a94b3366\""]
       }
     ],
     "execute": [
@@ -1543,9 +1373,7 @@
       {
         "description": "verify index \"ExchangeItem_fromClassId_occurrenceId_occurrenceYear_i_a94b3366\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeItem_fromClassId_occurrenceId_occurrenceYear_i_a94b3366\""
-        ]
+        "params": ["\"public\".\"ExchangeItem_fromClassId_occurrenceId_occurrenceYear_i_a94b3366\""]
       }
     ]
   },
@@ -1566,9 +1394,7 @@
       {
         "description": "ensure index \"ExchangeItem_occurrenceId_occurrenceYear_idx_0f44eca6\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeItem_occurrenceId_occurrenceYear_idx_0f44eca6\""
-        ]
+        "params": ["\"public\".\"ExchangeItem_occurrenceId_occurrenceYear_idx_0f44eca6\""]
       }
     ],
     "execute": [
@@ -1582,9 +1408,7 @@
       {
         "description": "verify index \"ExchangeItem_occurrenceId_occurrenceYear_idx_0f44eca6\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeItem_occurrenceId_occurrenceYear_idx_0f44eca6\""
-        ]
+        "params": ["\"public\".\"ExchangeItem_occurrenceId_occurrenceYear_idx_0f44eca6\""]
       }
     ]
   },
@@ -1605,9 +1429,7 @@
       {
         "description": "ensure index \"ExchangeItem_requestId_idx_fd667f92\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeItem_requestId_idx_fd667f92\""
-        ]
+        "params": ["\"public\".\"ExchangeItem_requestId_idx_fd667f92\""]
       }
     ],
     "execute": [
@@ -1621,9 +1443,7 @@
       {
         "description": "verify index \"ExchangeItem_requestId_idx_fd667f92\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeItem_requestId_idx_fd667f92\""
-        ]
+        "params": ["\"public\".\"ExchangeItem_requestId_idx_fd667f92\""]
       }
     ]
   },
@@ -1644,9 +1464,7 @@
       {
         "description": "ensure index \"ExchangeItem_toClassId_occurrenceId_occurrenceYear_idx_47ff9320\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeItem_toClassId_occurrenceId_occurrenceYear_idx_47ff9320\""
-        ]
+        "params": ["\"public\".\"ExchangeItem_toClassId_occurrenceId_occurrenceYear_idx_47ff9320\""]
       }
     ],
     "execute": [
@@ -1660,9 +1478,7 @@
       {
         "description": "verify index \"ExchangeItem_toClassId_occurrenceId_occurrenceYear_idx_47ff9320\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeItem_toClassId_occurrenceId_occurrenceYear_idx_47ff9320\""
-        ]
+        "params": ["\"public\".\"ExchangeItem_toClassId_occurrenceId_occurrenceYear_idx_47ff9320\""]
       }
     ]
   },
@@ -1683,9 +1499,7 @@
       {
         "description": "ensure index \"ExchangeItem_userId_accepted_idx_b8232572\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeItem_userId_accepted_idx_b8232572\""
-        ]
+        "params": ["\"public\".\"ExchangeItem_userId_accepted_idx_b8232572\""]
       }
     ],
     "execute": [
@@ -1699,9 +1513,7 @@
       {
         "description": "verify index \"ExchangeItem_userId_accepted_idx_b8232572\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeItem_userId_accepted_idx_b8232572\""
-        ]
+        "params": ["\"public\".\"ExchangeItem_userId_accepted_idx_b8232572\""]
       }
     ]
   },
@@ -1722,9 +1534,7 @@
       {
         "description": "ensure index \"ExchangeItem_userId_idx_a489d58a\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeItem_userId_idx_a489d58a\""
-        ]
+        "params": ["\"public\".\"ExchangeItem_userId_idx_a489d58a\""]
       }
     ],
     "execute": [
@@ -1738,9 +1548,7 @@
       {
         "description": "verify index \"ExchangeItem_userId_idx_a489d58a\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeItem_userId_idx_a489d58a\""
-        ]
+        "params": ["\"public\".\"ExchangeItem_userId_idx_a489d58a\""]
       }
     ]
   },
@@ -1761,9 +1569,7 @@
       {
         "description": "ensure index \"ExchangePeriod_occurrenceId_occurrenceYear_idx_0f44eca6\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangePeriod_occurrenceId_occurrenceYear_idx_0f44eca6\""
-        ]
+        "params": ["\"public\".\"ExchangePeriod_occurrenceId_occurrenceYear_idx_0f44eca6\""]
       }
     ],
     "execute": [
@@ -1777,9 +1583,7 @@
       {
         "description": "verify index \"ExchangePeriod_occurrenceId_occurrenceYear_idx_0f44eca6\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangePeriod_occurrenceId_occurrenceYear_idx_0f44eca6\""
-        ]
+        "params": ["\"public\".\"ExchangePeriod_occurrenceId_occurrenceYear_idx_0f44eca6\""]
       }
     ]
   },
@@ -1800,9 +1604,7 @@
       {
         "description": "ensure index \"ExchangeRequest_adminState_createdAt_idx_3ef72936\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeRequest_adminState_createdAt_idx_3ef72936\""
-        ]
+        "params": ["\"public\".\"ExchangeRequest_adminState_createdAt_idx_3ef72936\""]
       }
     ],
     "execute": [
@@ -1816,9 +1618,7 @@
       {
         "description": "verify index \"ExchangeRequest_adminState_createdAt_idx_3ef72936\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeRequest_adminState_createdAt_idx_3ef72936\""
-        ]
+        "params": ["\"public\".\"ExchangeRequest_adminState_createdAt_idx_3ef72936\""]
       }
     ]
   },
@@ -1839,9 +1639,7 @@
       {
         "description": "ensure index \"ExchangeRequest_creatorId_idx_3a77d800\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeRequest_creatorId_idx_3a77d800\""
-        ]
+        "params": ["\"public\".\"ExchangeRequest_creatorId_idx_3a77d800\""]
       }
     ],
     "execute": [
@@ -1855,9 +1653,7 @@
       {
         "description": "verify index \"ExchangeRequest_creatorId_idx_3a77d800\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeRequest_creatorId_idx_3a77d800\""
-        ]
+        "params": ["\"public\".\"ExchangeRequest_creatorId_idx_3a77d800\""]
       }
     ]
   },
@@ -1878,9 +1674,7 @@
       {
         "description": "ensure index \"ExchangeRequest_creatorId_status_idx_3540b79f\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeRequest_creatorId_status_idx_3540b79f\""
-        ]
+        "params": ["\"public\".\"ExchangeRequest_creatorId_status_idx_3540b79f\""]
       }
     ],
     "execute": [
@@ -1894,9 +1688,7 @@
       {
         "description": "verify index \"ExchangeRequest_creatorId_status_idx_3540b79f\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeRequest_creatorId_status_idx_3540b79f\""
-        ]
+        "params": ["\"public\".\"ExchangeRequest_creatorId_status_idx_3540b79f\""]
       }
     ]
   },
@@ -1917,9 +1709,7 @@
       {
         "description": "ensure index \"ExchangeRequest_hash_idx_d25bc543\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeRequest_hash_idx_d25bc543\""
-        ]
+        "params": ["\"public\".\"ExchangeRequest_hash_idx_d25bc543\""]
       }
     ],
     "execute": [
@@ -1933,9 +1723,7 @@
       {
         "description": "verify index \"ExchangeRequest_hash_idx_d25bc543\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeRequest_hash_idx_d25bc543\""
-        ]
+        "params": ["\"public\".\"ExchangeRequest_hash_idx_d25bc543\""]
       }
     ]
   },
@@ -1956,9 +1744,7 @@
       {
         "description": "ensure index \"ExchangeRequest_targetUserId_idx_e0d638f0\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeRequest_targetUserId_idx_e0d638f0\""
-        ]
+        "params": ["\"public\".\"ExchangeRequest_targetUserId_idx_e0d638f0\""]
       }
     ],
     "execute": [
@@ -1972,9 +1758,7 @@
       {
         "description": "verify index \"ExchangeRequest_targetUserId_idx_e0d638f0\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeRequest_targetUserId_idx_e0d638f0\""
-        ]
+        "params": ["\"public\".\"ExchangeRequest_targetUserId_idx_e0d638f0\""]
       }
     ]
   },
@@ -1995,9 +1779,7 @@
       {
         "description": "ensure index \"ExchangeRequest_type_status_idx_f045f361\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeRequest_type_status_idx_f045f361\""
-        ]
+        "params": ["\"public\".\"ExchangeRequest_type_status_idx_f045f361\""]
       }
     ],
     "execute": [
@@ -2011,9 +1793,7 @@
       {
         "description": "verify index \"ExchangeRequest_type_status_idx_f045f361\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"ExchangeRequest_type_status_idx_f045f361\""
-        ]
+        "params": ["\"public\".\"ExchangeRequest_type_status_idx_f045f361\""]
       }
     ]
   },
@@ -2034,9 +1814,7 @@
       {
         "description": "ensure index \"FacultyCourse_courseId_idx_12f72d2a\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"FacultyCourse_courseId_idx_12f72d2a\""
-        ]
+        "params": ["\"public\".\"FacultyCourse_courseId_idx_12f72d2a\""]
       }
     ],
     "execute": [
@@ -2050,9 +1828,7 @@
       {
         "description": "verify index \"FacultyCourse_courseId_idx_12f72d2a\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"FacultyCourse_courseId_idx_12f72d2a\""
-        ]
+        "params": ["\"public\".\"FacultyCourse_courseId_idx_12f72d2a\""]
       }
     ]
   },
@@ -2073,9 +1849,7 @@
       {
         "description": "ensure index \"FacultyCourse_facultyId_idx_ff3b8c32\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"FacultyCourse_facultyId_idx_ff3b8c32\""
-        ]
+        "params": ["\"public\".\"FacultyCourse_facultyId_idx_ff3b8c32\""]
       }
     ],
     "execute": [
@@ -2089,9 +1863,7 @@
       {
         "description": "verify index \"FacultyCourse_facultyId_idx_ff3b8c32\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"FacultyCourse_facultyId_idx_ff3b8c32\""
-        ]
+        "params": ["\"public\".\"FacultyCourse_facultyId_idx_ff3b8c32\""]
       }
     ]
   },
@@ -2112,9 +1884,7 @@
       {
         "description": "ensure index \"Occurrence_courseId_idx_12f72d2a\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Occurrence_courseId_idx_12f72d2a\""
-        ]
+        "params": ["\"public\".\"Occurrence_courseId_idx_12f72d2a\""]
       }
     ],
     "execute": [
@@ -2128,9 +1898,7 @@
       {
         "description": "verify index \"Occurrence_courseId_idx_12f72d2a\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Occurrence_courseId_idx_12f72d2a\""
-        ]
+        "params": ["\"public\".\"Occurrence_courseId_idx_12f72d2a\""]
       }
     ]
   },
@@ -2151,9 +1919,7 @@
       {
         "description": "ensure index \"Occurrence_courseId_year_idx_ae755fc5\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Occurrence_courseId_year_idx_ae755fc5\""
-        ]
+        "params": ["\"public\".\"Occurrence_courseId_year_idx_ae755fc5\""]
       }
     ],
     "execute": [
@@ -2167,9 +1933,7 @@
       {
         "description": "verify index \"Occurrence_courseId_year_idx_ae755fc5\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Occurrence_courseId_year_idx_ae755fc5\""
-        ]
+        "params": ["\"public\".\"Occurrence_courseId_year_idx_ae755fc5\""]
       }
     ]
   },
@@ -2190,9 +1954,7 @@
       {
         "description": "ensure index \"Occurrence_courseUnitId_idx_fae358e6\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Occurrence_courseUnitId_idx_fae358e6\""
-        ]
+        "params": ["\"public\".\"Occurrence_courseUnitId_idx_fae358e6\""]
       }
     ],
     "execute": [
@@ -2206,9 +1968,7 @@
       {
         "description": "verify index \"Occurrence_courseUnitId_idx_fae358e6\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Occurrence_courseUnitId_idx_fae358e6\""
-        ]
+        "params": ["\"public\".\"Occurrence_courseUnitId_idx_fae358e6\""]
       }
     ]
   },
@@ -2229,9 +1989,7 @@
       {
         "description": "ensure index \"PlannerState_userId_idx_a489d58a\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"PlannerState_userId_idx_a489d58a\""
-        ]
+        "params": ["\"public\".\"PlannerState_userId_idx_a489d58a\""]
       }
     ],
     "execute": [
@@ -2245,9 +2003,7 @@
       {
         "description": "verify index \"PlannerState_userId_idx_a489d58a\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"PlannerState_userId_idx_a489d58a\""
-        ]
+        "params": ["\"public\".\"PlannerState_userId_idx_a489d58a\""]
       }
     ]
   },
@@ -2268,9 +2024,7 @@
       {
         "description": "ensure index \"Session_expiresAt_idx_6b6b8c10\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Session_expiresAt_idx_6b6b8c10\""
-        ]
+        "params": ["\"public\".\"Session_expiresAt_idx_6b6b8c10\""]
       }
     ],
     "execute": [
@@ -2284,9 +2038,7 @@
       {
         "description": "verify index \"Session_expiresAt_idx_6b6b8c10\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Session_expiresAt_idx_6b6b8c10\""
-        ]
+        "params": ["\"public\".\"Session_expiresAt_idx_6b6b8c10\""]
       }
     ]
   },
@@ -2307,9 +2059,7 @@
       {
         "description": "ensure index \"Session_userId_idx_a489d58a\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Session_userId_idx_a489d58a\""
-        ]
+        "params": ["\"public\".\"Session_userId_idx_a489d58a\""]
       }
     ],
     "execute": [
@@ -2323,9 +2073,7 @@
       {
         "description": "verify index \"Session_userId_idx_a489d58a\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"Session_userId_idx_a489d58a\""
-        ]
+        "params": ["\"public\".\"Session_userId_idx_a489d58a\""]
       }
     ]
   },
@@ -2346,9 +2094,7 @@
       {
         "description": "ensure index \"SlotClass_classId_idx_0089e5e7\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"SlotClass_classId_idx_0089e5e7\""
-        ]
+        "params": ["\"public\".\"SlotClass_classId_idx_0089e5e7\""]
       }
     ],
     "execute": [
@@ -2362,9 +2108,7 @@
       {
         "description": "verify index \"SlotClass_classId_idx_0089e5e7\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"SlotClass_classId_idx_0089e5e7\""
-        ]
+        "params": ["\"public\".\"SlotClass_classId_idx_0089e5e7\""]
       }
     ]
   },
@@ -2385,9 +2129,7 @@
       {
         "description": "ensure index \"SlotClass_slotId_idx_4d7c6bc9\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"SlotClass_slotId_idx_4d7c6bc9\""
-        ]
+        "params": ["\"public\".\"SlotClass_slotId_idx_4d7c6bc9\""]
       }
     ],
     "execute": [
@@ -2401,9 +2143,7 @@
       {
         "description": "verify index \"SlotClass_slotId_idx_4d7c6bc9\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"SlotClass_slotId_idx_4d7c6bc9\""
-        ]
+        "params": ["\"public\".\"SlotClass_slotId_idx_4d7c6bc9\""]
       }
     ]
   },
@@ -2424,9 +2164,7 @@
       {
         "description": "ensure index \"SlotProfessor_professorId_idx_f17aa655\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"SlotProfessor_professorId_idx_f17aa655\""
-        ]
+        "params": ["\"public\".\"SlotProfessor_professorId_idx_f17aa655\""]
       }
     ],
     "execute": [
@@ -2440,9 +2178,7 @@
       {
         "description": "verify index \"SlotProfessor_professorId_idx_f17aa655\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"SlotProfessor_professorId_idx_f17aa655\""
-        ]
+        "params": ["\"public\".\"SlotProfessor_professorId_idx_f17aa655\""]
       }
     ]
   },
@@ -2463,9 +2199,7 @@
       {
         "description": "ensure index \"SlotProfessor_slotId_idx_4d7c6bc9\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"SlotProfessor_slotId_idx_4d7c6bc9\""
-        ]
+        "params": ["\"public\".\"SlotProfessor_slotId_idx_4d7c6bc9\""]
       }
     ],
     "execute": [
@@ -2479,9 +2213,7 @@
       {
         "description": "verify index \"SlotProfessor_slotId_idx_4d7c6bc9\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"SlotProfessor_slotId_idx_4d7c6bc9\""
-        ]
+        "params": ["\"public\".\"SlotProfessor_slotId_idx_4d7c6bc9\""]
       }
     ]
   },
@@ -2502,9 +2234,7 @@
       {
         "description": "ensure index \"StudentCourseMetadata_courseId_idx_12f72d2a\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"StudentCourseMetadata_courseId_idx_12f72d2a\""
-        ]
+        "params": ["\"public\".\"StudentCourseMetadata_courseId_idx_12f72d2a\""]
       }
     ],
     "execute": [
@@ -2518,9 +2248,7 @@
       {
         "description": "verify index \"StudentCourseMetadata_courseId_idx_12f72d2a\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"StudentCourseMetadata_courseId_idx_12f72d2a\""
-        ]
+        "params": ["\"public\".\"StudentCourseMetadata_courseId_idx_12f72d2a\""]
       }
     ]
   },
@@ -2541,9 +2269,7 @@
       {
         "description": "ensure index \"StudentCourseMetadata_nmec_idx_b0591a9a\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"StudentCourseMetadata_nmec_idx_b0591a9a\""
-        ]
+        "params": ["\"public\".\"StudentCourseMetadata_nmec_idx_b0591a9a\""]
       }
     ],
     "execute": [
@@ -2557,9 +2283,7 @@
       {
         "description": "verify index \"StudentCourseMetadata_nmec_idx_b0591a9a\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"StudentCourseMetadata_nmec_idx_b0591a9a\""
-        ]
+        "params": ["\"public\".\"StudentCourseMetadata_nmec_idx_b0591a9a\""]
       }
     ]
   },
@@ -2580,11 +2304,7 @@
       {
         "description": "ensure FK \"AdminCourse_userId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "AdminCourse_userId_fkey",
-          "public",
-          "\"public\".\"AdminCourse\""
-        ]
+        "params": ["AdminCourse_userId_fkey", "public", "\"public\".\"AdminCourse\""]
       }
     ],
     "execute": [
@@ -2597,11 +2317,7 @@
       {
         "description": "verify FK \"AdminCourse_userId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "AdminCourse_userId_fkey",
-          "public",
-          "\"public\".\"AdminCourse\""
-        ]
+        "params": ["AdminCourse_userId_fkey", "public", "\"public\".\"AdminCourse\""]
       }
     ]
   },
@@ -2622,11 +2338,7 @@
       {
         "description": "ensure FK \"AdminCourse_courseId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "AdminCourse_courseId_fkey",
-          "public",
-          "\"public\".\"AdminCourse\""
-        ]
+        "params": ["AdminCourse_courseId_fkey", "public", "\"public\".\"AdminCourse\""]
       }
     ],
     "execute": [
@@ -2639,11 +2351,7 @@
       {
         "description": "verify FK \"AdminCourse_courseId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "AdminCourse_courseId_fkey",
-          "public",
-          "\"public\".\"AdminCourse\""
-        ]
+        "params": ["AdminCourse_courseId_fkey", "public", "\"public\".\"AdminCourse\""]
       }
     ]
   },
@@ -2664,11 +2372,7 @@
       {
         "description": "ensure FK \"AdminOccurrence_userId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "AdminOccurrence_userId_fkey",
-          "public",
-          "\"public\".\"AdminOccurrence\""
-        ]
+        "params": ["AdminOccurrence_userId_fkey", "public", "\"public\".\"AdminOccurrence\""]
       }
     ],
     "execute": [
@@ -2681,11 +2385,7 @@
       {
         "description": "verify FK \"AdminOccurrence_userId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "AdminOccurrence_userId_fkey",
-          "public",
-          "\"public\".\"AdminOccurrence\""
-        ]
+        "params": ["AdminOccurrence_userId_fkey", "public", "\"public\".\"AdminOccurrence\""]
       }
     ]
   },
@@ -2706,11 +2406,7 @@
       {
         "description": "ensure FK \"AdminOccurrence_occurrenceId_occurrenceYear_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "AdminOccurrence_occurrenceId_occurrenceYear_fkey",
-          "public",
-          "\"public\".\"AdminOccurrence\""
-        ]
+        "params": ["AdminOccurrence_occurrenceId_occurrenceYear_fkey", "public", "\"public\".\"AdminOccurrence\""]
       }
     ],
     "execute": [
@@ -2723,11 +2419,7 @@
       {
         "description": "verify FK \"AdminOccurrence_occurrenceId_occurrenceYear_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "AdminOccurrence_occurrenceId_occurrenceYear_fkey",
-          "public",
-          "\"public\".\"AdminOccurrence\""
-        ]
+        "params": ["AdminOccurrence_occurrenceId_occurrenceYear_fkey", "public", "\"public\".\"AdminOccurrence\""]
       }
     ]
   },
@@ -2748,11 +2440,7 @@
       {
         "description": "ensure FK \"Class_occurrenceId_occurrenceYear_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Class_occurrenceId_occurrenceYear_fkey",
-          "public",
-          "\"public\".\"Class\""
-        ]
+        "params": ["Class_occurrenceId_occurrenceYear_fkey", "public", "\"public\".\"Class\""]
       }
     ],
     "execute": [
@@ -2765,11 +2453,7 @@
       {
         "description": "verify FK \"Class_occurrenceId_occurrenceYear_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Class_occurrenceId_occurrenceYear_fkey",
-          "public",
-          "\"public\".\"Class\""
-        ]
+        "params": ["Class_occurrenceId_occurrenceYear_fkey", "public", "\"public\".\"Class\""]
       }
     ]
   },
@@ -2790,11 +2474,7 @@
       {
         "description": "ensure FK \"CourseUnit_courseId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "CourseUnit_courseId_fkey",
-          "public",
-          "\"public\".\"CourseUnit\""
-        ]
+        "params": ["CourseUnit_courseId_fkey", "public", "\"public\".\"CourseUnit\""]
       }
     ],
     "execute": [
@@ -2807,11 +2487,7 @@
       {
         "description": "verify FK \"CourseUnit_courseId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "CourseUnit_courseId_fkey",
-          "public",
-          "\"public\".\"CourseUnit\""
-        ]
+        "params": ["CourseUnit_courseId_fkey", "public", "\"public\".\"CourseUnit\""]
       }
     ]
   },
@@ -2832,11 +2508,7 @@
       {
         "description": "ensure FK \"Enrollment_userId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Enrollment_userId_fkey",
-          "public",
-          "\"public\".\"Enrollment\""
-        ]
+        "params": ["Enrollment_userId_fkey", "public", "\"public\".\"Enrollment\""]
       }
     ],
     "execute": [
@@ -2849,11 +2521,7 @@
       {
         "description": "verify FK \"Enrollment_userId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Enrollment_userId_fkey",
-          "public",
-          "\"public\".\"Enrollment\""
-        ]
+        "params": ["Enrollment_userId_fkey", "public", "\"public\".\"Enrollment\""]
       }
     ]
   },
@@ -2874,11 +2542,7 @@
       {
         "description": "ensure FK \"Enrollment_classId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Enrollment_classId_fkey",
-          "public",
-          "\"public\".\"Enrollment\""
-        ]
+        "params": ["Enrollment_classId_fkey", "public", "\"public\".\"Enrollment\""]
       }
     ],
     "execute": [
@@ -2891,11 +2555,7 @@
       {
         "description": "verify FK \"Enrollment_classId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Enrollment_classId_fkey",
-          "public",
-          "\"public\".\"Enrollment\""
-        ]
+        "params": ["Enrollment_classId_fkey", "public", "\"public\".\"Enrollment\""]
       }
     ]
   },
@@ -2916,11 +2576,7 @@
       {
         "description": "ensure FK \"EnrollmentRequest_userId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "EnrollmentRequest_userId_fkey",
-          "public",
-          "\"public\".\"EnrollmentRequest\""
-        ]
+        "params": ["EnrollmentRequest_userId_fkey", "public", "\"public\".\"EnrollmentRequest\""]
       }
     ],
     "execute": [
@@ -2933,11 +2589,7 @@
       {
         "description": "verify FK \"EnrollmentRequest_userId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "EnrollmentRequest_userId_fkey",
-          "public",
-          "\"public\".\"EnrollmentRequest\""
-        ]
+        "params": ["EnrollmentRequest_userId_fkey", "public", "\"public\".\"EnrollmentRequest\""]
       }
     ]
   },
@@ -2958,11 +2610,7 @@
       {
         "description": "ensure FK \"EnrollmentRequestOption_requestId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "EnrollmentRequestOption_requestId_fkey",
-          "public",
-          "\"public\".\"EnrollmentRequestOption\""
-        ]
+        "params": ["EnrollmentRequestOption_requestId_fkey", "public", "\"public\".\"EnrollmentRequestOption\""]
       }
     ],
     "execute": [
@@ -2975,11 +2623,7 @@
       {
         "description": "verify FK \"EnrollmentRequestOption_requestId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "EnrollmentRequestOption_requestId_fkey",
-          "public",
-          "\"public\".\"EnrollmentRequestOption\""
-        ]
+        "params": ["EnrollmentRequestOption_requestId_fkey", "public", "\"public\".\"EnrollmentRequestOption\""]
       }
     ]
   },
@@ -3042,11 +2686,7 @@
       {
         "description": "ensure FK \"ExchangeItem_requestId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "ExchangeItem_requestId_fkey",
-          "public",
-          "\"public\".\"ExchangeItem\""
-        ]
+        "params": ["ExchangeItem_requestId_fkey", "public", "\"public\".\"ExchangeItem\""]
       }
     ],
     "execute": [
@@ -3059,11 +2699,7 @@
       {
         "description": "verify FK \"ExchangeItem_requestId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "ExchangeItem_requestId_fkey",
-          "public",
-          "\"public\".\"ExchangeItem\""
-        ]
+        "params": ["ExchangeItem_requestId_fkey", "public", "\"public\".\"ExchangeItem\""]
       }
     ]
   },
@@ -3084,11 +2720,7 @@
       {
         "description": "ensure FK \"ExchangeItem_userId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "ExchangeItem_userId_fkey",
-          "public",
-          "\"public\".\"ExchangeItem\""
-        ]
+        "params": ["ExchangeItem_userId_fkey", "public", "\"public\".\"ExchangeItem\""]
       }
     ],
     "execute": [
@@ -3101,11 +2733,7 @@
       {
         "description": "verify FK \"ExchangeItem_userId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "ExchangeItem_userId_fkey",
-          "public",
-          "\"public\".\"ExchangeItem\""
-        ]
+        "params": ["ExchangeItem_userId_fkey", "public", "\"public\".\"ExchangeItem\""]
       }
     ]
   },
@@ -3126,11 +2754,7 @@
       {
         "description": "ensure FK \"ExchangeItem_occurrenceId_occurrenceYear_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "ExchangeItem_occurrenceId_occurrenceYear_fkey",
-          "public",
-          "\"public\".\"ExchangeItem\""
-        ]
+        "params": ["ExchangeItem_occurrenceId_occurrenceYear_fkey", "public", "\"public\".\"ExchangeItem\""]
       }
     ],
     "execute": [
@@ -3143,11 +2767,7 @@
       {
         "description": "verify FK \"ExchangeItem_occurrenceId_occurrenceYear_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "ExchangeItem_occurrenceId_occurrenceYear_fkey",
-          "public",
-          "\"public\".\"ExchangeItem\""
-        ]
+        "params": ["ExchangeItem_occurrenceId_occurrenceYear_fkey", "public", "\"public\".\"ExchangeItem\""]
       }
     ]
   },
@@ -3168,11 +2788,7 @@
       {
         "description": "ensure FK \"ExchangeItem_fromClassId_occurrenceId_occurrenceYear_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "ExchangeItem_fromClassId_occurrenceId_occurrenceYear_fkey",
-          "public",
-          "\"public\".\"ExchangeItem\""
-        ]
+        "params": ["ExchangeItem_fromClassId_occurrenceId_occurrenceYear_fkey", "public", "\"public\".\"ExchangeItem\""]
       }
     ],
     "execute": [
@@ -3185,11 +2801,7 @@
       {
         "description": "verify FK \"ExchangeItem_fromClassId_occurrenceId_occurrenceYear_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "ExchangeItem_fromClassId_occurrenceId_occurrenceYear_fkey",
-          "public",
-          "\"public\".\"ExchangeItem\""
-        ]
+        "params": ["ExchangeItem_fromClassId_occurrenceId_occurrenceYear_fkey", "public", "\"public\".\"ExchangeItem\""]
       }
     ]
   },
@@ -3210,11 +2822,7 @@
       {
         "description": "ensure FK \"ExchangeItem_toClassId_occurrenceId_occurrenceYear_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "ExchangeItem_toClassId_occurrenceId_occurrenceYear_fkey",
-          "public",
-          "\"public\".\"ExchangeItem\""
-        ]
+        "params": ["ExchangeItem_toClassId_occurrenceId_occurrenceYear_fkey", "public", "\"public\".\"ExchangeItem\""]
       }
     ],
     "execute": [
@@ -3227,11 +2835,7 @@
       {
         "description": "verify FK \"ExchangeItem_toClassId_occurrenceId_occurrenceYear_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "ExchangeItem_toClassId_occurrenceId_occurrenceYear_fkey",
-          "public",
-          "\"public\".\"ExchangeItem\""
-        ]
+        "params": ["ExchangeItem_toClassId_occurrenceId_occurrenceYear_fkey", "public", "\"public\".\"ExchangeItem\""]
       }
     ]
   },
@@ -3252,11 +2856,7 @@
       {
         "description": "ensure FK \"ExchangePeriod_occurrenceId_occurrenceYear_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "ExchangePeriod_occurrenceId_occurrenceYear_fkey",
-          "public",
-          "\"public\".\"ExchangePeriod\""
-        ]
+        "params": ["ExchangePeriod_occurrenceId_occurrenceYear_fkey", "public", "\"public\".\"ExchangePeriod\""]
       }
     ],
     "execute": [
@@ -3269,11 +2869,7 @@
       {
         "description": "verify FK \"ExchangePeriod_occurrenceId_occurrenceYear_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "ExchangePeriod_occurrenceId_occurrenceYear_fkey",
-          "public",
-          "\"public\".\"ExchangePeriod\""
-        ]
+        "params": ["ExchangePeriod_occurrenceId_occurrenceYear_fkey", "public", "\"public\".\"ExchangePeriod\""]
       }
     ]
   },
@@ -3294,11 +2890,7 @@
       {
         "description": "ensure FK \"ExchangeRequest_creatorId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "ExchangeRequest_creatorId_fkey",
-          "public",
-          "\"public\".\"ExchangeRequest\""
-        ]
+        "params": ["ExchangeRequest_creatorId_fkey", "public", "\"public\".\"ExchangeRequest\""]
       }
     ],
     "execute": [
@@ -3311,11 +2903,7 @@
       {
         "description": "verify FK \"ExchangeRequest_creatorId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "ExchangeRequest_creatorId_fkey",
-          "public",
-          "\"public\".\"ExchangeRequest\""
-        ]
+        "params": ["ExchangeRequest_creatorId_fkey", "public", "\"public\".\"ExchangeRequest\""]
       }
     ]
   },
@@ -3336,11 +2924,7 @@
       {
         "description": "ensure FK \"ExchangeRequest_targetUserId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "ExchangeRequest_targetUserId_fkey",
-          "public",
-          "\"public\".\"ExchangeRequest\""
-        ]
+        "params": ["ExchangeRequest_targetUserId_fkey", "public", "\"public\".\"ExchangeRequest\""]
       }
     ],
     "execute": [
@@ -3353,11 +2937,7 @@
       {
         "description": "verify FK \"ExchangeRequest_targetUserId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "ExchangeRequest_targetUserId_fkey",
-          "public",
-          "\"public\".\"ExchangeRequest\""
-        ]
+        "params": ["ExchangeRequest_targetUserId_fkey", "public", "\"public\".\"ExchangeRequest\""]
       }
     ]
   },
@@ -3378,11 +2958,7 @@
       {
         "description": "ensure FK \"FacultyCourse_facultyId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "FacultyCourse_facultyId_fkey",
-          "public",
-          "\"public\".\"FacultyCourse\""
-        ]
+        "params": ["FacultyCourse_facultyId_fkey", "public", "\"public\".\"FacultyCourse\""]
       }
     ],
     "execute": [
@@ -3395,11 +2971,7 @@
       {
         "description": "verify FK \"FacultyCourse_facultyId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "FacultyCourse_facultyId_fkey",
-          "public",
-          "\"public\".\"FacultyCourse\""
-        ]
+        "params": ["FacultyCourse_facultyId_fkey", "public", "\"public\".\"FacultyCourse\""]
       }
     ]
   },
@@ -3420,11 +2992,7 @@
       {
         "description": "ensure FK \"FacultyCourse_courseId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "FacultyCourse_courseId_fkey",
-          "public",
-          "\"public\".\"FacultyCourse\""
-        ]
+        "params": ["FacultyCourse_courseId_fkey", "public", "\"public\".\"FacultyCourse\""]
       }
     ],
     "execute": [
@@ -3437,11 +3005,7 @@
       {
         "description": "verify FK \"FacultyCourse_courseId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "FacultyCourse_courseId_fkey",
-          "public",
-          "\"public\".\"FacultyCourse\""
-        ]
+        "params": ["FacultyCourse_courseId_fkey", "public", "\"public\".\"FacultyCourse\""]
       }
     ]
   },
@@ -3462,11 +3026,7 @@
       {
         "description": "ensure FK \"Occurrence_courseUnitId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Occurrence_courseUnitId_fkey",
-          "public",
-          "\"public\".\"Occurrence\""
-        ]
+        "params": ["Occurrence_courseUnitId_fkey", "public", "\"public\".\"Occurrence\""]
       }
     ],
     "execute": [
@@ -3479,11 +3039,7 @@
       {
         "description": "verify FK \"Occurrence_courseUnitId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Occurrence_courseUnitId_fkey",
-          "public",
-          "\"public\".\"Occurrence\""
-        ]
+        "params": ["Occurrence_courseUnitId_fkey", "public", "\"public\".\"Occurrence\""]
       }
     ]
   },
@@ -3504,11 +3060,7 @@
       {
         "description": "ensure FK \"Occurrence_courseId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Occurrence_courseId_fkey",
-          "public",
-          "\"public\".\"Occurrence\""
-        ]
+        "params": ["Occurrence_courseId_fkey", "public", "\"public\".\"Occurrence\""]
       }
     ],
     "execute": [
@@ -3521,11 +3073,7 @@
       {
         "description": "verify FK \"Occurrence_courseId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Occurrence_courseId_fkey",
-          "public",
-          "\"public\".\"Occurrence\""
-        ]
+        "params": ["Occurrence_courseId_fkey", "public", "\"public\".\"Occurrence\""]
       }
     ]
   },
@@ -3546,11 +3094,7 @@
       {
         "description": "ensure FK \"PlannerState_userId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "PlannerState_userId_fkey",
-          "public",
-          "\"public\".\"PlannerState\""
-        ]
+        "params": ["PlannerState_userId_fkey", "public", "\"public\".\"PlannerState\""]
       }
     ],
     "execute": [
@@ -3563,11 +3107,7 @@
       {
         "description": "verify FK \"PlannerState_userId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "PlannerState_userId_fkey",
-          "public",
-          "\"public\".\"PlannerState\""
-        ]
+        "params": ["PlannerState_userId_fkey", "public", "\"public\".\"PlannerState\""]
       }
     ]
   },
@@ -3588,11 +3128,7 @@
       {
         "description": "ensure FK \"Session_userId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Session_userId_fkey",
-          "public",
-          "\"public\".\"Session\""
-        ]
+        "params": ["Session_userId_fkey", "public", "\"public\".\"Session\""]
       }
     ],
     "execute": [
@@ -3605,11 +3141,7 @@
       {
         "description": "verify FK \"Session_userId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "Session_userId_fkey",
-          "public",
-          "\"public\".\"Session\""
-        ]
+        "params": ["Session_userId_fkey", "public", "\"public\".\"Session\""]
       }
     ]
   },
@@ -3630,11 +3162,7 @@
       {
         "description": "ensure FK \"SlotClass_slotId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "SlotClass_slotId_fkey",
-          "public",
-          "\"public\".\"SlotClass\""
-        ]
+        "params": ["SlotClass_slotId_fkey", "public", "\"public\".\"SlotClass\""]
       }
     ],
     "execute": [
@@ -3647,11 +3175,7 @@
       {
         "description": "verify FK \"SlotClass_slotId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "SlotClass_slotId_fkey",
-          "public",
-          "\"public\".\"SlotClass\""
-        ]
+        "params": ["SlotClass_slotId_fkey", "public", "\"public\".\"SlotClass\""]
       }
     ]
   },
@@ -3672,11 +3196,7 @@
       {
         "description": "ensure FK \"SlotClass_classId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "SlotClass_classId_fkey",
-          "public",
-          "\"public\".\"SlotClass\""
-        ]
+        "params": ["SlotClass_classId_fkey", "public", "\"public\".\"SlotClass\""]
       }
     ],
     "execute": [
@@ -3689,11 +3209,7 @@
       {
         "description": "verify FK \"SlotClass_classId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "SlotClass_classId_fkey",
-          "public",
-          "\"public\".\"SlotClass\""
-        ]
+        "params": ["SlotClass_classId_fkey", "public", "\"public\".\"SlotClass\""]
       }
     ]
   },
@@ -3714,11 +3230,7 @@
       {
         "description": "ensure FK \"SlotProfessor_slotId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "SlotProfessor_slotId_fkey",
-          "public",
-          "\"public\".\"SlotProfessor\""
-        ]
+        "params": ["SlotProfessor_slotId_fkey", "public", "\"public\".\"SlotProfessor\""]
       }
     ],
     "execute": [
@@ -3731,11 +3243,7 @@
       {
         "description": "verify FK \"SlotProfessor_slotId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "SlotProfessor_slotId_fkey",
-          "public",
-          "\"public\".\"SlotProfessor\""
-        ]
+        "params": ["SlotProfessor_slotId_fkey", "public", "\"public\".\"SlotProfessor\""]
       }
     ]
   },
@@ -3756,11 +3264,7 @@
       {
         "description": "ensure FK \"SlotProfessor_professorId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "SlotProfessor_professorId_fkey",
-          "public",
-          "\"public\".\"SlotProfessor\""
-        ]
+        "params": ["SlotProfessor_professorId_fkey", "public", "\"public\".\"SlotProfessor\""]
       }
     ],
     "execute": [
@@ -3773,11 +3277,7 @@
       {
         "description": "verify FK \"SlotProfessor_professorId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "SlotProfessor_professorId_fkey",
-          "public",
-          "\"public\".\"SlotProfessor\""
-        ]
+        "params": ["SlotProfessor_professorId_fkey", "public", "\"public\".\"SlotProfessor\""]
       }
     ]
   },
@@ -3798,11 +3298,7 @@
       {
         "description": "ensure FK \"StudentCourseMetadata_nmec_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "StudentCourseMetadata_nmec_fkey",
-          "public",
-          "\"public\".\"StudentCourseMetadata\""
-        ]
+        "params": ["StudentCourseMetadata_nmec_fkey", "public", "\"public\".\"StudentCourseMetadata\""]
       }
     ],
     "execute": [
@@ -3815,11 +3311,7 @@
       {
         "description": "verify FK \"StudentCourseMetadata_nmec_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "StudentCourseMetadata_nmec_fkey",
-          "public",
-          "\"public\".\"StudentCourseMetadata\""
-        ]
+        "params": ["StudentCourseMetadata_nmec_fkey", "public", "\"public\".\"StudentCourseMetadata\""]
       }
     ]
   },
@@ -3840,11 +3332,7 @@
       {
         "description": "ensure FK \"StudentCourseMetadata_courseId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "StudentCourseMetadata_courseId_fkey",
-          "public",
-          "\"public\".\"StudentCourseMetadata\""
-        ]
+        "params": ["StudentCourseMetadata_courseId_fkey", "public", "\"public\".\"StudentCourseMetadata\""]
       }
     ],
     "execute": [
@@ -3857,11 +3345,7 @@
       {
         "description": "verify FK \"StudentCourseMetadata_courseId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "StudentCourseMetadata_courseId_fkey",
-          "public",
-          "\"public\".\"StudentCourseMetadata\""
-        ]
+        "params": ["StudentCourseMetadata_courseId_fkey", "public", "\"public\".\"StudentCourseMetadata\""]
       }
     ]
   }

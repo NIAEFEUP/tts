@@ -64,9 +64,7 @@
     "/{faculty}/{language}/mob_hor_geral.estudante": {
       "get": {
         "operationId": "student-get-schedule",
-        "tags": [
-          "student"
-        ],
+        "tags": ["student"],
         "summary": "Student schedule",
         "description": "Weekly timetable of a student. Returns the weekly timetable of the week that contains `pv_semana_ini`; `pv_semana_fim` does not widen the range.",
         "x-fern-sdk-group-name": "student",
@@ -133,9 +131,7 @@
     "/{faculty}/{language}/mob_fest_geral.exames": {
       "get": {
         "operationId": "student-get-exams",
-        "tags": [
-          "student"
-        ],
+        "tags": ["student"],
         "summary": "Exams",
         "description": "The authenticated user's exams.",
         "x-fern-sdk-group-name": "student",
@@ -244,9 +240,7 @@
     "/{faculty}/{language}/mob_fest_geral.percurso_academico": {
       "get": {
         "operationId": "student-get-academic-path",
-        "tags": [
-          "student"
-        ],
+        "tags": ["student"],
         "summary": "Academic path",
         "description": "The authenticated user's academic path.",
         "x-fern-sdk-group-name": "student",
@@ -388,10 +382,7 @@
                               "type": "string"
                             },
                             "aval_a_lectivo": {
-                              "type": [
-                                "integer",
-                                "null"
-                              ]
+                              "type": ["integer", "null"]
                             },
                             "resultado_insc": {
                               "type": "string"
@@ -491,9 +482,7 @@
     "/{faculty}/{language}/mob_fest_geral.perfil": {
       "get": {
         "operationId": "student-get-profile",
-        "tags": [
-          "student"
-        ],
+        "tags": ["student"],
         "summary": "Profile",
         "description": "The authenticated user's details.",
         "x-fern-sdk-group-name": "student",
@@ -623,16 +612,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "codigo",
-                    "nome",
-                    "email",
-                    "email_alt",
-                    "pagina_web",
-                    "telemovel",
-                    "telefone",
-                    "cursos"
-                  ]
+                  "required": ["codigo", "nome", "email", "email_alt", "pagina_web", "telemovel", "telefone", "cursos"]
                 }
               }
             }
@@ -654,9 +634,7 @@
     "/{faculty}/{language}/mob_fest_geral.ucurr_inscricoes_corrente": {
       "get": {
         "operationId": "student-get-current-courses",
-        "tags": [
-          "student"
-        ],
+        "tags": ["student"],
         "summary": "Courses and their course units",
         "description": "Lists the courses the student is enrolled in, with their current course units.",
         "x-fern-sdk-group-name": "student",
@@ -781,10 +759,7 @@
                               "type": "string"
                             },
                             "aval_a_lectivo": {
-                              "type": [
-                                "integer",
-                                "null"
-                              ]
+                              "type": ["integer", "null"]
                             },
                             "resultado_insc": {
                               "type": "string"
@@ -883,9 +858,7 @@
     "/{faculty}/{language}/mob_ucurr_geral.outras_ocorrencias": {
       "get": {
         "operationId": "course-unit-get-occurrences",
-        "tags": [
-          "courseUnit"
-        ],
+        "tags": ["courseUnit"],
         "summary": "Course unit occurrences",
         "description": "Lists the occurrences of a course unit, given one of its occurrences.",
         "x-fern-sdk-group-name": "courseUnit",
@@ -965,9 +938,7 @@
     "/{faculty}/{language}/mob_ucurr_geral.perfil": {
       "get": {
         "operationId": "course-unit-get-info",
-        "tags": [
-          "courseUnit"
-        ],
+        "tags": ["courseUnit"],
         "summary": "Course unit information",
         "description": "Given an occurrence ID, returns the contents of its course unit.",
         "x-fern-sdk-group-name": "courseUnit",
@@ -1024,10 +995,7 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "nome",
-                          "name"
-                        ]
+                        "required": ["nome", "name"]
                       }
                     },
                     "ano_lectivo": {
@@ -1048,17 +1016,10 @@
                             "type": "string"
                           },
                           "horas": {
-                            "type": [
-                              "integer",
-                              "null"
-                            ]
+                            "type": ["integer", "null"]
                           }
                         },
-                        "required": [
-                          "tipo",
-                          "descricao",
-                          "horas"
-                        ]
+                        "required": ["tipo", "descricao", "horas"]
                       }
                     },
                     "ds": {
@@ -1076,10 +1037,7 @@
                             "type": "integer"
                           },
                           "num_horas": {
-                            "type": [
-                              "integer",
-                              "null"
-                            ]
+                            "type": ["integer", "null"]
                           },
                           "docentes": {
                             "type": "array",
@@ -1096,21 +1054,11 @@
                                   "type": "number"
                                 }
                               },
-                              "required": [
-                                "doc_codigo",
-                                "nome",
-                                "horas"
-                              ]
+                              "required": ["doc_codigo", "nome", "horas"]
                             }
                           }
                         },
-                        "required": [
-                          "tipo",
-                          "tipo_descricao",
-                          "num_turmas",
-                          "num_horas",
-                          "docentes"
-                        ]
+                        "required": ["tipo", "tipo_descricao", "num_turmas", "num_horas", "docentes"]
                       }
                     },
                     "responsabilidades": {
@@ -1128,11 +1076,7 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "codigo",
-                          "nome",
-                          "papel"
-                        ]
+                        "required": ["codigo", "nome", "papel"]
                       }
                     },
                     "estado": {
@@ -1180,17 +1124,7 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "tipo",
-                          "tipo_descr",
-                          "autores",
-                          "titulo",
-                          "link",
-                          "editor",
-                          "ano",
-                          "isbn",
-                          "obs"
-                        ]
+                        "required": ["tipo", "tipo_descr", "autores", "titulo", "link", "editor", "ano", "isbn", "obs"]
                       }
                     },
                     "bib_obs": {
@@ -1214,10 +1148,7 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "nome",
-                          "descricao"
-                        ]
+                        "required": ["nome", "descricao"]
                       }
                     },
                     "keywords": {
@@ -1229,9 +1160,7 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "descricao"
-                        ]
+                        "required": ["descricao"]
                       }
                     },
                     "modo_avaliacao": {
@@ -1252,29 +1181,16 @@
                             "type": "string"
                           },
                           "duracao": {
-                            "type": [
-                              "integer",
-                              "null"
-                            ]
+                            "type": ["integer", "null"]
                           },
                           "data_conclusao": {
                             "type": "string"
                           },
                           "peso": {
-                            "type": [
-                              "integer",
-                              "null"
-                            ]
+                            "type": ["integer", "null"]
                           }
                         },
-                        "required": [
-                          "descricao",
-                          "tipo",
-                          "tipo_descr",
-                          "duracao",
-                          "data_conclusao",
-                          "peso"
-                        ]
+                        "required": ["descricao", "tipo", "tipo_descr", "duracao", "data_conclusao", "peso"]
                       }
                     },
                     "cond_frequencia": {
@@ -1324,9 +1240,7 @@
     "/{faculty}/{language}/mob_ucurr_geral.uc_inscritos": {
       "get": {
         "operationId": "course-unit-get-enrolled",
-        "tags": [
-          "courseUnit"
-        ],
+        "tags": ["courseUnit"],
         "summary": "Course unit enrolled students",
         "description": "Lists the people enrolled in a course unit.",
         "x-fern-sdk-group-name": "courseUnit",
@@ -1365,10 +1279,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "codigo",
-                      "nome"
-                    ]
+                    "required": ["codigo", "nome"]
                   }
                 }
               }
@@ -1391,9 +1302,7 @@
     "/{faculty}/{language}/mob_ucurr_geral.uc_turmas": {
       "get": {
         "operationId": "course-unit-get-classes",
-        "tags": [
-          "courseUnit"
-        ],
+        "tags": ["courseUnit"],
         "summary": "Course unit classes",
         "x-fern-sdk-group-name": "courseUnit",
         "x-fern-sdk-method-name": "getClasses",
@@ -1434,16 +1343,11 @@
                             "type": "null"
                           }
                         },
-                        "required": [
-                          "turma_id",
-                          "n_max_alunos"
-                        ]
+                        "required": ["turma_id", "n_max_alunos"]
                       }
                     }
                   },
-                  "required": [
-                    "turmas"
-                  ]
+                  "required": ["turmas"]
                 }
               }
             }
@@ -1466,9 +1370,7 @@
     "/{faculty}/{language}/mob_ucurr_geral.conteudos": {
       "get": {
         "operationId": "course-unit-get-files",
-        "tags": [
-          "courseUnit"
-        ],
+        "tags": ["courseUnit"],
         "summary": "Course unit files",
         "description": "Files (contents) of a course unit.",
         "x-fern-sdk-group-name": "courseUnit",
@@ -1561,13 +1463,7 @@
                         }
                       }
                     },
-                    "required": [
-                      "codigo",
-                      "nome",
-                      "name",
-                      "nivel",
-                      "ficheiros"
-                    ]
+                    "required": ["codigo", "nome", "name", "nivel", "ficheiros"]
                   }
                 }
               }
@@ -1589,9 +1485,7 @@
     "/{faculty}/{language}/conteudos_service.conteudos_cont": {
       "get": {
         "operationId": "course-unit-download-file",
-        "tags": [
-          "courseUnit"
-        ],
+        "tags": ["courseUnit"],
         "summary": "Download file",
         "description": "Without a valid session, SIGARRA answers `200` with an HTML error page (\"Erro!\") instead of the file.\n\nDownloads a file by its ID.",
         "x-fern-sdk-group-name": "courseUnit",
@@ -1641,9 +1535,7 @@
     "/{faculty}/{language}/mob_ucurr_geral.sum_turmas": {
       "get": {
         "operationId": "summaries-get-classes",
-        "tags": [
-          "summaries"
-        ],
+        "tags": ["summaries"],
         "summary": "Classes of a course unit",
         "description": "Lists the classes of a course unit occurrence.",
         "x-fern-sdk-group-name": "summaries",
@@ -1690,17 +1582,11 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "turma_id",
-                          "tipo",
-                          "sigla"
-                        ]
+                        "required": ["turma_id", "tipo", "sigla"]
                       }
                     }
                   },
-                  "required": [
-                    "turmas"
-                  ]
+                  "required": ["turmas"]
                 }
               }
             }
@@ -1721,9 +1607,7 @@
     "/{faculty}/{language}/mob_ucurr_geral.sum_aulas": {
       "get": {
         "operationId": "summaries-get-lessons",
-        "tags": [
-          "summaries"
-        ],
+        "tags": ["summaries"],
         "summary": "Lessons of a class",
         "description": "Lists all the lessons of a class, with the ID of each lesson's summary.",
         "x-fern-sdk-group-name": "summaries",
@@ -1790,12 +1674,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "n_aula",
-                      "cod_sumario",
-                      "data_prevista",
-                      "data_efectiva"
-                    ]
+                    "required": ["n_aula", "cod_sumario", "data_prevista", "data_efectiva"]
                   }
                 }
               }
@@ -1817,9 +1696,7 @@
     "/{faculty}/{language}/mob_ucurr_geral.sumario": {
       "get": {
         "operationId": "summaries-get-summary",
-        "tags": [
-          "summaries"
-        ],
+        "tags": ["summaries"],
         "summary": "Lesson summary",
         "description": "Gets the summary of a specific lesson.",
         "x-fern-sdk-group-name": "summaries",
@@ -1855,10 +1732,7 @@
                       "type": "integer"
                     },
                     "cod_sumario": {
-                      "type": [
-                        "integer",
-                        "null"
-                      ]
+                      "type": ["integer", "null"]
                     },
                     "data_prevista": {
                       "type": "string"
@@ -1876,10 +1750,7 @@
                       "type": "string"
                     },
                     "n_alunos": {
-                      "type": [
-                        "integer",
-                        "null"
-                      ]
+                      "type": ["integer", "null"]
                     }
                   },
                   "required": [
@@ -1912,9 +1783,7 @@
     "/{faculty}/{language}/instalacs_geral.ocupacao_parques": {
       "get": {
         "operationId": "parking-get-occupancy",
-        "tags": [
-          "parking"
-        ],
+        "tags": ["parking"],
         "summary": "Parking lot occupancy",
         "x-fern-sdk-group-name": "parking",
         "x-fern-sdk-method-name": "getOccupancy",
@@ -2042,9 +1911,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "itdc"
-                  ]
+                  "required": ["itdc"]
                 }
               }
             }
@@ -2056,9 +1923,7 @@
     "/calendarios-api/api/v1/events/{faculty}/student/{nmec}/": {
       "get": {
         "operationId": "calendar-get-student-events",
-        "tags": [
-          "calendar"
-        ],
+        "tags": ["calendar"],
         "summary": "Student schedule (v2)",
         "description": "The session works from any IP address, not only the one that created it.\n\nA student's schedule, from SIGARRA's new schedule module.\n\nThe trailing slash is required: without it SIGARRA redirects to `/calendarios/...`, which returns 404. The URL for a student is in the `data-evt-source-url` and `data-table-source-url` attributes of `hor_geral.estudantes_view`.",
         "x-fern-sdk-group-name": "calendar",
@@ -2137,9 +2002,7 @@
     "/calendarios-api/api/v1/caltable/{faculty}/student/{nmec}/": {
       "get": {
         "operationId": "calendar-get-student-table",
-        "tags": [
-          "calendar"
-        ],
+        "tags": ["calendar"],
         "summary": "Student schedule table (v2)",
         "description": "The session works from any IP address, not only the one that created it.\n\nA student's schedule, from SIGARRA's new schedule module, as an HTML table.\n\nThe trailing slash is required: without it SIGARRA redirects to `/calendarios/...`, which returns 404. The URL for a student is in the `data-evt-source-url` and `data-table-source-url` attributes of `hor_geral.estudantes_view`.",
         "x-fern-sdk-group-name": "calendar",
@@ -2217,9 +2080,7 @@
     "/calendarios-api/api/v1/events/{faculty}/uc/{ocorr_id}/": {
       "get": {
         "operationId": "calendar-get-course-unit-events",
-        "tags": [
-          "calendar"
-        ],
+        "tags": ["calendar"],
         "summary": "Course unit schedule (v2)",
         "description": "The session works from any IP address, not only the one that created it.\n\nThe trailing slash is required. The URL is in the `data-evt-source-url` / `data-table-source-url` attributes of the corresponding `hor_geral.*_view` page.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "calendar",
@@ -2284,9 +2145,7 @@
     "/calendarios-api/api/v1/caltable/{faculty}/uc/{ocorr_id}/": {
       "get": {
         "operationId": "calendar-get-course-unit-table",
-        "tags": [
-          "calendar"
-        ],
+        "tags": ["calendar"],
         "summary": "Course unit schedule table (v2)",
         "description": "The session works from any IP address, not only the one that created it.\n\nThe trailing slash is required. The URL is in the `data-evt-source-url` / `data-table-source-url` attributes of the corresponding `hor_geral.*_view` page.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "calendar",
@@ -2351,9 +2210,7 @@
     "/calendarios-api/api/v1/events/{faculty}/doc/{doc_codigo}/": {
       "get": {
         "operationId": "calendar-get-professor-events",
-        "tags": [
-          "calendar"
-        ],
+        "tags": ["calendar"],
         "summary": "Professor schedule (v2)",
         "description": "The session works from any IP address, not only the one that created it.\n\nThe trailing slash is required. The URL is in the `data-evt-source-url` / `data-table-source-url` attributes of the corresponding `hor_geral.*_view` page.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "calendar",
@@ -2418,9 +2275,7 @@
     "/calendarios-api/api/v1/caltable/{faculty}/doc/{doc_codigo}/": {
       "get": {
         "operationId": "calendar-get-professor-table",
-        "tags": [
-          "calendar"
-        ],
+        "tags": ["calendar"],
         "summary": "Professor schedule table (v2)",
         "description": "The session works from any IP address, not only the one that created it.\n\nThe trailing slash is required. The URL is in the `data-evt-source-url` / `data-table-source-url` attributes of the corresponding `hor_geral.*_view` page.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "calendar",
@@ -2485,9 +2340,7 @@
     "/{faculty}/{language}/mob_val_geral.autentica": {
       "post": {
         "operationId": "auth-login",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Login (credentials, JSON)",
         "description": "Authenticates with a username and password and answers with JSON; on success, sets the session cookies.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "auth",
@@ -2516,10 +2369,7 @@
                     "format": "password"
                   }
                 },
-                "required": [
-                  "pv_login",
-                  "pv_password"
-                ]
+                "required": ["pv_login", "pv_password"]
               }
             }
           }
@@ -2558,9 +2408,7 @@
       },
       "get": {
         "operationId": "auth-login-with-query",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Login (credentials, JSON, query string)",
         "description": "Same as `POST`, with the credentials in the query string. Prefer `POST`: URLs (and so the password) tend to end up in logs.\n\nUsed by [uporto-schedule-scrapper](https://github.com/NIAEFEUP/uporto-schedule-scrapper).",
         "x-fern-sdk-group-name": "auth",
@@ -2627,9 +2475,7 @@
     "/{faculty}/{language}/vld_validacao.validacao": {
       "post": {
         "operationId": "auth-login-page",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Login (credentials)",
         "description": "Authenticates with a username and password; this is the website's login form (served by `vld_validacao.login`). Works on any faculty path, including `up`.\n\nOn success, sets `SI_SESSION` and `SI_SECURITY` (no expiry date; the session lasts about 2 hours) and redirects with a `<meta http-equiv=\"refresh\">` to `p_address` (`web_page.Inicial` by default). On failure, the reason is in `p.aviso-invalidado` (e.g. \"O conjunto utilizador/senha não é válido.\" for a wrong username or password, \"A sua conta encontra-se bloqueada.\" for a locked account, or an expired password). If the request already carries a valid session, the page is titled \"Problema encontrado\" (\"Problem found\"), `p.erro-nota` says \"Já se encontra autenticado com o utilizador <name>.\" (\"You are already authenticated as <name>.\"), and no new session is created.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "auth",
@@ -2668,10 +2514,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "p_user",
-                  "p_pass"
-                ]
+                "required": ["p_user", "p_pass"]
               }
             }
           }
@@ -2702,9 +2545,7 @@
     "/{faculty}/{language}/vld_validacao.sair": {
       "get": {
         "operationId": "auth-logout",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Logout",
         "description": "Ends the session: its cookies stop working. Then redirects to `web_page.Inicial` with a `<meta http-equiv=\"refresh\">`. Answers the same without a session.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "auth",
@@ -2741,9 +2582,7 @@
     "/auth/oidc/token": {
       "get": {
         "operationId": "auth-oidc-token",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Login (OpenID Connect)",
         "description": "Exchanges a token from the U.Porto identity provider (`https://open-id.up.pt/realms/sigarra`) for SIGARRA session cookies. Both access tokens and ID tokens are accepted. The session is bound to the IP address that makes this call, so call it from wherever the session will be used (e.g. a backend, not the browser that obtained the token). Each call creates a new session that lasts 2 hours (`exp` is 7200 s after the request), regardless of the token's own lifetime. [uni](https://github.com/NIAEFEUP/uni)'s tokens have the audience `it-sigarra-oidc-bridge`, likely the name of this service.\n\nAnswers `401` without a token and `403` with an invalid one. Only `GET` is allowed (`405` otherwise).\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "auth",
@@ -2764,10 +2603,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "exp",
-                    "result"
-                  ],
+                  "required": ["exp", "result"],
                   "properties": {
                     "exp": {
                       "type": "integer",
@@ -2806,9 +2642,7 @@
     "/{faculty}/{language}/web_page.inicial": {
       "get": {
         "operationId": "home-get-home-page",
-        "tags": [
-          "home"
-        ],
+        "tags": ["home"],
         "summary": "Home page",
         "description": "Home page. When authenticated, `.autenticado .fotografia img` links to `fotografias_service.foto?pct_cod=<username>`, which `uni` uses to find the username.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "home",
@@ -2845,9 +2679,7 @@
     "/{faculty}/{language}/vld_entidades_geral.entidade_pagina": {
       "get": {
         "operationId": "student-get-faculties-page",
-        "tags": [
-          "student"
-        ],
+        "tags": ["student"],
         "summary": "A person's faculties",
         "description": "Without a valid session, SIGARRA answers `200` with a redirect page to another faculty instead of the list.\n\nLists the faculties a person belongs to (`#conteudoinner>ul a`, e.g. \"Faculdade de Engenharia (FEUP)\"). `uni` requests it with `faculty` set to `up`.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "student",
@@ -2886,9 +2718,7 @@
     "/{faculty}/{language}/fest_geral.cursos_list": {
       "get": {
         "operationId": "student-get-courses-page",
-        "tags": [
-          "student"
-        ],
+        "tags": ["student"],
         "summary": "A student's courses",
         "description": "Lists a student's courses and links to each `fest_geral.curso_percurso_academico_view?pv_fest_id=`. `uni` also uses it to check whether the session is still valid.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "student",
@@ -2937,9 +2767,7 @@
     "/{faculty}/{language}/fest_geral.curso_percurso_academico_view": {
       "get": {
         "operationId": "student-get-course-academic-path-page",
-        "tags": [
-          "student"
-        ],
+        "tags": ["student"],
         "summary": "Academic path in a course",
         "description": "A student's academic path in a course: course units, grades and the course average.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "student",
@@ -2988,9 +2816,7 @@
     "/{faculty}/{language}/fest_geral.ucurr_inscricoes_list": {
       "get": {
         "operationId": "student-get-course-unit-enrollments-page",
-        "tags": [
-          "student"
-        ],
+        "tags": ["student"],
         "summary": "Course unit enrolments",
         "description": "A student's course unit enrolments in a course.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "student",
@@ -3039,9 +2865,7 @@
     "/{faculty}/{language}/fest_geral.info_pessoal_view": {
       "get": {
         "operationId": "student-get-personal-info-page",
-        "tags": [
-          "student"
-        ],
+        "tags": ["student"],
         "summary": "Personal information",
         "description": "Without a valid session, SIGARRA answers `200` with a one-line error (\"Erro - Não tem permissões de acesso a esta página.\", i.e. no permission to access the page).\n\nA student's personal details.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "student",
@@ -3089,9 +2913,7 @@
     "/{faculty}/{language}/hor_geral.estudantes_view": {
       "get": {
         "operationId": "student-get-schedule-page",
-        "tags": [
-          "student"
-        ],
+        "tags": ["student"],
         "summary": "Student schedule page",
         "description": "A student's schedule page. `#cal-shadow-container[data-evt-source-url]` has the URL for `calendar.getStudentEvents`.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "student",
@@ -3158,9 +2980,7 @@
     "/{faculty}/{language}/exa_geral.mapa_de_exames": {
       "get": {
         "operationId": "course-unit-get-exams-page",
-        "tags": [
-          "courseUnit"
-        ],
+        "tags": ["courseUnit"],
         "summary": "Exam calendar",
         "description": "Exam calendar of a course unit occurrence; exams are in `td.exame` cells.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "courseUnit",
@@ -3209,9 +3029,7 @@
     "/{faculty}/{language}/hor_geral.ucurr_view": {
       "get": {
         "operationId": "course-unit-get-schedule-page",
-        "tags": [
-          "courseUnit"
-        ],
+        "tags": ["courseUnit"],
         "summary": "Course unit schedule page",
         "description": "A course unit's schedule page. `#cal-shadow-container[data-evt-source-url]` has the URL for `calendar.getCourseUnitEvents`.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "courseUnit",
@@ -3278,9 +3096,7 @@
     "/{faculty}/{language}/it_listagem.lista_cursos_disciplina": {
       "get": {
         "operationId": "course-unit-get-courses-page",
-        "tags": [
-          "courseUnit"
-        ],
+        "tags": ["courseUnit"],
         "summary": "Courses of a course unit",
         "description": "Lists the courses a course unit occurrence belongs to, with links to `it_listagem.lista_turma_disciplina` for each.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "courseUnit",
@@ -3320,9 +3136,7 @@
     "/{faculty}/{language}/it_listagem.lista_turma_disciplina": {
       "get": {
         "operationId": "course-unit-get-classes-page",
-        "tags": [
-          "courseUnit"
-        ],
+        "tags": ["courseUnit"],
         "summary": "Classes and students of a course unit",
         "description": "Lists a course unit's classes and their students, for one course. `uni` follows the links in `it_listagem.lista_cursos_disciplina`.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "courseUnit",
@@ -3407,9 +3221,7 @@
     "/{faculty}/{language}/func_geral.formview": {
       "get": {
         "operationId": "professor-get-profile-page",
-        "tags": [
-          "professor"
-        ],
+        "tags": ["professor"],
         "summary": "Staff member page",
         "description": "Public, but shows more information with a valid session.\n\nA staff member's page. `uni` extracts the institutional email (from `mailto:` links or an obfuscated `onclick`) and offices (`instal_geral.espaco_view` links).\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "professor",
@@ -3455,9 +3267,7 @@
     "/{faculty}/{language}/hor_geral.docentes_view": {
       "get": {
         "operationId": "professor-get-schedule-page",
-        "tags": [
-          "professor"
-        ],
+        "tags": ["professor"],
         "summary": "Professor schedule page",
         "description": "A professor's schedule page. `#cal-shadow-container[data-evt-source-url]` has the URL for `calendar.getProfessorEvents`.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "professor",
@@ -3524,9 +3334,7 @@
     "/{faculty}/{language}/fotografias_service.foto": {
       "get": {
         "operationId": "people-get-photo",
-        "tags": [
-          "people"
-        ],
+        "tags": ["people"],
         "summary": "Photo",
         "description": "Without a valid session, SIGARRA answers `200` with a placeholder image.\n\nPhoto of a student or staff member.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "people",
@@ -3573,9 +3381,7 @@
     "/{faculty}/{language}/gpag_ccorrente_geral.conta_corrente_view": {
       "get": {
         "operationId": "finances-get-current-account-page",
-        "tags": [
-          "finances"
-        ],
+        "tags": ["finances"],
         "summary": "Current account",
         "description": "A person's current account: unpaid fees, payment references and the account statement. `uni` also requests it on the `sasup` faculty for social services.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "finances",
@@ -3624,9 +3430,7 @@
     "/{faculty}/{language}/imp4_impressoes.atribs": {
       "get": {
         "operationId": "finances-get-printing-page",
-        "tags": [
-          "finances"
-        ],
+        "tags": ["finances"],
         "summary": "Printing balance",
         "description": "Printing balance and history. `uni` requests it on `feup`.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "finances",
@@ -3675,9 +3479,7 @@
     "/{faculty}/{language}/gpag_ccorrentes_geral.gerar_mb": {
       "post": {
         "operationId": "finances-generate-mb-reference",
-        "tags": [
-          "finances"
-        ],
+        "tags": ["finances"],
         "summary": "Generate a Multibanco reference",
         "description": "Creates a Multibanco payment reference, e.g. to top up the printing balance. **This creates a real payment reference.** Not verified live.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "finances",
@@ -3714,12 +3516,7 @@
                     "description": "Amount, with a decimal comma (e.g. `5,00`). Minimum 1,00 €."
                   }
                 },
-                "required": [
-                  "p_tipo_id",
-                  "pct_codigo",
-                  "p_valor",
-                  "p_valor_livre"
-                ]
+                "required": ["p_tipo_id", "pct_codigo", "p_valor", "p_valor_livre"]
               }
             }
           }
@@ -3741,9 +3538,7 @@
     "/{faculty}/{language}/CANTINA.EMENTASHOW": {
       "get": {
         "operationId": "canteen-get-menus-page",
-        "tags": [
-          "canteen"
-        ],
+        "tags": ["canteen"],
         "summary": "Canteen menus",
         "description": "Canteen menus. `uni` requests it on `feup`.\n\nUsed by [uni](https://github.com/NIAEFEUP/uni).",
         "x-fern-sdk-group-name": "canteen",
@@ -3774,9 +3569,7 @@
     "/{faculty}/{language}/vld_validacao.login": {
       "get": {
         "operationId": "auth-get-login-page",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Login form",
         "description": "The login page: a credentials form that posts to `vld_validacao.validacao`, and a federated login form that submits to `vld_validacao.federate_login`.",
         "x-fern-sdk-group-name": "auth",
@@ -3829,9 +3622,7 @@
     "/{faculty}/{language}/vld_validacao.federate_login": {
       "get": {
         "operationId": "auth-federated-login",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Login (SAML)",
         "description": "Starts the browser login through U.Porto's Shibboleth identity provider: redirects to `https://wayf.up.pt/idp/profile/SAML2/Redirect/SSO` with a SAML `AuthnRequest`. SIGARRA receives the response at `/Shibboleth.sso/SAML2/POST`.",
         "x-fern-sdk-group-name": "auth",
@@ -3871,9 +3662,7 @@
     "/{faculty}/{language}/mob_hor_geral.ucurr": {
       "get": {
         "operationId": "course-unit-get-schedule",
-        "tags": [
-          "courseUnit"
-        ],
+        "tags": ["courseUnit"],
         "summary": "Course unit schedule",
         "description": "Weekly timetable of a course unit occurrence. Returns the weekly timetable of the week that contains `pv_semana_ini`; `pv_semana_fim` does not widen the range.",
         "x-fern-sdk-group-name": "courseUnit",
@@ -3940,9 +3729,7 @@
     "/{faculty}/{language}/web_base.gera_pagina": {
       "get": {
         "operationId": "home-get-faculties-redirect",
-        "tags": [
-          "home"
-        ],
+        "tags": ["home"],
         "summary": "List of faculties (redirect)",
         "description": "Institutional page generator. Only `/up/pt/web_base.gera_pagina?p_pagina=escolas` (the list of faculties) still answers: it redirects (`301`) to `https://www.up.pt/portal/pt/conhecer/sobre-a-uporto/as-faculdades/`. Any other combination (another faculty, another page, or no `p_pagina`) is refused by the web server with a generic `403`.\n\nUsed by [uporto-schedule-scrapper](https://github.com/NIAEFEUP/uporto-schedule-scrapper).",
         "x-fern-sdk-group-name": "home",
@@ -3992,9 +3779,7 @@
     "/{faculty}/{language}/cur_geral.cur_view": {
       "get": {
         "operationId": "course-get-page",
-        "tags": [
-          "course"
-        ],
+        "tags": ["course"],
         "summary": "Course page",
         "description": "A course page: name, acronym (the \"Sigla:\" / \"Acronym:\" row), and a \"Planos de Estudos\" (study plans) section linking to `cur_geral.cur_planos_estudos_view`. An unknown course answers `200` with a \"Sem resultados\" (no results) page.\n\nUsed by [uporto-schedule-scrapper](https://github.com/NIAEFEUP/uporto-schedule-scrapper).",
         "x-fern-sdk-group-name": "course",
@@ -4061,9 +3846,7 @@
     "/{faculty}/{language}/cur_geral.cur_planos_estudos_view": {
       "get": {
         "operationId": "course-get-study-plan-page",
-        "tags": [
-          "course"
-        ],
+        "tags": ["course"],
         "summary": "Study plan",
         "description": "A course's study plan. Each group of course units is a `div[id^=\"div_id_\"]` with an `h3` title and a `table.dadossz` whose rows link to `ucurr_geral.ficha_uc_view?pv_ocorrencia_id=`.\n\nUsed by [uporto-schedule-scrapper](https://github.com/NIAEFEUP/uporto-schedule-scrapper).",
         "x-fern-sdk-group-name": "course",
@@ -4130,9 +3913,7 @@
     "/{faculty}/{language}/it_geral.vagas": {
       "get": {
         "operationId": "course-get-class-vacancies-page",
-        "tags": [
-          "course"
-        ],
+        "tags": ["course"],
         "summary": "Class vacancies",
         "description": "Vacancies in each class of a course's course units, for the current class enrolment period (e.g. \"Inscrições nas turmas 1º Semestre - 2026/2027\", the 1st semester's class enrolments). The data is a table with one row per course unit and pairs of columns (class, vacancies). The course doesn't need to belong to the faculty in the path.\n\nUsed by [uporto-schedule-scrapper](https://github.com/NIAEFEUP/uporto-schedule-scrapper).",
         "x-fern-sdk-group-name": "course",
@@ -4181,9 +3962,7 @@
     "/{faculty}/{language}/ucurr_geral.pesquisa_ocorr_ucs_list": {
       "get": {
         "operationId": "course-unit-search-page",
-        "tags": [
-          "courseUnit"
-        ],
+        "tags": ["courseUnit"],
         "summary": "Course unit search",
         "description": "Search results for course unit occurrences (the form is `ucurr_geral.pesquisa_ucs`). Each result row (`table.dados .d`) links to `ucurr_geral.ficha_uc_view?pv_ocorrencia_id=`; results are paginated, and the last page is linked from `.paginar-saltar-barra-posicao`. All filters are optional.\n\nUsed by [uporto-schedule-scrapper](https://github.com/NIAEFEUP/uporto-schedule-scrapper).",
         "x-fern-sdk-group-name": "courseUnit",
@@ -4349,9 +4128,7 @@
     "/{faculty}/{language}/ucurr_geral.ficha_uc_view": {
       "get": {
         "operationId": "course-unit-get-sheet-page",
-        "tags": [
-          "courseUnit"
-        ],
+        "tags": ["courseUnit"],
         "summary": "Course unit page",
         "description": "A course unit occurrence's page: name, acronym (\"Sigla:\" / \"Acronym:\"), occurrence (`h2`, e.g. \"Ocorrência: 2023/2024 - 1S\"), and the \"Ciclos de Estudo/Cursos\" (study cycles/courses) table (course, curricular year, ECTS). With a valid session it also shows teaching responsibilities and hours, and navigation links (contents, students, schedule, classes, exams, …); in particular, the schedule link, `<a>Horário</a>`, links to `hor_geral.ucurr_view?pv_ocorrencia_id=` only with a session. An unknown occurrence answers `200` with a \"Sem Resultados\" (no results) page.\n\nUsed by [uporto-schedule-scrapper](https://github.com/NIAEFEUP/uporto-schedule-scrapper).",
         "x-fern-sdk-group-name": "courseUnit",
@@ -4427,10 +4204,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "code",
-                    "name"
-                  ]
+                  "required": ["code", "name"]
                 },
                 "is_inst_req": {
                   "type": "boolean"
@@ -4477,13 +4251,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "id",
-                      "acronym",
-                      "name",
-                      "sigarra_id",
-                      "sigarra_url"
-                    ]
+                    "required": ["id", "acronym", "name", "sigarra_id", "sigarra_url"]
                   }
                 },
                 "classes": {
@@ -4507,13 +4275,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "id",
-                      "acronym",
-                      "name",
-                      "sigarra_id",
-                      "sigarra_url"
-                    ]
+                    "required": ["id", "acronym", "name", "sigarra_id", "sigarra_url"]
                   }
                 },
                 "persons": {
@@ -4531,25 +4293,13 @@
                         "type": "string"
                       },
                       "sigarra_id": {
-                        "type": [
-                          "integer",
-                          "null"
-                        ]
+                        "type": ["integer", "null"]
                       },
                       "sigarra_url": {
-                        "type": [
-                          "string",
-                          "null"
-                        ]
+                        "type": ["string", "null"]
                       }
                     },
-                    "required": [
-                      "id",
-                      "acronym",
-                      "name",
-                      "sigarra_id",
-                      "sigarra_url"
-                    ]
+                    "required": ["id", "acronym", "name", "sigarra_id", "sigarra_url"]
                   }
                 },
                 "rooms": {
@@ -4573,13 +4323,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "id",
-                      "acronym",
-                      "name",
-                      "sigarra_id",
-                      "sigarra_url"
-                    ]
+                    "required": ["id", "acronym", "name", "sigarra_id", "sigarra_url"]
                   }
                 },
                 "typology": {
@@ -4592,10 +4336,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "acronym",
-                    "name"
-                  ]
+                  "required": ["acronym", "name"]
                 },
                 "css_class": {
                   "type": "array",
@@ -4644,11 +4385,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "name",
-                    "acronym",
-                    "color_class"
-                  ]
+                  "required": ["name", "acronym", "color_class"]
                 }
               },
               "cal_type": {
@@ -4670,10 +4407,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "start",
-                      "end"
-                    ]
+                    "required": ["start", "end"]
                   },
                   "day_time_range": {
                     "type": "object",
@@ -4685,10 +4419,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "start",
-                      "end"
-                    ]
+                    "required": ["start", "end"]
                   },
                   "lunch_time_range": {
                     "type": "object",
@@ -4700,18 +4431,10 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "start",
-                      "end"
-                    ]
+                    "required": ["start", "end"]
                   }
                 },
-                "required": [
-                  "locale",
-                  "academic_year_range",
-                  "day_time_range",
-                  "lunch_time_range"
-                ]
+                "required": ["locale", "academic_year_range", "day_time_range", "lunch_time_range"]
               },
               "date_range": {
                 "type": "object",
@@ -4723,35 +4446,20 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "start",
-                  "end"
-                ]
+                "required": ["start", "end"]
               },
               "count": {
                 "type": "integer"
               }
             },
-            "required": [
-              "legend",
-              "cal_type",
-              "cal_params",
-              "date_range",
-              "count"
-            ]
+            "required": ["legend", "cal_type", "cal_params", "date_range", "count"]
           }
         },
-        "required": [
-          "data",
-          "meta"
-        ]
+        "required": ["data", "meta"]
       },
       "Error": {
         "type": "object",
-        "required": [
-          "erro",
-          "erro_msg"
-        ],
+        "required": ["erro", "erro_msg"],
         "properties": {
           "erro": {
             "type": "string",
@@ -4807,10 +4515,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "espaco_id",
-                      "espaco_nome"
-                    ]
+                    "required": ["espaco_id", "espaco_nome"]
                   }
                 },
                 "doc_sigla": {
@@ -4828,10 +4533,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "doc_codigo",
-                      "doc_nome"
-                    ]
+                    "required": ["doc_codigo", "doc_nome"]
                   }
                 },
                 "turma_sigla": {
@@ -4849,10 +4551,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "turma_id",
-                      "turma_sigla"
-                    ]
+                    "required": ["turma_id", "turma_sigla"]
                   }
                 },
                 "periodo": {
@@ -4916,17 +4615,11 @@
             }
           }
         },
-        "required": [
-          "horario"
-        ]
+        "required": ["horario"]
       },
       "LoginResult": {
         "type": "object",
-        "required": [
-          "authenticated",
-          "codigo",
-          "tipo"
-        ],
+        "required": ["authenticated", "codigo", "tipo"],
         "properties": {
           "authenticated": {
             "type": "boolean"

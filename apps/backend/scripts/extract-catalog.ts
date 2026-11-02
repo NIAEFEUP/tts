@@ -75,9 +75,7 @@ function clean(value: string): string {
 
 const sqlite = new Database(DB_PATH, { readonly: true })
 
-const faculty = sqlite
-  .query<FacultyRow, [string]>('SELECT acronym, name FROM faculty WHERE acronym = ?')
-  .get(FACULTY)
+const faculty = sqlite.query<FacultyRow, [string]>('SELECT acronym, name FROM faculty WHERE acronym = ?').get(FACULTY)
 if (!faculty) throw new Error(`Faculty ${FACULTY} not found in ${DB_PATH}`)
 
 const placeholders = COURSE_IDS.map(() => '?').join(', ')
