@@ -20,6 +20,7 @@ export type Major = {
   name: string
   url: string
   year: number
+  faculties: string[]
 }
 
 export type CourseInfo = {
