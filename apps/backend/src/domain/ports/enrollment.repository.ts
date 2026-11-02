@@ -32,4 +32,9 @@ export type StudentEnrollment = {
 
 export type EnrollmentRepository = {
   findByUserId(userId: string): Promise<StudentEnrollment[]>
+  /**
+   * Whether both students have a class enrolled in the same occurrence, i.e.
+   * the same `(id, year)` pair. A student with no enrollments shares nothing.
+   */
+  sharesOccurrence(userIdA: string, userIdB: string): Promise<boolean>
 }

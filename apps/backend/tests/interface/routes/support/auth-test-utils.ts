@@ -103,3 +103,13 @@ export function getCookie(response: Response, name: string): string | null {
   }
   return null
 }
+
+/** A `UserRepository` that knows exactly `users`, looked up by `id`. */
+export function createFakeUserDirectory(users: AuthUser[]): UserRepository {
+  return {
+    upsertFromClaims: async () => {
+      throw new Error('createFakeUserDirectory does not support logins')
+    },
+    findById: async (id) => users.find((user) => user.id === id) ?? null,
+  }
+}

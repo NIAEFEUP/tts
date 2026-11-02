@@ -10,6 +10,7 @@ import { authRoutes } from './auth/auth.routes'
 import type { AuthRoutesDeps } from './auth/auth.routes'
 import { authCompatRoutes } from './auth/auth-compat.routes'
 import { enrollmentRoutes } from './users/enrollments.routes'
+import { studentRoutes } from './students/students.routes'
 
 export const createApiRoutes = (deps: AuthRoutesDeps) => {
   return new Elysia()
@@ -22,4 +23,5 @@ export const createApiRoutes = (deps: AuthRoutesDeps) => {
     .use(authCompatRoutes(deps))
     .use(enrollmentRoutes(deps.sessions))
     .use(scheduleRoutes({ sessions: deps.sessions }))
+    .use(studentRoutes({ sessions: deps.sessions }))
 }
