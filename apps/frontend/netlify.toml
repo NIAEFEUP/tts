@@ -1,11 +1,11 @@
 [build]
-  command = "npm run build"
-  publish = "build"
+command = "npm run build"
+publish = "build"
 
 [build.environment]
-  NODE_VERSION = "21"
+NODE_VERSION = "21"
 
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+from = "/*"
+to = "/index.html"
+status = 200

@@ -5,12 +5,7 @@
     "browser": true
   },
   "plugins": ["react"],
-  "ignorePatterns": [
-    "build/**",
-    "dist/**",
-    "src/components/ui/**",
-    "src/components/svgs/**"
-  ],
+  "ignorePatterns": ["build/**", "dist/**", "src/components/ui/**", "src/components/svgs/**"],
   "rules": {
     "no-console": ["error", { "allow": ["error", "warn", "debug"] }],
     "react/react-in-jsx-scope": "off",
