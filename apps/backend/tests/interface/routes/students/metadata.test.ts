@@ -9,7 +9,7 @@ import {
   createFakeStudentCourseMetadata,
   createStudentsApp,
   studentNotFoundBody,
-} from '../support/user-test-utils'
+} from '../support/student-test-utils'
 
 const metadata = createFakeStudentCourseMetadata([{ nmec: CLASSMATE.id, courseId: 22841, festId: 123456 }])
 const path = (nmec: string, courseId: number | string) => `/v1/students/${nmec}/courses/${courseId}/metadata`

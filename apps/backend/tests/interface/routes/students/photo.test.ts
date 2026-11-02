@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 
 import { UNAUTHORIZED_BODY } from '../support/catalog-test-utils'
-import { CLASSMATE, createStudentsApp, studentNotFoundBody } from '../support/user-test-utils'
+import { CLASSMATE, createStudentsApp, studentNotFoundBody } from '../support/student-test-utils'
 
 const { get } = createStudentsApp()
 

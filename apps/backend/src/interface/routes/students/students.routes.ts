@@ -3,7 +3,7 @@ import { Elysia, t } from 'elysia'
 import { isAdmin } from '@/core/auth/user'
 import { normalizeNmec } from '@/core/auth/nmec'
 import { createGetStudentSchedule } from '@/application/use-cases/students/get-student-schedule'
-import { studentPhotoUrl } from '@/application/use-cases/students/student-photo-url'
+import { studentPhotoUrl } from '@/core/utils/student-photo-url'
 import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import type { StudentCourseMetadataRepository } from '@/domain/ports/student-course-metadata.repository'
@@ -82,10 +82,10 @@ export const studentRoutes = ({ sessions }: StudentRoutesDeps) =>
         const student = await findStudent(params.nmec)
 
         const getStudentSchedule = createGetStudentSchedule({ enrollments: repositories.enrollmentRepository })
-        const schedule = await getStudentSchedule(user, student.id)
-        if (!schedule) throw httpError.forbidden()
+        const result = await getStudentSchedule(user, student.id)
+        if (result.kind === 'forbidden') throw httpError.forbidden()
 
-        return schedule
+        return result.schedule
       },
       {
         params: t.Object({ nmec: t.String() }),

@@ -11,7 +11,7 @@ import {
   createStudentsApp,
   enrollmentIn,
   studentNotFoundBody,
-} from '../support/user-test-utils'
+} from '../support/student-test-utils'
 
 // VIEWER and CLASSMATE share occurrence (100, 2025). STRANGER is in occurrence
 // 100 too, but in 2024: same Sigarra id, different academic year.
