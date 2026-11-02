@@ -4,7 +4,7 @@ import { Major } from '../@types'
 
 interface MajorContextContent {
   majors: Major[]
-  majorsError: unknown
+  majorsError: Error | null
   majorsLoading: boolean
   majorsValidating: boolean
   retryMajors: () => void

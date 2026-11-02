@@ -1,15 +1,7 @@
 import { client } from '../client'
 import type { Major } from '../../@types'
 
-type Course = {
-  id: number
-  acronym: string
-  name: string
-  courseType: string
-  year: number
-  url: string
-  faculties: string[]
-}
+type Course = NonNullable<Awaited<ReturnType<typeof client.v1.courses.get>>['data']>[number]
 
 const toMajor = (course: Course): Major => ({
   id: course.id,

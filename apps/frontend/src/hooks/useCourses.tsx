@@ -13,7 +13,7 @@ import type { Major } from '../@types'
 const useCourses = ({ enabled }: { enabled: boolean }) => {
   const year = getAcademicYear()
 
-  const { data, error, mutate, isValidating } = useSWR(
+  const { data, error, mutate, isValidating } = useSWR<Major[], Error>(
     enabled ? ['v1/courses', year] : null,
     () => catalogService.getCourses({ year }),
     {
@@ -31,7 +31,7 @@ const useCourses = ({ enabled }: { enabled: boolean }) => {
 
   return {
     majors,
-    error,
+    error: error ?? null,
     loading: enabled && !data && !error,
     isValidating,
     retry: mutate,
