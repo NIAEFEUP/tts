@@ -342,18 +342,18 @@ Legacy mapping:
 
 ## 7. Users / students
 
-| Method | Path                                         | Auth                     | Purpose                                         |
-| ------ | -------------------------------------------- | ------------------------ | ----------------------------------------------- |
-| `GET`  | `/users/me`                                  | `?`                      | Current user (same as `/auth/me`)               |
-| `GET`  | `/users/me/schedule`                         | `?`                      | My current schedule                             |
-| `PUT`  | `/users/me/schedule/refresh`                 | `?`                      | Resync my schedule and enrollments from Sigarra |
-| `GET`  | `/users/me/enrollments`                      | `?`                      | My class enrollments                            |
-| `GET`  | `/users/me/exchanges`                        | `?`                      | My exchange requests                            |
-| `GET`  | `/users/me/eligible-occurrences`             | `?`                      | Occurrences I am eligible to take / exchange    |
-| `GET`  | `/students/:nmec`                            | any user                 | Public student profile (name only)              |
-| `GET`  | `/students/:nmec/schedule`                   | admin / self / classmate | Another student’s schedule                      |
-| `GET`  | `/students/:nmec/photo`                      | any user                 | Redirect to the student photo                   |
-| `GET`  | `/students/:nmec/courses/:courseId/metadata` | admin                    | `fest_id` metadata for a student in a course    |
+| Method | Path                                         | Auth                | Purpose                                         |
+| ------ | -------------------------------------------- | ------------------- | ----------------------------------------------- |
+| `GET`  | `/users/me`                                  | `?`                 | Current user (same as `/auth/me`)               |
+| `GET`  | `/users/me/schedule`                         | `?`                 | My current schedule                             |
+| `PUT`  | `/users/me/schedule/refresh`                 | `?`                 | Resync my schedule and enrollments from Sigarra |
+| `GET`  | `/users/me/enrollments`                      | `?`                 | My class enrollments                            |
+| `GET`  | `/users/me/exchanges`                        | `?`                 | My exchange requests                            |
+| `GET`  | `/users/me/eligible-occurrences`             | `?`                 | Occurrences I am eligible to take / exchange    |
+| `GET`  | `/students/:nmec`                            | `?`                 | Public student profile (name only)              |
+| `GET`  | `/students/:nmec/schedule`                   | admin / participant | Another student’s schedule                      |
+| `GET`  | `/students/:nmec/photo`                      | `?`                 | Redirect to the student photo                   |
+| `GET`  | `/students/:nmec/courses/:courseId/metadata` | admin               | `fest_id` metadata for a student in a course    |
 
 ### `GET /users/me/enrollments` — response
 
