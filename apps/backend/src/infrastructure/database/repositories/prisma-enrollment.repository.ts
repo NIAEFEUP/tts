@@ -1,24 +1,29 @@
 import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
 import type { Db } from '@/infrastructure/database/prisma'
-import { hasCommonOccurrence } from './shares-occurrence'
 
 export function createEnrollmentRepository({ db }: { db: Db }): EnrollmentRepository {
-  // The occurrence of every class the student is enrolled in: only id columns
-  // are read, no slots or professors.
-  const findOccurrenceKeys = async (userId: string) => {
-    const enrollments = await db.orm.public.Enrollment.where({ userId }).select('classId').all()
-    if (enrollments.length === 0) return []
-
-    const classIds = enrollments.map((enrollment) => enrollment.classId)
-    return db.orm.public.Class.where((classRow) => classRow.id.in(classIds))
-      .select('occurrenceId', 'occurrenceYear')
-      .all()
-  }
-
   return {
+    // Whether the two students have a class in the same occurrence. An
+    // occurrence is the `(occurrenceId, occurrenceYear)` pair: Sigarra reuses
+    // the id across academic years, so the id alone would match the wrong year.
     async sharesOccurrence(userIdA, userIdB) {
-      const [a, b] = await Promise.all([findOccurrenceKeys(userIdA), findOccurrenceKeys(userIdB)])
-      return hasCommonOccurrence(a, b)
+      const plan = db.raw.sql`
+        SELECT EXISTS (
+          SELECT 1
+          FROM "Enrollment" a
+          JOIN "Class" ca ON ca."id" = a."classId"
+          JOIN "Class" cb
+            ON cb."occurrenceId" = ca."occurrenceId"
+           AND cb."occurrenceYear" = ca."occurrenceYear"
+          JOIN "Enrollment" b ON b."classId" = cb."id"
+          WHERE a."userId" = ${userIdA} AND b."userId" = ${userIdB}
+        ) AS "shares"
+      `
+        .returnsRow({ shares: 'pg/bool@1' })
+        .build()
+
+      const [row] = await db.runtime().query(plan)
+      return row?.shares === true
     },
 
     async findByUserId(userId) {
