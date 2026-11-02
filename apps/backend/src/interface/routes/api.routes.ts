@@ -1,6 +1,7 @@
 import { Elysia } from 'elysia'
 
 import { healthRoutes } from './health.routes'
+import { scheduleRoutes } from './users/schedule.routes'
 import { facultyRoutes } from './faculties.routes'
 import { courseRoutes } from './courses.routes'
 import { courseUnitRoutes } from './course-units.routes'
@@ -8,6 +9,7 @@ import { occurrenceRoutes } from './occurrences.routes'
 import { authRoutes } from './auth/auth.routes'
 import type { AuthRoutesDeps } from './auth/auth.routes'
 import { authCompatRoutes } from './auth/auth-compat.routes'
+import { enrollmentRoutes } from './users/enrollments.routes'
 
 export const createApiRoutes = (deps: AuthRoutesDeps) => {
   return new Elysia()
@@ -18,4 +20,6 @@ export const createApiRoutes = (deps: AuthRoutesDeps) => {
     .use(occurrenceRoutes({ sessions: deps.sessions }))
     .use(authRoutes(deps))
     .use(authCompatRoutes(deps))
+    .use(enrollmentRoutes(deps.sessions))
+    .use(scheduleRoutes({ sessions: deps.sessions }))
 }

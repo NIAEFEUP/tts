@@ -2,3 +2,4 @@ node_modules/
 dist/
 out-tsc/
 build/
+*.timestamp-*.mjs
