@@ -9,9 +9,12 @@ import { HttpError } from '@/interface/errors/errors'
 // Imported as `type` only: the route never touches the database directly.
 import type { OccurrenceRepository } from '@/domain/ports/occurrence.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
+import type { ClassRepository } from '@/domain/ports/class.repository'
+
 import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { apiError } from '@/interface/middleware/error-handler'
 import { occurrenceWithUnitSchema } from './catalog.schemas'
+import { classWithSlotsSchema } from './users/schemas'
 
 // Occurrences are the concrete (course unit, course, academic year) tuples —
 // the place where a course unit is actually taught. These routes expose two
@@ -31,7 +34,10 @@ import { occurrenceWithUnitSchema } from './catalog.schemas'
 // available on the Elysia context."
 type OccurrenceDependencies = {
   decorator: {
-    repositories: { occurrenceRepository: OccurrenceRepository }
+    repositories: {
+      occurrenceRepository: OccurrenceRepository
+      classWithSlots: ClassRepository
+    }
   }
   store: {}
   derive: {}
@@ -69,5 +75,19 @@ export const occurrenceRoutes = ({ sessions }: OccurrenceRoutesDeps) =>
         params: t.Object({ id: t.Integer() }),
         query: t.Object({ year: t.Integer() }),
         detail: { tags: ['occurrences'], summary: 'Get one occurrence' },
+      },
+    )
+    .get(
+      '/:id/classes',
+      async ({ repositories, params, query }) => {
+        const classes = await repositories.classWithSlots.findByOccurrence(params.id, query.year)
+
+        return classes
+      },
+      {
+        response: { 200: t.Array(classWithSlotsSchema), 404: 'ApiError' },
+        params: t.Object({ id: t.Integer() }),
+        query: t.Object({ year: t.Integer() }),
+        detail: { tags: ['classes'], summary: 'Get classes given an occurrence' },
       },
     )
