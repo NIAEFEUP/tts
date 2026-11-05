@@ -1,4 +1,4 @@
-import type { Class, ClassRepository, ClassWithSlots } from '@/domain/ports/class.repository'
+import type { Class, ClassRepository, ClassWithSlots, EnrolledStudent } from '@/domain/ports/class.repository'
 import type { Db } from '@/infrastructure/database/prisma'
 
 import { and } from '@prisma/orm-postgres/orm-client'
@@ -97,6 +97,27 @@ export function createClassRepository({ db }: { db: Db }): ClassRepository {
         .all()
 
       return loadWithSlots(classes)
+    },
+
+    // GET /v1/classes/:id/students — enrolled students for an existing class.
+    async findStudentsByClassId(classId): Promise<EnrolledStudent[] | null> {
+      const classRow = await db.orm.public.Class.where((row) => row.id.eq(classId))
+        .select('id')
+        .first()
+
+      if (!classRow) return null
+
+      const enrollments = await db.orm.public.Enrollment.where((enrollment) => enrollment.classId.eq(classId))
+        .select('userId')
+        .all()
+
+      const userIds = [...new Set(enrollments.map((enrollment) => enrollment.userId))]
+      if (userIds.length == 0) return []
+
+      return db.orm.public.User.where((user) => user.id.in(userIds))
+        .select('id', 'name')
+        .orderBy((user) => user.id.asc())
+        .all()
     },
   }
 }

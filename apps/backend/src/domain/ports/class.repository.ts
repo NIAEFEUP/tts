@@ -36,6 +36,7 @@ export type EnrolledStudent = {
 /**
  *   findById(id)                         → used by GET /v1/classes/:id
  *   findByOccurrence(occurrenceId, year) → used by GET /v1/occurrences/:id/classes
+ *   findStudentsByClassId(classId)       → used by GET /v1/classes/:id/students
  */
 export type ClassRepository = {
   /** Class for an exact id match, or `null` if none exists (route → 404). */
