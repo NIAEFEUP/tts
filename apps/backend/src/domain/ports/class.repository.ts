@@ -28,6 +28,11 @@ export type ClassWithSlots = Class & {
   slots: ClassSlot[]
 }
 
+export type EnrolledStudent = {
+  id: string
+  name: string
+}
+
 /**
  *   findById(id)                         → used by GET /v1/classes/:id
  *   findByOccurrence(occurrenceId, year) → used by GET /v1/occurrences/:id/classes
@@ -38,4 +43,7 @@ export type ClassRepository = {
 
   /** Classes belonging to an occurrence's composite key `(id, year)`. */
   findByOccurrence(occurrenceId: number, occurrenceYear: number): Promise<ClassWithSlots[]>
+
+  /** Students enrolled in a class, or null if the class does not exist. */
+  findStudentsByClassId(classId: number): Promise<EnrolledStudent[] | null>
 }
