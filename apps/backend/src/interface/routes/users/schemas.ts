@@ -42,3 +42,8 @@ export const classWithSlotsSchema = t.Object({
   vacancies: t.Union([t.Number(), t.Null()]),
   slots: t.Array(slotSchema),
 })
+
+export const enrolledStudentSchema = t.Object({
+  id: t.String(),
+  name: t.String(),
+})
