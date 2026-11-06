@@ -36,8 +36,6 @@ export const scheduleEntrySchema = t.Object({
 
 export const classWithSlotsSchema = t.Object({
   id: t.Number(),
-  occurrenceId: t.Number(),
-  occurrenceYear: t.Number(),
   name: t.String(),
   vacancies: t.Union([t.Number(), t.Null()]),
   slots: t.Array(slotSchema),
