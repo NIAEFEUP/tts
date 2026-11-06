@@ -16,6 +16,11 @@ import { apiError } from '@/interface/middleware/error-handler'
 import { occurrenceWithUnitSchema } from './catalog.schemas'
 import { classWithSlotsSchema } from './users/schemas'
 
+const occurrenceWithClassesSchema = t.Composite([
+  occurrenceWithUnitSchema,
+  t.Object({ classes: t.Array(classWithSlotsSchema) }),
+])
+
 // Occurrences are the concrete (course unit, course, academic year) tuples —
 // the place where a course unit is actually taught. These routes expose two
 // read-only views of that data:
@@ -36,7 +41,7 @@ type OccurrenceDependencies = {
   decorator: {
     repositories: {
       occurrenceRepository: OccurrenceRepository
-      classWithSlots: ClassRepository
+      classRepository: ClassRepository
     }
   }
   store: {}
@@ -80,14 +85,24 @@ export const occurrenceRoutes = ({ sessions }: OccurrenceRoutesDeps) =>
     .get(
       '/:id/classes',
       async ({ repositories, params, query }) => {
-        const classes = await repositories.classWithSlots.findByOccurrence(params.id, query.year)
+        const occurrence = await repositories.occurrenceRepository.findById(params.id, query.year)
+        if (!occurrence) throw new HttpError('occurrence-not-found', `Occurrence ${params.id} not found`, 404)
 
-        return classes
+        const classes = await repositories.classRepository.findByOccurrence(params.id, query.year)
+        return {
+          ...occurrence,
+          classes: classes.map((classRow) => ({
+            id: classRow.id,
+            name: classRow.name,
+            vacancies: classRow.vacancies,
+            slots: classRow.slots,
+          })),
+        }
       },
       {
-        response: { 200: t.Array(classWithSlotsSchema), 404: 'ApiError' },
+        response: { 200: occurrenceWithClassesSchema, 404: 'ApiError' },
         params: t.Object({ id: t.Integer() }),
         query: t.Object({ year: t.Integer() }),
-        detail: { tags: ['classes'], summary: 'Get classes given an occurrence' },
+        detail: { tags: ['occurrences'], summary: 'Get occurrence with classes' },
       },
     )

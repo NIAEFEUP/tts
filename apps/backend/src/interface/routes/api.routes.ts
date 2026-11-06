@@ -25,5 +25,5 @@ export const createApiRoutes = (deps: AuthRoutesDeps) => {
     .use(enrollmentRoutes(deps.sessions))
     .use(scheduleRoutes({ sessions: deps.sessions }))
     .use(studentRoutes({ sessions: deps.sessions }))
-    .use(classRoutes(deps.sessions))
+    .use(classRoutes({ sessions: deps.sessions }))
 }
