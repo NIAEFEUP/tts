@@ -98,6 +98,16 @@ export const CLASSES: ClassWithSlots[] = [
     vacancies: null,
     slots: [],
   },
+  {
+    // Same occurrence id as 501, but a different academic year — Sigarra reuses
+    // occurrence ids across years, so classes are keyed by (occurrenceId, year).
+    id: 503,
+    occurrenceId: 587177,
+    occurrenceYear: 2024,
+    name: '1LEIC01',
+    vacancies: 20,
+    slots: [],
+  },
 ]
 
 export const CLASS_STUDENTS: Record<number, EnrolledStudent[]> = {

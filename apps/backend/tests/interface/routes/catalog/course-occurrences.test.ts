@@ -171,6 +171,22 @@ describe('occurrence routes', () => {
     })
   })
 
+  it('looks up classes for the requested year, not a fixed one', async () => {
+    // Occurrence ids repeat across years, so (id, year) is the real key. Give
+    // occurrence 587177 a 2024 sibling with its own class: a handler that
+    // hard-coded 2025, or dropped query.year, would return the wrong classes.
+    const { get: getAcrossYears } = createCatalogApp({
+      occurrences: [OCCURRENCES[0], { ...OCCURRENCES[0], year: 2024, hash: 'hash-bd-2024' }],
+    })
+
+    const in2024 = await getAcrossYears('/v1/occurrences/587177/classes?year=2024')
+    const in2025 = await getAcrossYears('/v1/occurrences/587177/classes?year=2025')
+
+    expect(in2024.status).toBe(200)
+    expect(in2024.body).toMatchObject({ year: 2024, classes: [{ id: 503 }] })
+    expect(in2025.body).toMatchObject({ year: 2025, classes: [{ id: 501 }] })
+  })
+
   it('returns an empty class list for an occurrence with no classes', async () => {
     const { status, body } = await get('/v1/occurrences/587178/classes?year=2024')
 
