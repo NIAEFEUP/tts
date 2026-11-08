@@ -24,6 +24,7 @@ describe('class routes', () => {
       id: CLASSES[0].id,
       name: CLASSES[0].name,
       vacancies: CLASSES[0].vacancies,
+      filteredTeachers: CLASSES[0].filteredTeachers,
       slots: CLASSES[0].slots,
     })
   })

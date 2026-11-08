@@ -66,6 +66,7 @@ export const CLASSES: ClassWithSlots[] = [
     occurrenceYear: 2025,
     name: '1LEIC01',
     vacancies: 25,
+    filteredTeachers: [123, 124, 123],
     slots: [
       {
         id: 901,
@@ -96,6 +97,7 @@ export const CLASSES: ClassWithSlots[] = [
     occurrenceYear: 2025,
     name: '2LEIC01',
     vacancies: null,
+    filteredTeachers: [],
     slots: [],
   },
   {
@@ -106,6 +108,7 @@ export const CLASSES: ClassWithSlots[] = [
     occurrenceYear: 2024,
     name: '1LEIC01',
     vacancies: 20,
+    filteredTeachers: [],
     slots: [],
   },
 ]
