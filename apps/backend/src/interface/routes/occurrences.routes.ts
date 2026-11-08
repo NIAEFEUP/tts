@@ -95,6 +95,7 @@ export const occurrenceRoutes = ({ sessions }: OccurrenceRoutesDeps) =>
             id: classRow.id,
             name: classRow.name,
             vacancies: classRow.vacancies,
+            filteredTeachers: classRow.filteredTeachers,
             slots: classRow.slots,
           })),
         }

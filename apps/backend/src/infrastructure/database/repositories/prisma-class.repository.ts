@@ -52,9 +52,8 @@ async function loadClassDetails(db: Db, classes: ClassRow[]): Promise<ClassWithS
   }
   for (const assignedSlotIds of slotIdsByClassId.values()) assignedSlotIds.sort((a, b) => a - b)
 
-  return classes.map((classRow) => ({
-    ...classRow,
-    slots: (slotIdsByClassId.get(classRow.id) ?? []).map((slotId) => {
+  return classes.map((classRow) => {
+    const slots = (slotIdsByClassId.get(classRow.id) ?? []).map((slotId) => {
       const slot = slotsById.get(slotId)
       if (!slot) throw new Error(`Schedule slot ${slotId} not found`)
 
@@ -71,8 +70,14 @@ async function loadClassDetails(db: Db, classes: ClassRow[]): Promise<ClassWithS
           name: professor.name,
         })),
       }
-    }),
-  }))
+    })
+
+    return {
+      ...classRow,
+      filteredTeachers: slots.flatMap((slot) => slot.professors.map((professor) => professor.id)),
+      slots,
+    }
+  })
 }
 
 export function createClassRepository({ db }: { db: Db }): ClassRepository {

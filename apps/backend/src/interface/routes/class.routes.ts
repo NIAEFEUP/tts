@@ -37,6 +37,7 @@ export const classRoutes = ({ sessions }: ClassRoutesDeps) =>
           id: classRow.id,
           name: classRow.name,
           vacancies: classRow.vacancies,
+          filteredTeachers: classRow.filteredTeachers,
           slots: classRow.slots,
         }
       },

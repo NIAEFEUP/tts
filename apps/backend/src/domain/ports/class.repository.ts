@@ -30,6 +30,7 @@ export type ClassSlot = {
 
 /** A class with its schedule slots and the professors assigned to them. */
 export type ClassWithSlots = Class & {
+  filteredTeachers: number[]
   slots: ClassSlot[]
 }
 
