@@ -27,6 +27,7 @@ const occurrenceWithClassesSchema = t.Composite([
 // read-only views of that data:
 //
 //   GET /v1/occurrences/:id — single occurrence with course unit info
+//   GET /v1/occurrences/:id/periods — exchange periods of one occurrence
 //
 // Both are behind a session (`?`): anonymous callers get a 401 before the
 // handler runs. `semester` is validated as `t.Integer({ minimum: 1, maximum: 2 })`
@@ -92,8 +93,8 @@ export const occurrenceRoutes = ({ sessions }: OccurrenceRoutesDeps) =>
     .get(
       '/:id/periods',
       async ({ repositories, params, query }) => {
-        const occurrences = await repositories.occurrenceRepository.findById(params.id, query.year)
-        if (!occurrences) throw new HttpError('occurrence-not-found', `Occurrence ${params.id} not found`, 404)
+        const occurrence = await repositories.occurrenceRepository.findById(params.id, query.year)
+        if (!occurrence) throw new HttpError('occurrence-not-found', `Occurrence ${params.id} not found`, 404)
 
         return repositories.exchangePeriodsRepository.findByOccurrence(params.id, query.year)
       },

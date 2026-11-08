@@ -11,7 +11,7 @@ export type ExchangePeriod = {
 
 /**
  * The repository contract.
- * Periods of the given occurrence, ordered by `startDate`.
+ * Periods of the given occurrence, ordered by `startAt`.
  */
 export type ExchangePeriodsRepository = {
   findByOccurrence(occurrenceId: number, occurrenceYear: number): Promise<ExchangePeriod[]>

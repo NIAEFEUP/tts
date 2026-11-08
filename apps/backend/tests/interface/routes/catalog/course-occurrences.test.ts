@@ -4,6 +4,7 @@ import {
   CLASSES,
   COURSE_UNITS,
   OCCURRENCES,
+  EXCHANGE_PERIODS,
   VALIDATION_ERROR_BODY,
   createCatalogApp,
   registerCatalogAuthGuard,
@@ -23,6 +24,7 @@ describe('occurrence routes', () => {
     '/v1/courses/22841/occurrences',
     '/v1/occurrences/587177?year=2025',
     '/v1/occurrences/587177/classes?year=2025',
+    '/v1/occurrences/587177/periods?year=2025',
   ])
 
   // --- GET /v1/courses/:id/occurrences ---
@@ -201,4 +203,61 @@ describe('occurrence routes', () => {
     expect(status).toBe(404)
     expect(body).toEqual({ error: 'Occurrence 587177 not found', code: 'occurrence-not-found' })
   })
+})
+
+// --- GET /v1/occurrences/:id/periods ---
+
+it('an occurrence lists its exchange periods ordered by startsAt', async () => {
+  const { status, contentType, body } = await get('/v1/occurrences/587177/periods?year=2025')
+
+  expect(status).toBe(200)
+  expect(contentType).toMatch(/^application\/json/)
+  // The fixture is out of order on purpose; Dates serialize to ISO strings.
+  expect(body).toEqual([
+    { ...EXCHANGE_PERIODS[1], startsAt: '2025-09-01T00:00:00.000Z', endsAt: '2025-09-15T00:00:00.000Z' },
+    { ...EXCHANGE_PERIODS[0], startsAt: '2026-02-01T00:00:00.000Z', endsAt: '2026-02-15T00:00:00.000Z' },
+  ])
+})
+
+it('only the periods of the requested (id, year) are returned', async () => {
+  // 587177 also has a period in 2024; it must not leak into 2025.
+  const { body } = await get('/v1/occurrences/587177/periods?year=2025')
+
+  expect(body).toHaveLength(2)
+})
+
+it('an occurrence with no periods answers an empty list, not an error', async () => {
+  // 587179/2025 exists but has no entries in EXCHANGE_PERIODS.
+  const { status, body } = await get('/v1/occurrences/587179/periods?year=2025')
+
+  expect(status).toBe(200)
+  expect(body).toEqual([])
+})
+
+it('an unknown occurrence answers 404 occurrence-not-found', async () => {
+  const { status, body } = await get('/v1/occurrences/99999/periods?year=2025')
+
+  expect(status).toBe(404)
+  expect(body).toEqual({ error: 'Occurrence 99999 not found', code: 'occurrence-not-found' })
+})
+
+it('the same occurrence id with a different year answers 404', async () => {
+  const { status, body } = await get('/v1/occurrences/587177/periods?year=2020')
+
+  expect(status).toBe(404)
+  expect(body).toEqual({ error: 'Occurrence 587177 not found', code: 'occurrence-not-found' })
+})
+
+it('omitting year is rejected by the query schema', async () => {
+  const { status, body } = await get('/v1/occurrences/587177/periods')
+
+  expect(status).toBe(422)
+  expect(body).toEqual(VALIDATION_ERROR_BODY)
+})
+
+it('a non-numeric occurrence id is rejected by the params schema', async () => {
+  const { status, body } = await get('/v1/occurrences/not-a-number/periods?year=2025')
+
+  expect(status).toBe(422)
+  expect(body).toEqual(VALIDATION_ERROR_BODY)
 })
