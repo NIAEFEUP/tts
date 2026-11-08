@@ -83,7 +83,7 @@ export const occurrenceRoutes = ({ sessions }: OccurrenceRoutesDeps) =>
         query: t.Object({ year: t.Integer() }),
         detail: { tags: ['occurrences'], summary: 'Get one occurrence' },
       },
-  )
+    )
     // GET /v1/occurrences/587177/periods?year=2025
     // Returns the exchange periods of one occurrence, ordered by `startsAt`.
     // Sigarra can reuse the same id across academic years, so the real key
@@ -101,7 +101,7 @@ export const occurrenceRoutes = ({ sessions }: OccurrenceRoutesDeps) =>
         response: { 200: t.Array(exchangePeriodSchema), 404: 'ApiError' },
         params: t.Object({ id: t.Integer() }),
         query: t.Object({ year: t.Integer() }),
-        detail: { tags : ['occurrences'], summary: 'List exchange periods'},
+        detail: { tags: ['occurrences'], summary: 'List exchange periods' },
       },
     )
     .get(
