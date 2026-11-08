@@ -20,10 +20,10 @@ export type ClassProfessor = {
 /** A schedule slot attached to a class. Times are stored in minutes. */
 export type ClassSlot = {
   id: number
-  lesson_type: string
-  day: number
-  start_time: number
-  duration: number
+  lessonType: string
+  dayOfWeek: number
+  startMinute: number
+  durationMin: number
   location: string | null
   professors: ClassProfessor[]
 }
