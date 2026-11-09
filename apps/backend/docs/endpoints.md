@@ -437,6 +437,29 @@ the client can render them without sorting. `dayOfWeek` is `0` for Sunday;
 ]
 ```
 
+### `GET /users/me/eligible-occurrences` — response
+
+Returns occurrences whose exchange period is currently open and whose course
+unit matches one of the student's current enrollments. The list is ordered by
+academic year (newest first), then occurrence id. A missing or invalid session
+returns `401 unauthorized`.
+
+```json
+[
+  {
+    "id": 12345,
+    "courseUnitId": 42,
+    "courseId": 22841,
+    "year": 2025,
+    "ects": 6,
+    "url": "https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=12345",
+    "hash": "occurrence-hash",
+    "acronym": "BD",
+    "name": "Bases de Dados"
+  }
+]
+```
+
 ### `GET /users/me/exchanges` — query params
 
 - `role` — `sent` | `received` | `all` (default `all`)
