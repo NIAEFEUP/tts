@@ -9,9 +9,17 @@ import { HttpError } from '@/interface/errors/errors'
 // Imported as `type` only: the route never touches the database directly.
 import type { OccurrenceRepository } from '@/domain/ports/occurrence.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
+import type { ClassRepository } from '@/domain/ports/class.repository'
+
 import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { apiError } from '@/interface/middleware/error-handler'
 import { occurrenceWithUnitSchema } from './catalog.schemas'
+import { classWithSlotsSchema } from './users/schemas'
+
+const occurrenceWithClassesSchema = t.Composite([
+  occurrenceWithUnitSchema,
+  t.Object({ classes: t.Array(classWithSlotsSchema) }),
+])
 
 // Occurrences are the concrete (course unit, course, academic year) tuples —
 // the place where a course unit is actually taught. These routes expose two
@@ -31,7 +39,10 @@ import { occurrenceWithUnitSchema } from './catalog.schemas'
 // available on the Elysia context."
 type OccurrenceDependencies = {
   decorator: {
-    repositories: { occurrenceRepository: OccurrenceRepository }
+    repositories: {
+      occurrenceRepository: OccurrenceRepository
+      classRepository: ClassRepository
+    }
   }
   store: {}
   derive: {}
@@ -69,5 +80,30 @@ export const occurrenceRoutes = ({ sessions }: OccurrenceRoutesDeps) =>
         params: t.Object({ id: t.Integer() }),
         query: t.Object({ year: t.Integer() }),
         detail: { tags: ['occurrences'], summary: 'Get one occurrence' },
+      },
+    )
+    .get(
+      '/:id/classes',
+      async ({ repositories, params, query }) => {
+        const occurrence = await repositories.occurrenceRepository.findById(params.id, query.year)
+        if (!occurrence) throw new HttpError('occurrence-not-found', `Occurrence ${params.id} not found`, 404)
+
+        const classes = await repositories.classRepository.findByOccurrence(params.id, query.year)
+        return {
+          ...occurrence,
+          classes: classes.map((classRow) => ({
+            id: classRow.id,
+            name: classRow.name,
+            vacancies: classRow.vacancies,
+            filteredTeachers: classRow.filteredTeachers,
+            slots: classRow.slots,
+          })),
+        }
+      },
+      {
+        response: { 200: occurrenceWithClassesSchema, 404: 'ApiError' },
+        params: t.Object({ id: t.Integer() }),
+        query: t.Object({ year: t.Integer() }),
+        detail: { tags: ['occurrences'], summary: 'Get occurrence with classes' },
       },
     )

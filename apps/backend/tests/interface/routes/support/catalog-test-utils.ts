@@ -1,6 +1,7 @@
 import { expect, it } from 'bun:test'
 
 import type { Course, CourseRepository } from '@/domain/ports/course.repository'
+import type { ClassRepository, EnrolledStudent, ClassWithSlots } from '@/domain/ports/class.repository'
 import type { CourseUnit, CourseUnitRepository } from '@/domain/ports/course-unit.repository'
 import type { Faculty, FacultyRepository } from '@/domain/ports/faculty.repository'
 import type { Occurrence, OccurrenceWithUnit, OccurrenceRepository } from '@/domain/ports/occurrence.repository'
@@ -58,6 +59,67 @@ export const FACULTIES: Faculty[] = [
   { acronym: 'FEUP', name: 'Faculdade de Engenharia' },
 ]
 
+export const CLASSES: ClassWithSlots[] = [
+  {
+    id: 501,
+    occurrenceId: 587177,
+    occurrenceYear: 2025,
+    name: '1LEIC01',
+    vacancies: 25,
+    filteredTeachers: [123, 124, 123],
+    slots: [
+      {
+        id: 901,
+        lessonType: 'TP',
+        dayOfWeek: 2,
+        startMinute: 540,
+        durationMin: 120,
+        location: 'B108',
+        professors: [
+          { id: 123, acronym: 'AS', name: 'Ana Silva' },
+          { id: 124, acronym: null, name: null },
+        ],
+      },
+      {
+        id: 902,
+        lessonType: 'T',
+        dayOfWeek: 4,
+        startMinute: 600,
+        durationMin: 60,
+        location: null,
+        professors: [{ id: 123, acronym: 'AS', name: 'Ana Silva' }],
+      },
+    ],
+  },
+  {
+    id: 502,
+    occurrenceId: 587179,
+    occurrenceYear: 2025,
+    name: '2LEIC01',
+    vacancies: null,
+    filteredTeachers: [],
+    slots: [],
+  },
+  {
+    // Same occurrence id as 501, but a different academic year — Sigarra reuses
+    // occurrence ids across years, so classes are keyed by (occurrenceId, year).
+    id: 503,
+    occurrenceId: 587177,
+    occurrenceYear: 2024,
+    name: '1LEIC01',
+    vacancies: 20,
+    filteredTeachers: [],
+    slots: [],
+  },
+]
+
+export const CLASS_STUDENTS: Record<number, EnrolledStudent[]> = {
+  501: [
+    { id: '202012345', name: 'Ana Silva' },
+    { id: '202054321', name: 'Bruno Costa' },
+  ],
+}
+
 /**
  * Abstract course units. A unit belongs to a course; the same subject taught
  * in another course or year is a *different* unit row with its own id, and
@@ -112,6 +174,8 @@ export type CatalogFixtures = {
   faculties?: Faculty[]
   courseUnits?: CourseUnit[]
   occurrences?: Occurrence[]
+  classes?: ClassWithSlots[]
+  classStudents?: Record<number, EnrolledStudent[]>
 }
 
 /** In-memory `CourseRepository` over `courses` (defaults to `COURSES`). */
@@ -215,11 +279,34 @@ export function createFakeOccurrenceRepository({
   }
 }
 
+export function createFakeClassRepository({
+  classes = CLASSES,
+  classStudents = CLASS_STUDENTS,
+}: CatalogFixtures = {}): ClassRepository {
+  return {
+    async findByOccurrence(occurrenceId, occurrenceYear) {
+      return classes
+        .filter((classRow) => classRow.occurrenceId === occurrenceId && classRow.occurrenceYear === occurrenceYear)
+        .sort((a, b) => a.id - b.id)
+    },
+
+    async findById(id) {
+      return classes.find((classRow) => classRow.id === id) ?? null
+    },
+
+    async findStudentsByClassId(classId) {
+      if (!classes.some((classRow) => classRow.id === classId)) return null
+      return classStudents[classId] ?? []
+    },
+  }
+}
+
 export type CatalogRepositories = CatalogFixtures & {
   courseRepository?: CourseRepository
   courseUnitRepository?: CourseUnitRepository
   facultyRepository?: FacultyRepository
   occurrenceRepository?: OccurrenceRepository
+  classRepository?: ClassRepository
   sessionRepository?: SessionRepository
 }
 
@@ -260,13 +347,16 @@ export function createCatalogApp({
   faculties,
   courseUnits,
   occurrences,
+  classes,
+  classStudents,
   courseRepository,
   courseUnitRepository,
   facultyRepository,
   occurrenceRepository,
+  classRepository,
   sessionRepository,
 }: CatalogRepositories = {}) {
-  const fixtures: CatalogFixtures = { courses, faculties, courseUnits, occurrences }
+  const fixtures: CatalogFixtures = { courses, faculties, courseUnits, occurrences, classes, classStudents }
 
   const app = createApp({
     repositories: {
@@ -274,6 +364,7 @@ export function createCatalogApp({
       courseUnitRepository: courseUnitRepository ?? createFakeCourseUnitRepository(fixtures),
       facultyRepository: facultyRepository ?? createFakeFacultyRepository(fixtures),
       occurrenceRepository: occurrenceRepository ?? createFakeOccurrenceRepository(fixtures),
+      classRepository: classRepository ?? createFakeClassRepository(fixtures),
       sessionRepository: sessionRepository ?? createFakeSessions(),
     },
   })

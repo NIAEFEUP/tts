@@ -307,10 +307,10 @@ Matches the frontend’s `CourseInfo` with embedded `ClassInfo`. The `id` here i
       "slots": [
         {
           "id": 789,
-          "lesson_type": "T",
-          "day": 1,
-          "start_time": 9.5,
-          "duration": 1.5,
+          "lessonType": "T",
+          "dayOfWeek": 1,
+          "startMinute": 570,
+          "duration": 90,
           "location": "B001",
           "professors": [{ "id": 1, "acronym": "JAS", "name": "João Silva" }]
         }
