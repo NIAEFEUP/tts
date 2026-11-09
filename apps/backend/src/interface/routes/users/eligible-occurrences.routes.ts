@@ -1,39 +1,29 @@
 import { Elysia, t } from 'elysia'
-import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
+import type { EligibleOccurrenceRepository } from '@/domain/ports/eligible-occurrence.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
-import { occurrenceSchema, slotSchema } from './schemas'
-import { createAuthMiddleware } from '@/interface/middleware/auth.middleware'
+import { occurrenceWithUnitSchema } from '../catalog.schemas'
+import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { httpError } from '@/interface/errors/errors'
 
-const enrollment = t.Object({
-  occurrence: occurrenceSchema,
-  class: t.Object({
-    id: t.Number(),
-    name: t.String(),
-    vacancies: t.Union([t.Number(), t.Null()]),
-    slots: t.Array(slotSchema),
-  }),
-})
-
-type EnrollmentRoutesDeps = {
-  decorator: { repositories: { enrollmentRepository: EnrollmentRepository } }
+type EligibleOccurrenceRoutesDeps = {
+  decorator: { repositories: { eligibleOccurrenceRepository: EligibleOccurrenceRepository } }
   store: {}
   derive: {}
   resolve: {}
 }
 
 export const eligibleOccurrencesRoutes = (sessions: SessionRepository) =>
-  new Elysia<'/v1/users/me', EnrollmentRoutesDeps>({ prefix: '/v1/users/me' })
+  new Elysia<'/v1/users/me', EligibleOccurrenceRoutesDeps>({ prefix: '/v1/users/me' })
     .model({ ApiError: t.Object({ error: t.String(), code: t.String() }) })
-    .use(createAuthMiddleware({ resolveSession: sessions.resolve }))
+    .use(createRequiredAuthMiddleware({ resolveSession: sessions.resolve }))
     .get(
       '/eligible-occurrences',
       ({ user, repositories }) => {
         if (!user) throw httpError.unauthorized()
-        return repositories.enrollmentRepository.findByUserId(user.id)
+        return repositories.eligibleOccurrenceRepository.findByUserId(user.id)
       },
       {
-        response: { 200: t.Array(enrollment), 401: 'ApiError' },
+        response: { 200: t.Array(occurrenceWithUnitSchema), 401: 'ApiError' },
         detail: { tags: ['users'], summary: 'List occurrences I can exchange into' },
       },
     )
