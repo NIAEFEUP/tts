@@ -16,12 +16,21 @@ export function createEligibleOccurrenceRepository({ db }: { db: Db }): Eligible
 
       const occurrenceIds = [...new Set(classes.map((classRow) => classRow.occurrenceId))]
 
+      const enrolledOccurrenceKeys = new Set(
+        classes.map((classRow) => `${classRow.occurrenceId}:${classRow.occurrenceYear}`),
+      )
+
       const enrolledOccurrences = await db.orm.public.Occurrence.where((occurrence) => occurrence.id.in(occurrenceIds))
-        .select('courseUnitId')
+        .select('id', 'year', 'courseUnitId')
         .all()
 
-      const courseUnitIds = [...new Set(enrolledOccurrences.map((occurrence) => occurrence.courseUnitId))]
-      if (courseUnitIds.length === 0) return []
+      const courseUnitIds = [
+        ...new Set(
+          enrolledOccurrences
+            .filter((occurrence) => enrolledOccurrenceKeys.has(`${occurrence.id}:${occurrence.year}`))
+            .map((occurrence) => occurrence.courseUnitId),
+        ),
+      ]
 
       const occurrences = await db.orm.public.Occurrence.where((occurrence) =>
         occurrence.courseUnitId.in(courseUnitIds),
