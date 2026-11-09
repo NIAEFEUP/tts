@@ -55,7 +55,7 @@ export function createEligibleOccurrenceRepository({ db }: { db: Db }): Eligible
       const now = Date.now()
       const openOccurrenceKeys = new Set(
         activePeriods
-          .filter((period) => period.startsAt.getTime() <= now && period.endsAt.getTime() >= now)
+          .filter((period) => period.startsAt.epochMilliseconds <= now && period.endsAt.epochMilliseconds >= now)
           .map((period) => `${period.occurrenceId}:${period.occurrenceYear}`),
       )
 
