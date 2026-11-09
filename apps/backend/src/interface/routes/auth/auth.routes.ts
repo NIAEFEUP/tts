@@ -12,8 +12,9 @@ import { isAdmin } from '@/core/auth/user'
 import { ErrorCode } from '@/interface/errors/errors'
 import { createAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { apiError } from '@/interface/middleware/error-handler'
-import { anonymous, sessionInfo, sessionUser } from './auth.schemas'
+import { anonymous, sessionUser } from './auth.schemas'
 import { RETURN_TO_COOKIE, STATE_COOKIE, TRANSIENT_COOKIE_TTL_SECONDS } from './auth.utils'
+import { currentUserProfile } from './current-user.handler'
 
 const OIDC_NOT_CONFIGURED = {
   error: 'Sigarra OIDC is not configured on this server',
@@ -35,10 +36,13 @@ export type AuthRoutesDeps = {
  *   GET  /callback   — Sigarra redirects back; set the session cookie
  *   POST /dev-login  — dev-only Sigarra username/password login
  *   POST /logout     — clear the session
- *   GET  /me         — current user (or `{ signed: false }`)
+ *   GET  /me         — requires session (or 401 APIError)
  */
 export const authRoutes = ({ provider, users, sessions, sigarraDirect, config }: AuthRoutesDeps) => {
-  const beginLogin = createBeginLogin({ provider, frontendUrl: config.frontendUrl })
+  const beginLogin = createBeginLogin({
+    provider,
+    frontendUrl: config.frontendUrl,
+  })
   const completeLogin = createCompleteLogin({
     provider,
     users,
@@ -61,7 +65,12 @@ export const authRoutes = ({ provider, users, sessions, sigarraDirect, config }:
       // Every cookie this plugin writes (session + OIDC round-trip state) shares
       // one attribute set; only maxAge differs per cookie. Elysia's `cookie`
       // config applies it globally so call sites can't forget it.
-      cookie: { httpOnly: true, sameSite: 'lax' as const, path: '/', secure: config.secureCookies },
+      cookie: {
+        httpOnly: true,
+        sameSite: 'lax' as const,
+        path: '/',
+        secure: config.secureCookies,
+      },
     })
       .use(createAuthMiddleware({ resolveSession: sessions.resolve }))
       // `response` schemas below reference this named model. Elysia resolves
@@ -114,7 +123,10 @@ export const authRoutes = ({ provider, users, sessions, sigarraDirect, config }:
           }
 
           if (!query.code) {
-            return status(400, { error: 'Missing authorization code', code: 'oidc-missing-code' })
+            return status(400, {
+              error: 'Missing authorization code',
+              code: 'oidc-missing-code',
+            })
           }
 
           try {
@@ -133,7 +145,10 @@ export const authRoutes = ({ provider, users, sessions, sigarraDirect, config }:
           } catch (error) {
             clearTransient()
             if (error instanceof InvalidOidcStateError) {
-              return status(400, { error: 'Invalid OIDC state', code: 'oidc-state-mismatch' })
+              return status(400, {
+                error: 'Invalid OIDC state',
+                code: 'oidc-state-mismatch',
+              })
             }
             console.error('Sigarra OIDC callback failed:', error)
             return status(502, {
@@ -154,7 +169,13 @@ export const authRoutes = ({ provider, users, sessions, sigarraDirect, config }:
             oidc_state: t.Optional(t.String()),
             oidc_return_to: t.Optional(t.String()),
           }),
-          response: { 302: t.Void(), 400: 'ApiError', 401: 'ApiError', 502: 'ApiError', 503: 'ApiError' },
+          response: {
+            302: t.Void(),
+            400: 'ApiError',
+            401: 'ApiError',
+            502: 'ApiError',
+            503: 'ApiError',
+          },
           detail: {
             tags: ['auth'],
             summary: 'Complete login',
@@ -162,33 +183,25 @@ export const authRoutes = ({ provider, users, sessions, sigarraDirect, config }:
           },
         },
       )
-      .get(
-        '/me',
-        ({ user }) => {
-          if (!user) return { signed: false as const }
-          return {
-            signed: true as const,
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            isAdmin: isAdmin(user),
-            role: user.role,
-          }
-        },
-        {
-          response: { 200: sessionInfo },
-          detail: { tags: ['auth'], summary: 'Current user' },
-        },
-      )
+      .get('/me', currentUserProfile, {
+        response: { 200: sessionUser, 401: 'ApiError' },
+        detail: { tags: ['auth'], summary: 'Current user' },
+      })
       .post(
         '/dev-login',
         async ({ body, cookie, status }) => {
           // Dev-only: absent in production (see AuthConfig.devLoginEnabled).
           if (!config.devLoginEnabled) {
-            return status(404, { error: 'Not found', code: ErrorCode.notFound })
+            return status(404, {
+              error: 'Not found',
+              code: ErrorCode.notFound,
+            })
           }
 
-          const result = await devLogin({ username: body?.username, password: body?.password })
+          const result = await devLogin({
+            username: body?.username,
+            password: body?.password,
+          })
 
           if (!result.ok) {
             if (result.reason === 'not-configured') {
@@ -197,7 +210,10 @@ export const authRoutes = ({ provider, users, sessions, sigarraDirect, config }:
                 code: 'dev-login-not-configured',
               })
             }
-            return status(401, { error: 'Invalid Sigarra credentials', code: 'invalid-credentials' })
+            return status(401, {
+              error: 'Invalid Sigarra credentials',
+              code: 'invalid-credentials',
+            })
           }
 
           cookie.session.value = result.token
@@ -220,7 +236,12 @@ export const authRoutes = ({ provider, users, sessions, sigarraDirect, config }:
             }),
           ),
           cookie: t.Cookie({ session: t.Optional(t.String()) }),
-          response: { 200: sessionUser, 401: 'ApiError', 404: 'ApiError', 503: 'ApiError' },
+          response: {
+            200: sessionUser,
+            401: 'ApiError',
+            404: 'ApiError',
+            503: 'ApiError',
+          },
           detail: {
             tags: ['auth'],
             summary: 'Dev login',

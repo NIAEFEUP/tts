@@ -23,7 +23,7 @@ const ROLE = {
 /** The roles the seeder can assign (see `core/auth/user`). */
 const role = t.Union([ROLE.USER, ROLE.ADMIN, ROLE.SUPERUSER])
 
-/** A signed-in identity as `/auth/me` and `/auth/dev-login` expose it. */
+/** A signed-in identity as `/auth/me`, `/users/me` and `/auth/dev-login` expose it. */
 export const sessionUser = t.Object({
   signed: t.Literal(true),
   id: t.String(),
@@ -34,7 +34,7 @@ export const sessionUser = t.Object({
   role,
 })
 
-/** The signed-out marker returned by `/auth/me` and `/auth/logout`. */
+/** The signed-out marker returned by `/auth/logout` and the legacy `/auth/info/`. */
 export const anonymous = t.Object({ signed: t.Literal(false) })
 
 /** A raw identity record, as the legacy `/sigarra_login/` returns it. */
@@ -44,9 +44,6 @@ export const userProfile = t.Object({
   email: t.Union([t.String(), t.Null()]),
   role,
 })
-
-/** `/auth/me` answers with a signed-in user or the anonymous marker. */
-export const sessionInfo = t.Union([sessionUser, anonymous])
 
 /** Legacy `/auth/info/` shape, kept in step with the un-migrated frontend. */
 export const legacySessionInfo = t.Union([

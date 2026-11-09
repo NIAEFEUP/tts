@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'bun:test'
+import { Elysia } from 'elysia'
 import { authRoutes } from '@/interface/routes/auth/auth.routes'
+import { errorHandler } from '@/interface/middleware/error-handler'
 import {
   ADMIN,
   TEST_SESSION_TOKEN,
@@ -10,6 +12,7 @@ import {
   createTestAuthConfig,
   getCookie,
 } from '../support/auth-test-utils'
+import { UNAUTHORIZED_BODY } from '../support/catalog-test-utils'
 
 // The OIDC flow is driven end to end: `/login` sets the state cookie, the
 // callback verifies it and mints a session, and `/me` resolves that session
@@ -18,13 +21,17 @@ import {
 const ADMIN_USER = ADMIN
 
 function buildApp(config = createTestAuthConfig()) {
-  return authRoutes({
-    provider: createFakeIdentityProvider(ADMIN_USER),
-    users: createFakeUsers(ADMIN_USER),
-    sessions: createFakeSessions(ADMIN_USER),
-    sigarraDirect: createFakeDevAuthenticator(),
-    config,
-  })
+  // Mirror `main.ts`: the global error handler turns a thrown `HttpError` into
+  // the `{ error, code }` body the frontend (and these tests) expect.
+  return new Elysia().use(errorHandler).use(
+    authRoutes({
+      provider: createFakeIdentityProvider(ADMIN_USER),
+      users: createFakeUsers(ADMIN_USER),
+      sessions: createFakeSessions(ADMIN_USER),
+      sigarraDirect: createFakeDevAuthenticator(),
+      config,
+    }),
+  )
 }
 
 describe('auth routes', () => {
@@ -74,11 +81,25 @@ describe('auth routes', () => {
     expect((await res.json()).code).toBe('oidc-state-mismatch')
   })
 
-  it('reports anonymous on /me without a session', async () => {
+  it('rejects /me without a session with a 401', async () => {
     const app = buildApp()
     const res = await app.handle(new Request('http://localhost/v1/auth/me'))
 
-    expect(await res.json()).toEqual({ signed: false })
+    expect(res.status).toBe(401)
+    expect(res.headers.get('content-type')).toMatch(/^application\/json/)
+    expect(await res.json()).toEqual(UNAUTHORIZED_BODY)
+  })
+
+  it('rejects /me with an unrecognised session cookie', async () => {
+    const app = buildApp()
+    const res = await app.handle(
+      new Request('http://localhost/v1/auth/me', {
+        headers: { cookie: 'session=forged' },
+      }),
+    )
+
+    expect(res.status).toBe(401)
+    expect(await res.json()).toEqual(UNAUTHORIZED_BODY)
   })
 
   it('reports the user on /me with a valid session cookie', async () => {
@@ -99,6 +120,7 @@ describe('auth routes', () => {
       }),
     )
 
+    expect(me.status).toBe(200)
     expect(await me.json()).toEqual({
       signed: true,
       id: ADMIN_USER.id,
@@ -127,7 +149,8 @@ describe('auth routes', () => {
       }),
     )
 
-    expect(await me.json()).toEqual({ signed: false })
+    expect(me.status).toBe(401)
+    expect(await me.json()).toEqual(UNAUTHORIZED_BODY)
   })
 
   it('logs in via dev-login using the configured account (no body)', async () => {
