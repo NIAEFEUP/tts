@@ -1,7 +1,7 @@
 import { expect, it } from 'bun:test'
 
 import type { AuthUser } from '@/core/auth/user'
-import type { EnrollmentRepository, StudentEnrollment } from '@/domain/ports/enrollment.repository'
+import type { EligibleOccurrenceRepository } from '@/domain/ports/eligible-occurrence.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import { createApp } from '@/main'
 
@@ -12,43 +12,26 @@ const USER: AuthUser = {
   role: 'USER',
 }
 
-const enrollments: StudentEnrollment[] = [
+const occurrences = [
   {
-    occurrence: {
-      id: 12345,
-      year: 2025,
-      courseUnit: {
-        id: 42,
-        acronym: 'BD',
-        name: 'Bases de Dados',
-        semester: 1,
-      },
-    },
-    class: {
-      id: 678,
-      name: '1LEIC01',
-      vacancies: 25,
-      slots: [
-        {
-          id: 901,
-          lessonType: 'TP',
-          dayOfWeek: 2,
-          startMinute: 540,
-          durationMin: 120,
-          location: 'B108',
-          professors: [{ id: 123, acronym: 'AS', name: 'Ana Silva' }],
-        },
-      ],
-    },
+    id: 12345,
+    courseUnitId: 42,
+    courseId: 22841,
+    year: 2025,
+    ects: 6,
+    url: 'https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=12345',
+    hash: 'occurrence-hash',
+    acronym: 'BD',
+    name: 'Bases de Dados',
   },
 ]
 
 let queriedUserId: string | null = null
 
-const enrollmentRepository: EnrollmentRepository = {
+const eligibleOccurrenceRepository: EligibleOccurrenceRepository = {
   async findByUserId(userId) {
     queriedUserId = userId
-    return enrollments
+    return occurrences
   },
 }
 
@@ -60,7 +43,7 @@ const sessionRepository: SessionRepository = {
 
 const app = createApp({
   repositories: {
-    enrollmentRepository,
+    eligibleOccurrenceRepository,
     sessionRepository,
   },
 })
@@ -72,18 +55,18 @@ const getEligibleOccurrences = (cookie?: string) =>
     }),
   )
 
-it('GET /users/me/eligible-occurrences returns the authenticated student enrollment details', async () => {
+it('GET /users/me/eligible-occurrences returns the authenticated student eligible occurrences', async () => {
   const response = await getEligibleOccurrences('session=valid-session')
 
   expect(response.status).toBe(200)
-  expect(await response.json()).toEqual(enrollments)
+  expect(await response.json()).toEqual(occurrences)
   expect(queriedUserId).toBe(USER.id)
 })
 
 it('GET /users/me/eligible-occurrences returns an empty list when the student has no enrollments', async () => {
   const emptyApp = createApp({
     repositories: {
-      enrollmentRepository: { findByUserId: async () => [] },
+      eligibleOccurrenceRepository: { findByUserId: async () => [] },
       sessionRepository,
     },
   })
