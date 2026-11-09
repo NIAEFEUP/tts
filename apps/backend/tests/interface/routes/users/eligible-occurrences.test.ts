@@ -1,16 +1,10 @@
-import { expect, it } from 'bun:test'
-
-import type { AuthUser } from '@/core/auth/user'
+import { describe, expect, it } from 'bun:test'
 import type { EligibleOccurrenceRepository } from '@/domain/ports/eligible-occurrence.repository'
-import type { SessionRepository } from '@/domain/ports/session.repository'
 import { createApp } from '@/main'
+import { TEST_SESSION_TOKEN, TEST_USER, createFakeSessions } from '../support/auth-test-utils'
+import { UNAUTHORIZED_BODY } from '../support/catalog-test-utils'
 
-const USER: AuthUser = {
-  id: 'up202012345',
-  name: 'Ana Silva',
-  email: 'up202012345@up.pt',
-  role: 'USER',
-}
+const PATH = '/v1/users/me/eligible-occurrences'
 
 const occurrences = [
   {
@@ -26,68 +20,61 @@ const occurrences = [
   },
 ]
 
-let queriedUserId: string | null = null
+describe('eligible occurrences routes', () => {
+  let queriedUserId: string | null = null
 
-const eligibleOccurrenceRepository: EligibleOccurrenceRepository = {
-  async findByUserId(userId) {
-    queriedUserId = userId
-    return occurrences
-  },
-}
+  const eligibleOccurrenceRepository: EligibleOccurrenceRepository = {
+    async findByUserId(userId) {
+      queriedUserId = userId
+      return occurrences
+    },
+  }
 
-const sessionRepository: SessionRepository = {
-  issue: async () => 'valid-session',
-  resolve: async (token) => (token === 'valid-session' ? USER : null),
-  revoke: async () => {},
-}
-
-const app = createApp({
-  repositories: {
-    eligibleOccurrenceRepository,
-    sessionRepository,
-  },
-})
-
-const getEligibleOccurrences = (cookie?: string) =>
-  app.handle(
-    new Request('http://localhost/v1/users/me/eligible-occurrences', {
-      headers: cookie ? { cookie } : {},
-    }),
-  )
-
-it('GET /users/me/eligible-occurrences returns the authenticated student eligible occurrences', async () => {
-  const response = await getEligibleOccurrences('session=valid-session')
-
-  expect(response.status).toBe(200)
-  expect(await response.json()).toEqual(occurrences)
-  expect(queriedUserId).toBe(USER.id)
-})
-
-it('GET /users/me/eligible-occurrences returns an empty list when the student has no enrollments', async () => {
-  const emptyApp = createApp({
+  const app = createApp({
     repositories: {
-      eligibleOccurrenceRepository: { findByUserId: async () => [] },
-      sessionRepository,
+      eligibleOccurrenceRepository,
+      sessionRepository: createFakeSessions(),
     },
   })
-  const response = await emptyApp.handle(
-    new Request('http://localhost/v1/users/me/eligible-occurrences', {
-      headers: { cookie: 'session=valid-session' },
-    }),
-  )
 
-  expect(response.status).toBe(200)
-  expect(await response.json()).toEqual([])
-})
+  const getEligibleOccurrences = (cookie?: string) =>
+    app.handle(
+      new Request(`http://localhost${PATH}`, {
+        headers: cookie ? { cookie } : {},
+      }),
+    )
 
-it('GET /users/me/eligible-occurrences requires a valid session cookie', async () => {
-  for (const cookie of [undefined, 'session=invalid-session']) {
-    const response = await getEligibleOccurrences(cookie)
+  it('returns the authenticated student eligible occurrences', async () => {
+    const response = await getEligibleOccurrences(`session=${TEST_SESSION_TOKEN}`)
 
-    expect(response.status).toBe(401)
-    expect(await response.json()).toEqual({
-      error: 'Authentication required',
-      code: 'unauthorized',
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual(occurrences)
+    expect(queriedUserId).toBe(TEST_USER.id)
+  })
+
+  it('returns an empty list when the student has no enrollments', async () => {
+    const emptyApp = createApp({
+      repositories: {
+        eligibleOccurrenceRepository: { findByUserId: async () => [] },
+        sessionRepository: createFakeSessions(),
+      },
     })
-  }
+    const response = await emptyApp.handle(
+      new Request(`http://localhost${PATH}`, {
+        headers: { cookie: `session=${TEST_SESSION_TOKEN}` },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual([])
+  })
+
+  it('requires a valid session cookie', async () => {
+    for (const cookie of [undefined, 'session=invalid-session']) {
+      const response = await getEligibleOccurrences(cookie)
+
+      expect(response.status).toBe(401)
+      expect(await response.json()).toEqual(UNAUTHORIZED_BODY)
+    }
+  })
 })
