@@ -9,8 +9,8 @@
     "prepare": "husky",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
-    "format": "oxfmt apps/backend/src apps/backend/tests apps/frontend/src packages/sigarra/src/index.ts packages/sigarra/scripts",
-    "format:check": "oxfmt --check apps/backend/src apps/backend/tests apps/frontend/src packages/sigarra/src/index.ts packages/sigarra/scripts",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
     "postinstall": "prisma skills sync || exit 0"
   },
   "devDependencies": {

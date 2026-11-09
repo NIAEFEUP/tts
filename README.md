@@ -40,7 +40,7 @@ This repository is a **Bun workspace monorepo** with two apps and a shared packa
   ```
 - **[Docker](https://www.docker.com/) + Docker Compose** — runs the local PostgreSQL database
   (and the optional containerized apps).
-- *(Optional)* **[devenv](https://devenv.sh) / Nix** — the repo ships a `devenv.nix` + `.envrc`
+- _(Optional)_ **[devenv](https://devenv.sh) / Nix** — the repo ships a `devenv.nix` + `.envrc`
   that provide Node 22, Bun and corepack. If you use `direnv`, run `direnv allow` once.
 
 ## Quick start (fresh clone)
@@ -106,16 +106,16 @@ bunx varlock load          # run from inside apps/backend or apps/frontend
 
 ### Backend — `apps/backend/.env`
 
-| Variable                                  | Default                                     | Notes                                                                 |
-| ----------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------- |
-| `DATABASE_URL`                            | `postgresql://tts:tts@localhost:5434`       | Matches the Docker Compose database.                                  |
-| `ADMIN_UP`                                | `up2026xxxxx`                               | **Set to your own NMEC.** Seeded as the demo admin by `db:seed:demo`. |
-| `ADMIN_ROLE`                              | `ADMIN`                                     | `USER` \| `ADMIN` \| `SUPERUSER`.                                     |
-| `PORT`                                    | `3000`                                      | Backend port.                                                         |
-| `FRONTEND_URL` / `ALLOWED_ORIGINS`        | `http://localhost:3100`                     | Post-login target and credentialed-CORS allowlist.                    |
-| `DEV_LOGIN_ENABLED`                       | `true`                                      | Enables username/password dev login; forced off when `NODE_ENV=production`. |
-| `SIGARRA_USERNAME` / `SIGARRA_PASSWORD`   | empty                                       | Sigarra account the dev login authenticates as (only read in dev).    |
-| `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET`   | empty                                       | Needed only for real Sigarra OIDC login.                              |
+| Variable                                | Default                               | Notes                                                                       |
+| --------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------- |
+| `DATABASE_URL`                          | `postgresql://tts:tts@localhost:5434` | Matches the Docker Compose database.                                        |
+| `ADMIN_UP`                              | `up2026xxxxx`                         | **Set to your own NMEC.** Seeded as the demo admin by `db:seed:demo`.       |
+| `ADMIN_ROLE`                            | `ADMIN`                               | `USER` \| `ADMIN` \| `SUPERUSER`.                                           |
+| `PORT`                                  | `3000`                                | Backend port.                                                               |
+| `FRONTEND_URL` / `ALLOWED_ORIGINS`      | `http://localhost:3100`               | Post-login target and credentialed-CORS allowlist.                          |
+| `DEV_LOGIN_ENABLED`                     | `true`                                | Enables username/password dev login; forced off when `NODE_ENV=production`. |
+| `SIGARRA_USERNAME` / `SIGARRA_PASSWORD` | empty                                 | Sigarra account the dev login authenticates as (only read in dev).          |
+| `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | empty                                 | Needed only for real Sigarra OIDC login.                                    |
 
 `ADMIN_UP` is stored as bare digits internally, so `up202207150` and `202207150` are the same
 account. See [`apps/backend/.env.schema`](./apps/backend/.env.schema) for the full, commented list
@@ -125,10 +125,10 @@ account. See [`apps/backend/.env.schema`](./apps/backend/.env.schema) for the fu
 
 Optional for local dev (the schema defaults are enough). Useful overrides:
 
-| Variable                  | Default                 | Notes                                                    |
-| ------------------------- | ----------------------- | -------------------------------------------------------- |
-| `PORT`                    | `3100`                  | Vite dev-server port.                                    |
-| `VITE_APP_BACKEND_URL`    | `http://localhost:3000` | Backend the SPA talks to.                                |
+| Variable                  | Default                 | Notes                                                            |
+| ------------------------- | ----------------------- | ---------------------------------------------------------------- |
+| `PORT`                    | `3100`                  | Vite dev-server port.                                            |
+| `VITE_APP_BACKEND_URL`    | `http://localhost:3000` | Backend the SPA talks to.                                        |
 | `VITE_APP_FEDERATED_AUTH` | `false`                 | `true` shows the Sigarra OIDC login button instead of dev login. |
 
 Only `VITE_`-prefixed variables reach the browser; everything else is treated as sensitive. In
@@ -160,11 +160,11 @@ account with `ADMIN_ROLE` and full admin scope.
 
 The schema and runtime client live in [`apps/backend/src/infrastructure/database/`](./apps/backend/src/infrastructure/database/):
 
-| File              | Purpose                                                       |
-| ----------------- | ------------------------------------------------------------- |
-| `contract.prisma` | The schema — the source of truth. Edit this.                  |
-| `contract.json`   | Generated by `contract:emit`. Do not edit. **Git-ignored.**   |
-| `contract.d.ts`   | Generated by `contract:emit`. Do not edit. **Git-ignored.**   |
+| File              | Purpose                                                                  |
+| ----------------- | ------------------------------------------------------------------------ |
+| `contract.prisma` | The schema — the source of truth. Edit this.                             |
+| `contract.json`   | Generated by `contract:emit`. Do not edit. **Git-ignored.**              |
+| `contract.d.ts`   | Generated by `contract:emit`. Do not edit. **Git-ignored.**              |
 | `prisma.ts`       | Runtime client. `import { db } from '@/infrastructure/database/prisma'`. |
 
 The project uses **Prisma 8** (contract-first, `@prisma/orm-postgres`) — do **not** follow Prisma
@@ -177,9 +177,9 @@ for the migration model, data transforms and recovery paths.
 Both seed scripts **truncate every table first** and produce deterministic ids, so they are safe to
 re-run.
 
-| Command              | Populates                                                                                                                       |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `bun run db:seed`      | **Catalog only** — faculties, courses, course units and occurrences, from the committed fixture.                                |
+| Command                | Populates                                                                                                                           |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run db:seed`      | **Catalog only** — faculties, courses, course units and occurrences, from the committed fixture.                                    |
 | `bun run db:seed:demo` | **Catalog plus the mock exchange layer** — users, classes, enrollments, exchange windows, sample exchanges and enrollment requests. |
 
 > ⚠️ **The two are mutually exclusive.** `db:seed` wipes the demo data and `db:seed:demo` re-creates
@@ -245,14 +245,14 @@ bun run db:studio           # open Prisma Studio (visual DB inspector)
 
 ### Recovering from common errors
 
-| Error                            | Cause                                           | Fix                                                               |
-| -------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------- |
-| `MIGRATION.HASH_MISMATCH`        | `migration.ts` edited without self-emitting     | `node migrations/app/<dir>/migration.ts`, then `bun run migrate`  |
-| `MIGRATION.UNFILLED_PLACEHOLDER` | Placeholder not filled in `migration.ts`        | Fill the transform, self-emit, then `bun run migrate`             |
-| `MIGRATION.PLAN_ORIGIN_UNKNOWN`  | No `db` ref and migrations already exist        | Run `bun run db:update`, or pass `--from <hash>`                  |
-| `MIGRATION.HASH_NOT_IN_GRAPH`    | `db` ref points past the graph                  | `bun run migration:ref:set -- db <hash>`, then re-plan            |
-| `CONTRACT.MARKER_MISSING`        | DB has no marker (fresh DB or wipe)             | `bun run db:init`                                                 |
-| `CONTRACT.MARKER_MISMATCH`       | DB is at a different contract version           | Migrate forward, or `bun run db:sign` if the DB is correct        |
+| Error                            | Cause                                       | Fix                                                              |
+| -------------------------------- | ------------------------------------------- | ---------------------------------------------------------------- |
+| `MIGRATION.HASH_MISMATCH`        | `migration.ts` edited without self-emitting | `node migrations/app/<dir>/migration.ts`, then `bun run migrate` |
+| `MIGRATION.UNFILLED_PLACEHOLDER` | Placeholder not filled in `migration.ts`    | Fill the transform, self-emit, then `bun run migrate`            |
+| `MIGRATION.PLAN_ORIGIN_UNKNOWN`  | No `db` ref and migrations already exist    | Run `bun run db:update`, or pass `--from <hash>`                 |
+| `MIGRATION.HASH_NOT_IN_GRAPH`    | `db` ref points past the graph              | `bun run migration:ref:set -- db <hash>`, then re-plan           |
+| `CONTRACT.MARKER_MISSING`        | DB has no marker (fresh DB or wipe)         | `bun run db:init`                                                |
+| `CONTRACT.MARKER_MISMATCH`       | DB is at a different contract version       | Migrate forward, or `bun run db:sign` if the DB is correct       |
 
 ## Docker
 

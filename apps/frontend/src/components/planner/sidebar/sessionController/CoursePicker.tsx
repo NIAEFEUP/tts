@@ -13,7 +13,11 @@ import { Divider } from '../../../ui/new/divider'
 
 //TODO: absolute imports with @
 
-const CoursePicker = () => {
+type Props = {
+  allowedAcronyms?: string[]
+}
+
+const CoursePicker = ({ allowedAcronyms }: Props) => {
   const {
     coursesStorage,
     setCoursesInfo,
@@ -63,7 +67,11 @@ const CoursePicker = () => {
         </Dialog.Description>
 
         <div className="mx-4 mt-6 mb-2">
-          <MajorSearchCombobox selectedMajor={selectedMajor} setSelectedMajor={setSelectedMajor} />
+          <MajorSearchCombobox
+            selectedMajor={selectedMajor}
+            setSelectedMajor={setSelectedMajor}
+            allowedAcronyms={allowedAcronyms}
+          />
         </div>
 
         <div className="my-4">

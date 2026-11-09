@@ -8,4 +8,9 @@ import { ENV } from 'varlock/env'
 const backendUrl =
   ENV.VITE_APP_BACKEND_URL || (ENV.VITE_APP_PROD ? `${window.location.origin}/api` : 'http://localhost:3000')
 
-export const client: Treaty.Create<App> = treaty<App>(backendUrl)
+// `credentials: 'include'`: in dev the frontend (:3100) and backend (:3000) are
+// cross-origin, and fetch defaults to `credentials: 'same-origin'`, which would
+// drop the session cookie and turn every catalog call into a 401.
+export const client: Treaty.Create<App> = treaty<App>(backendUrl, {
+  fetch: { credentials: 'include' },
+})

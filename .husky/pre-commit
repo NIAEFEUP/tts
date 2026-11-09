@@ -1,2 +1,1 @@
-bunx oxfmt --check apps/backend/src apps/backend/tests apps/frontend/src
-bunx oxlint .
+bun run --parallel lint format:check

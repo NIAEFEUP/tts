@@ -50,6 +50,7 @@ const enrollmentRepository: EnrollmentRepository = {
     queriedUserId = userId
     return enrollments
   },
+  sharesOccurrence: async () => false,
 }
 
 const sessionRepository: SessionRepository = {
@@ -83,7 +84,7 @@ it('GET /users/me/enrollments returns the authenticated student enrollment detai
 it('GET /users/me/enrollments returns an empty list when the student has no enrollments', async () => {
   const emptyApp = createApp({
     repositories: {
-      enrollmentRepository: { findByUserId: async () => [] },
+      enrollmentRepository: { findByUserId: async () => [], sharesOccurrence: async () => false },
       sessionRepository,
     },
   })

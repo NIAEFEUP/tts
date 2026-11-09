@@ -3,6 +3,27 @@ import type { Db } from '@/infrastructure/database/prisma'
 
 export function createEnrollmentRepository({ db }: { db: Db }): EnrollmentRepository {
   return {
+    // Whether the two students have a class in the same occurrence. An
+    // occurrence is the `(occurrenceId, occurrenceYear)` pair: Sigarra reuses
+    // the id across academic years, so the id alone would match the wrong year.
+    async sharesOccurrence(userIdA, userIdB) {
+      // A's enrollment and B's enrollment, joined through classes of one
+      // occurrence. One row is enough to answer, so stop at the first.
+      const plan = db.sql.public.Enrollment.as('a')
+        .innerJoin(db.sql.public.Class.as('ca'), (f, fns) => fns.eq(f.ca.id, f.a.classId))
+        .innerJoin(db.sql.public.Class.as('cb'), (f, fns) =>
+          fns.and(fns.eq(f.cb.occurrenceId, f.ca.occurrenceId), fns.eq(f.cb.occurrenceYear, f.ca.occurrenceYear)),
+        )
+        .innerJoin(db.sql.public.Enrollment.as('b'), (f, fns) => fns.eq(f.b.classId, f.cb.id))
+        .select((f) => ({ classId: f.a.classId }))
+        .where((f, fns) => fns.and(fns.eq(f.a.userId, userIdA), fns.eq(f.b.userId, userIdB)))
+        .limit(1)
+        .build()
+
+      const rows = await db.runtime().query(plan)
+      return rows.length > 0
+    },
+
     async findByUserId(userId) {
       const enrollments = await db.orm.public.Enrollment.where({ userId })
         .orderBy((enrollment) => enrollment.classId.asc())

@@ -1,5 +1,5 @@
 import { Major, CourseInfo } from '../@types'
-import { dev_config, getSemester } from '../utils'
+import { dev_config, getSemester, getAcademicYear } from '../utils'
 import Cookies from 'js-cookie'
 import { ENV } from 'varlock/env'
 
@@ -20,9 +20,6 @@ const OIDC_LOGOUT_URL = `${BACKEND_URL}${V1}/logout`
 const DEV_LOGIN_URL = `${BACKEND_URL}${V1}/dev-login`
 const SEMESTER = import.meta.env.VITE_APP_SEMESTER || getSemester()
 
-// If we are in september 2024 we use 2024, if we are january 2025 we use 2024 because the first year of the academic year (2024/2025)
-const CURRENT_YEAR = new Date().getMonth() + 1 < 8 ? new Date().getFullYear() - 1 : new Date().getFullYear()
-
 /**
  * Make a request to the backend server.
  * @param route route to be appended to backend url
@@ -40,25 +37,17 @@ const apiRequest = async (route: string) => {
 }
 
 /**
- * Retrieves all UPorto majors.
- * @returns all majors from the backend
- */
-const getMajors = async () => {
-  return await apiRequest(`/course/${CURRENT_YEAR}`)
-}
-
-/**
  * Retrieves all course units for a major in a given semester
  * @param major major to get course units from
  * @returns course units array
  */
-const getCourses = async (major: Major) => {
+const getCourseUnits = async (major: Major) => {
   if (major === null) return []
   return getCoursesByMajorId(major.id)
 }
 
 const getCoursesByMajorId = async (id: number) => {
-  return await apiRequest(`/course_units/${id}/${CURRENT_YEAR}/${SEMESTER}/`)
+  return await apiRequest(`/course_units/${id}/${getAcademicYear()}/${SEMESTER}/`)
 }
 
 /**
@@ -144,8 +133,7 @@ const csrfTokenName = (): string => {
 }
 
 const api = {
-  getMajors,
-  getCourses,
+  getCourseUnits,
   getCoursesByMajorId,
   getCourseClass,
   getCoursesClasses,
