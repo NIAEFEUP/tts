@@ -14,6 +14,7 @@ export type SessionUser = {
   eligible_exchange: boolean
 }
 
+/** Normalises the backend session into the shape the components consume. */
 const useSession = () => {
   const anonymous: SessionUser = {
     signed: false,
@@ -24,37 +25,35 @@ const useSession = () => {
     eligible_exchange: false,
   }
 
+  /**
+   * Fetches the current session. A 401 is the normal anonymous case; every
+   * other failure is rethrown so SWR retries instead of rendering signed-out UI.
+   */
   const trySession = async (key: string): Promise<SessionUser> => {
-    try {
-      const res = await fetch(`${api.BACKEND_URL}/${key}`, {
-        method: 'GET',
-        credentials: 'include',
-      })
+    const res = await fetch(`${api.BACKEND_URL}/${key}`, {
+      method: 'GET',
+      credentials: 'include',
+    })
 
-      // 401 is the anonymous case, not a failure: return it so SWR does not
-      // enter its retry/backoff path and thrash `isLoading`.
-      if (res.status === 401) return anonymous
+    // 401 is the anonymous case, not a failure: return it so SWR does not
+    // enter its retry/backoff path and thrash `isLoading`.
+    if (res.status === 401) return anonymous
 
-      if (!res.ok) {
-        console.error(`Session check failed (${res.status})`)
-        return anonymous
-      }
+    if (!res.ok) {
+      throw new Error(`Session check failed (${res.status})`)
+    }
 
-      const data = await res.json()
-      if (!data?.signed) return anonymous
+    const data = await res.json()
+    if (!data?.signed) return anonymous
 
-      return {
-        signed: true,
-        username: data.id,
-        name: data.name,
-        is_admin: Boolean(data.isAdmin),
-        role: data.role ?? (data.isAdmin ? 'ADMIN' : 'USER'),
-        // Exchange eligibility is not exposed by the backend yet.
-        eligible_exchange: false,
-      }
-    } catch (e) {
-      console.error(e)
-      return anonymous
+    return {
+      signed: true,
+      username: data.id,
+      name: data.name,
+      is_admin: Boolean(data.isAdmin),
+      role: data.role ?? (data.isAdmin ? 'ADMIN' : 'USER'),
+      // Exchange eligibility is not exposed by the backend yet.
+      eligible_exchange: false,
     }
   }
 

@@ -5,6 +5,7 @@ import { apiError } from '@/interface/middleware/error-handler'
 import { currentUserProfile } from '../session/current-user.handler'
 import { sessionUser } from '../session/session.schemas'
 
+/** `/v1/users/me` — the authenticated user's profile. */
 export const meRoutes = ({ sessions }: { sessions: SessionRepository }) =>
   new Elysia({ prefix: '/v1/users' })
     .model({ ApiError: apiError })

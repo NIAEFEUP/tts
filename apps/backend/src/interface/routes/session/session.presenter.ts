@@ -9,6 +9,7 @@ export type SessionUserProfile = {
   role: AuthUser['role']
 }
 
+/** Projects an authenticated user onto the public session response shape. */
 export function toSessionUser(user: AuthUser): SessionUserProfile {
   return {
     signed: true,
