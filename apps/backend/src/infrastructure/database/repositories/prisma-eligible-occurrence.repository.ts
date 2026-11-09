@@ -20,20 +20,29 @@ export function createEligibleOccurrenceRepository({ db }: { db: Db }): Eligible
         classes.map((classRow) => `${classRow.occurrenceId}:${classRow.occurrenceYear}`),
       )
 
-      const loadedOccurrences = await db.orm.public.Occurrence.where((occurrence) => occurrence.id.in(occurrenceIds))
-        .include('courseUnit', (courseUnit) => courseUnit.select('acronym', 'name'))
-        .all()
+      const enrolledOccurrences = await db.orm.public.Occurrence.where((occurrence) =>
+        occurrence.id.in(occurrenceIds),
+      ).all()
 
-      const occurrences = loadedOccurrences.filter((occurrence) =>
+      const validEnrolled = enrolledOccurrences.filter((occurrence) =>
         enrolledOccurrenceKeys.has(`${occurrence.id}:${occurrence.year}`),
       )
 
-      const candidateOccurrenceIds = [...new Set(occurrences.map((occurrence) => occurrence.id))]
+      const courseUnitIds = [...new Set(validEnrolled.map((occurrence) => occurrence.courseUnitId))]
+      if (courseUnitIds.length === 0) return []
+
+      const loadedOccurrences = await db.orm.public.Occurrence.where((occurrence) =>
+        occurrence.courseUnitId.in(courseUnitIds),
+      )
+        .include('courseUnit', (courseUnit) => courseUnit.select('acronym', 'name'))
+        .all()
+
+      const candidateOccurrenceIds = [...new Set(loadedOccurrences.map((occurrence) => occurrence.id))]
       const activePeriods = await db.orm.public.ExchangePeriod.where((period) =>
         period.occurrenceId.in(candidateOccurrenceIds),
       ).all()
 
-      const withCourseUnits = occurrences
+      const withCourseUnits = loadedOccurrences
         .filter((occurrence) => occurrence.courseUnit !== null)
         .map((occurrence) => {
           if (!occurrence.courseUnit) throw new Error(`Course unit for occurrence ${occurrence.id} not found`)
