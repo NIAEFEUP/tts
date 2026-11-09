@@ -127,7 +127,7 @@ Branch **from the milestone branch** (see table above). Use this naming conventi
 <your-name>/<issue-number>-<short-description>
 ```
 
-> **Note:** Branch names must be lowercase (uppercase characters cause problems with Git on some filesystems). Avoid using `#` in branch names, as it causes syntax conflicts in shell environments (Bash / Zsh).
+> **Note:** Branch names must be lowercase. Avoid using `#` in branch names, as it causes syntax conflicts in shell environments (Bash / Zsh).
 
 **Examples:**
 

@@ -38,7 +38,7 @@ jobs:
               '',
               '- `<user>/<issue-number>-<short-description>` (e.g. `francisca/499-fix-navbar-overflow`)',
               '',
-              'The whole name must be lowercase (uppercase characters break Git on some filesystems), and the description must be words (letters only) separated by hyphens.',
+              'The username must be lowercase, and the description must be lowercase words (letters only) separated by hyphens.',
               '',
               "This check is informational only and doesn't block the PR: there's nothing you need to change here. It's just a reminder for future branches.",
             ].join('\n');
