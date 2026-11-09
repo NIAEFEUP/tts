@@ -24,7 +24,7 @@ jobs:
           script: |
             const branch = context.payload.pull_request.head.ref;
             const pattern =
-              /^(?<user>[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*-?)\/(?<issue>\d+)-(?<slug>[a-z]+(?:-[a-z]+)*)$/;
+              /^(?<user>[a-z0-9]+(?:-[a-z0-9]+)*-?)\/(?<issue>\d+)-(?<slug>[a-z]+(?:-[a-z]+)*)$/;
 
             if (pattern.test(branch)) {
               core.info(`Branch name "${branch}" follows the naming convention.`);
@@ -38,7 +38,7 @@ jobs:
               '',
               '- `<user>/<issue-number>-<short-description>` (e.g. `francisca/499-fix-navbar-overflow`)',
               '',
-              'The description must be lowercase words (letters only) separated by hyphens.',
+              'The whole name must be lowercase (uppercase characters break Git on some filesystems), and the description must be words (letters only) separated by hyphens.',
               '',
               "This check is informational only and doesn't block the PR: there's nothing you need to change here. It's just a reminder for future branches.",
             ].join('\n');
