@@ -185,6 +185,18 @@ export const EXCHANGE_PERIODS: ExchangePeriod[] = [
     startsAt: new Date('2024-09-01T00:00:00Z'),
     endsAt: new Date('2024-09-15T00:00:00Z'),
   },
+  {
+    occurrenceId: 587179,
+    occurrenceYear: 2025,
+    startsAt: new Date('2025-09-01T00:00:00Z'),
+    endsAt: new Date('2025-09-15T00:00:00Z'),
+  },
+  {
+    occurrenceId: 587178,
+    occurrenceYear: 2024,
+    startsAt: new Date('2024-10-01T00:00:00Z'),
+    endsAt: new Date('2024-10-15T00:00:00Z'),
+  },
 ]
 
 /** Error bodies shared by every catalog route, so tests assert shapes, not literals. */
@@ -205,6 +217,7 @@ export type CatalogFixtures = {
 /** In-memory `ExchangePeriodsRepository` over `exchangePeriods` (defaults to `EXCHANGE_PERIODS`). */
 export function createFakeExchangePeriodsRepository({
   exchangePeriods = EXCHANGE_PERIODS,
+  occurrences = OCCURRENCES,
 }: CatalogFixtures = {}): ExchangePeriodsRepository {
   return {
     async findByOccurrence(occurrenceId, occurrenceYear) {
@@ -214,6 +227,27 @@ export function createFakeExchangePeriodsRepository({
       return exchangePeriods
         .filter((period) => period.occurrenceId === occurrenceId && period.occurrenceYear === occurrenceYear)
         .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+    },
+    async findByCourse(courseId) {
+      // Same as the Prisma repository: join on (id, year) to the course's
+      // occurrences, then distinct windows by their dates, chronological.
+      const seen = new Set<string>()
+
+      return exchangePeriods
+        .filter((period) =>
+          occurrences.some(
+            (o) => o.id === period.occurrenceId && o.year === period.occurrenceYear && o.courseId === courseId,
+          ),
+        )
+        .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+        .filter((period) => {
+          const key = `${period.startsAt.getTime()}:${period.endsAt.getTime()}`
+          if (seen.has(key)) return false
+
+          seen.add(key)
+          return true
+        })
+        .map((period) => ({ startsAt: period.startsAt, endsAt: period.endsAt }))
     },
   }
 }
