@@ -342,18 +342,18 @@ Legacy mapping:
 
 ## 7. Users / students
 
-| Method | Path                                         | Auth                | Purpose                                         |
-| ------ | -------------------------------------------- | ------------------- | ----------------------------------------------- |
-| `GET`  | `/users/me`                                  | `?`                 | Current user (same as `/auth/me`)               |
-| `GET`  | `/users/me/schedule`                         | `?`                 | My current schedule                             |
-| `PUT`  | `/users/me/schedule/refresh`                 | `?`                 | Resync my schedule and enrollments from Sigarra |
-| `GET`  | `/users/me/enrollments`                      | `?`                 | My class enrollments                            |
-| `GET`  | `/users/me/exchanges`                        | `?`                 | My exchange requests                            |
-| `GET`  | `/users/me/eligible-occurrences`             | `?`                 | Occurrences I am eligible to take / exchange    |
-| `GET`  | `/students/:nmec`                            | `?`                 | Public student profile (name only)              |
-| `GET`  | `/students/:nmec/schedule`                   | admin / participant | Another student’s schedule                      |
-| `GET`  | `/students/:nmec/photo`                      | `?`                 | Redirect to the student photo                   |
-| `GET`  | `/students/:nmec/courses/:courseId/metadata` | admin               | `fest_id` metadata for a student in a course    |
+| Method | Path                                         | Auth                | Purpose                                                        |
+| ------ | -------------------------------------------- | ------------------- | -------------------------------------------------------------- |
+| `GET`  | `/users/me`                                  | `?`                 | Current user (same as `/auth/me`)                              |
+| `GET`  | `/users/me/schedule`                         | `?`                 | My current schedule                                            |
+| `PUT`  | `/users/me/schedule/refresh`                 | `?`                 | Resync my schedule and enrollments from Sigarra                |
+| `GET`  | `/users/me/enrollments`                      | `?`                 | My class enrollments                                           |
+| `GET`  | `/users/me/exchanges`                        | `?`                 | My exchange requests (role, status, type, page, limit filters) |
+| `GET`  | `/users/me/eligible-occurrences`             | `?`                 | Occurrences I am eligible to take / exchange                   |
+| `GET`  | `/students/:nmec`                            | `?`                 | Public student profile (name only)                             |
+| `GET`  | `/students/:nmec/schedule`                   | admin / participant | Another student’s schedule                                     |
+| `GET`  | `/students/:nmec/photo`                      | `?`                 | Redirect to the student photo                                  |
+| `GET`  | `/students/:nmec/courses/:courseId/metadata` | admin               | `fest_id` metadata for a student in a course                   |
 
 ### `GET /users/me/enrollments` — response
 
@@ -480,6 +480,13 @@ item; this returns the item itself.
 - `role` — `sent` | `received` | `all` (default `all`)
 - `status` — `PENDING` | `ACCEPTED` | `CANCELLED`
 - `type` — `DIRECT` | `MARKETPLACE` | `URGENT`
+- `page` — positive page number (default `1`)
+- `limit` — number of requests per page, from `1` to `100` (default `10`)
+
+The response is `{ page: { current, has_next, has_previous }, data }`. Each
+entry in `data` contains the exchange request fields and its participant items.
+Requests are ordered newest first, and a request is included when the user is
+the creator or target according to `role`.
 
 Legacy mapping:
 

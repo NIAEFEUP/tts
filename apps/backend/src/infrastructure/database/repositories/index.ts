@@ -7,6 +7,7 @@ import type { UserRepository } from '@/domain/ports/user.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
 import type { StudentCourseMetadataRepository } from '@/domain/ports/student-course-metadata.repository'
+import type { ExchangeRepository } from '@/domain/ports/exchange.repository'
 
 import { createCourseRepository } from './prisma-course.repository'
 import { createCourseUnitRepository } from './prisma-course-unit.repository'
@@ -16,6 +17,7 @@ import { createUserRepository } from './user.repository'
 import { createSessionRepository } from './session.repository'
 import { createEnrollmentRepository } from './prisma-enrollment.repository'
 import { createStudentCourseMetadataRepository } from './prisma-student-course-metadata.repository'
+import { createExchangeRepository } from './prisma-exchange.repository'
 
 export type Repositories = {
   courseRepository: CourseRepository
@@ -26,6 +28,7 @@ export type Repositories = {
   sessionRepository: SessionRepository
   enrollmentRepository: EnrollmentRepository
   studentCourseMetadataRepository: StudentCourseMetadataRepository
+  exchangeRepository: ExchangeRepository
 }
 
 export function createRepositories(db: Db): Repositories {
@@ -38,5 +41,6 @@ export function createRepositories(db: Db): Repositories {
     sessionRepository: createSessionRepository({ db }),
     enrollmentRepository: createEnrollmentRepository({ db }),
     studentCourseMetadataRepository: createStudentCourseMetadataRepository({ db }),
+    exchangeRepository: createExchangeRepository({ db }),
   }
 }

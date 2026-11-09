@@ -1,4 +1,5 @@
 import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
+import type { ExchangeRepository } from '@/domain/ports/exchange.repository'
 import { createApp } from '@/main'
 
 import { TEST_SESSION_TOKEN, createFakeSessions } from './auth-test-utils'
@@ -34,10 +35,12 @@ export function createGet(app: ReturnType<typeof createApp>) {
  */
 export function createUsersApp(
   enrollmentRepository: Pick<EnrollmentRepository, 'findByUserId'> & Partial<EnrollmentRepository>,
+  exchangeRepository?: ExchangeRepository,
 ) {
   const app = createApp({
     repositories: {
       enrollmentRepository: { sharesOccurrence: async () => false, ...enrollmentRepository },
+      ...(exchangeRepository ? { exchangeRepository } : {}),
       sessionRepository: createFakeSessions(),
     },
   })
