@@ -1,5 +1,4 @@
-import type { AuthUser } from '@/core/auth/user'
-import { isAdmin } from '@/core/auth/user'
+import { isAdmin, type AuthUser } from '@/core/auth/user'
 
 export type SessionUserProfile = {
   signed: true

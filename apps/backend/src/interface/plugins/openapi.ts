@@ -67,6 +67,8 @@ export const openapiPlugin = new Elysia({ name: 'openapi' })
           { name: 'courses', description: 'Course catalog' },
           { name: 'course-units', description: 'Abstract course unit catalog' },
           { name: 'occurrences', description: 'Concrete occurrences of a course unit' },
+          { name: 'users', description: 'Current-user and planner endpoints' },
+          { name: 'students', description: 'Student lookup endpoints' },
         ],
       },
     }),

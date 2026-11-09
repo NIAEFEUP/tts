@@ -84,6 +84,19 @@ when `NODE_ENV=production`). With no body it uses the configured
 `SIGARRA_USERNAME` / `SIGARRA_PASSWORD`; a `{ username, password }` body overrides
 them. It validates against Sigarra and sets the same session cookie as OIDC.
 
+### `GET /auth/me` and `GET /users/me`
+
+Both endpoints require a valid session and return the same profile payload.
+`/users/me` is an exact alias of `/auth/me`. With no session, or an invalid or
+expired one, they answer `401 unauthorized`:
+
+```json
+{ "error": "Authentication required", "code": "unauthorized" }
+```
+
+They never return `{ "signed": false }`. `POST /auth/logout` stays public and
+continues to return that marker.
+
 ### Compatibility-only auth routes
 
 Kept for older clients; the current frontend uses the canonical routes above, so
@@ -106,7 +119,7 @@ URLs from `BACKEND_URL` with an empty path prefix.
 3. Sigarra redirects to `GET /v1/auth/callback?code=...&state=...`.
 4. Backend exchanges the code for tokens, fetches user info (NMEC, name, email), creates or updates the `User` row, creates a `Session`, sets an HTTP-only cookie, and redirects to `return_to`.
 
-### `GET /auth/me` — response
+### `GET /auth/me` / `GET /users/me` — response
 
 ```json
 {
@@ -354,6 +367,11 @@ Legacy mapping:
 | `GET`  | `/students/:nmec/schedule`                   | admin / participant | Another student’s schedule                      |
 | `GET`  | `/students/:nmec/photo`                      | `?`                 | Redirect to the student photo                   |
 | `GET`  | `/students/:nmec/courses/:courseId/metadata` | admin               | `fest_id` metadata for a student in a course    |
+
+### `GET /users/me` — response
+
+Exact alias of `GET /auth/me`: same payload and same `401 unauthorized`
+semantics (see the Auth section above).
 
 ### `GET /users/me/enrollments` — response
 

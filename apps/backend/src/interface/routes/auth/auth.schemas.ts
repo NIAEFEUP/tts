@@ -1,41 +1,11 @@
-import { t, type TSchema } from 'elysia'
+import { t } from 'elysia'
 
-import type { UserRole } from '@/core/auth/user'
+import { anonymous, role } from '../session/session.schemas'
 
-// Wire schemas shared by the canonical (`/api/v1/auth/*`) and compatibility
-// auth routes. Elysia uses them to validate responses, generate the OpenAPI
-// docs, and strip fields the client should not see. Keeping them here — rather
-// than inline per route — lets both surfaces describe the session identically.
-//
-// Error bodies (`{ error, code }`) use the shared `apiError` schema from
-// `@/interface/middleware/error-handler`; each route instance registers it as
-// the named model `ApiError`, so the spec inlines the shape only once.
-
-// One schema per `UserRole`, kept in step with the domain: `satisfies` makes a
-// role missing from this record a compile error, so the wire schema cannot
-// drift from `core/auth/user`.
-const ROLE = {
-  USER: t.Literal('USER'),
-  ADMIN: t.Literal('ADMIN'),
-  SUPERUSER: t.Literal('SUPERUSER'),
-} satisfies Record<UserRole, TSchema>
-
-/** The roles the seeder can assign (see `core/auth/user`). */
-const role = t.Union([ROLE.USER, ROLE.ADMIN, ROLE.SUPERUSER])
-
-/** A signed-in identity as `/auth/me`, `/users/me` and `/auth/dev-login` expose it. */
-export const sessionUser = t.Object({
-  signed: t.Literal(true),
-  id: t.String(),
-  name: t.String(),
-  // Sigarra does not always release an email, so the stored value can be null.
-  email: t.Union([t.String(), t.Null()]),
-  isAdmin: t.Boolean(),
-  role,
-})
-
-/** The signed-out marker returned by `/auth/logout` and the legacy `/auth/info/`. */
-export const anonymous = t.Object({ signed: t.Literal(false) })
+// Wire schemas specific to the auth compatibility surface. The signed-in
+// session shape (`sessionUser`) and the signed-out marker (`anonymous`) live in
+// `../session/session.schemas`, shared with the canonical routes so every
+// identity is described identically.
 
 /** A raw identity record, as the legacy `/sigarra_login/` returns it. */
 export const userProfile = t.Object({

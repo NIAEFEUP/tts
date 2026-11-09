@@ -8,13 +8,13 @@ import type { DevAuthenticator } from '@/domain/ports/dev-authenticator'
 import type { IdentityProvider } from '@/domain/ports/identity-provider'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import type { UserRepository } from '@/domain/ports/user.repository'
-import { isAdmin } from '@/core/auth/user'
 import { ErrorCode } from '@/interface/errors/errors'
 import { createAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { apiError } from '@/interface/middleware/error-handler'
-import { anonymous, sessionUser } from './auth.schemas'
+import { currentUserProfile } from '../session/current-user.handler'
+import { anonymous, sessionUser } from '../session/session.schemas'
+import { toSessionUser } from '../session/session.presenter'
 import { RETURN_TO_COOKIE, STATE_COOKIE, TRANSIENT_COOKIE_TTL_SECONDS } from './auth.utils'
-import { currentUserProfile } from './current-user.handler'
 
 const OIDC_NOT_CONFIGURED = {
   error: 'Sigarra OIDC is not configured on this server',
@@ -36,7 +36,7 @@ export type AuthRoutesDeps = {
  *   GET  /callback   — Sigarra redirects back; set the session cookie
  *   POST /dev-login  — dev-only Sigarra username/password login
  *   POST /logout     — clear the session
- *   GET  /me         — requires session (or 401 APIError)
+ *   GET  /me         — requires session (or 401 ApiError)
  */
 export const authRoutes = ({ provider, users, sessions, sigarraDirect, config }: AuthRoutesDeps) => {
   const beginLogin = createBeginLogin({
@@ -219,14 +219,7 @@ export const authRoutes = ({ provider, users, sessions, sigarraDirect, config }:
           cookie.session.value = result.token
           cookie.session.maxAge = config.sessionTtlSeconds
 
-          return {
-            signed: true as const,
-            id: result.user.id,
-            name: result.user.name,
-            email: result.user.email,
-            isAdmin: isAdmin(result.user),
-            role: result.user.role,
-          }
+          return toSessionUser(result.user)
         },
         {
           body: t.Optional(

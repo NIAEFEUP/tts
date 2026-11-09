@@ -1,9 +1,10 @@
 import useSwr from 'swr'
 import api from '../api/backend'
 
-// The shape the components consume. `/v1/auth/me` returns the canonical
-// user (`id`, `isAdmin`, …); map it onto the field names the rest of the app
-// still reads so only this hook changes.
+// The shape the components consume. `/v1/auth/me` returns the canonical user
+// (`id`, `isAdmin`, …) for a valid session and 401 for anonymous callers;
+// normalise both onto the field names the rest of the app still reads so only
+// this hook changes.
 export type SessionUser = {
   signed: boolean
   username: string
@@ -23,12 +24,21 @@ const useSession = () => {
     eligible_exchange: false,
   }
 
-  const trySession = async (key): Promise<SessionUser> => {
+  const trySession = async (key: string): Promise<SessionUser> => {
     try {
       const res = await fetch(`${api.BACKEND_URL}/${key}`, {
         method: 'GET',
         credentials: 'include',
       })
+
+      // 401 is the anonymous case, not a failure: return it so SWR does not
+      // enter its retry/backoff path and thrash `isLoading`.
+      if (res.status === 401) return anonymous
+
+      if (!res.ok) {
+        console.error(`Session check failed (${res.status})`)
+        return anonymous
+      }
 
       const data = await res.json()
       if (!data?.signed) return anonymous
@@ -53,7 +63,7 @@ const useSession = () => {
     revalidateOnMount: true,
   })
 
-  if (data) {
+  if (data?.signed) {
     localStorage.setItem('signedIn', true.toString())
   }
 

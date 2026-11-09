@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { createApp } from '@/main'
+import { UNAUTHORIZED_BODY } from '../interface/routes/support/catalog-test-utils'
 
 describe('app composition', () => {
   it('wires routes without decorator conflicts', async () => {
@@ -27,7 +28,7 @@ describe('app composition', () => {
     expect(logout.status).toBe(200)
     expect(await logout.json()).toEqual({ signed: false })
     expect(me.status).toBe(401)
-    expect(await me.json()).toEqual({ error: 'Authentication required', code: 'unauthorized' })
+    expect(await me.json()).toEqual(UNAUTHORIZED_BODY)
     expect(faculties.status).toBe(401)
   })
 })
