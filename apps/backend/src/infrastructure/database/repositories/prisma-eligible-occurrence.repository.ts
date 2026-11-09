@@ -20,23 +20,13 @@ export function createEligibleOccurrenceRepository({ db }: { db: Db }): Eligible
         classes.map((classRow) => `${classRow.occurrenceId}:${classRow.occurrenceYear}`),
       )
 
-      const enrolledOccurrences = await db.orm.public.Occurrence.where((occurrence) => occurrence.id.in(occurrenceIds))
-        .select('id', 'year', 'courseUnitId')
-        .all()
-
-      const courseUnitIds = [
-        ...new Set(
-          enrolledOccurrences
-            .filter((occurrence) => enrolledOccurrenceKeys.has(`${occurrence.id}:${occurrence.year}`))
-            .map((occurrence) => occurrence.courseUnitId),
-        ),
-      ]
-
-      const occurrences = await db.orm.public.Occurrence.where((occurrence) =>
-        occurrence.courseUnitId.in(courseUnitIds),
-      )
+      const loadedOccurrences = await db.orm.public.Occurrence.where((occurrence) => occurrence.id.in(occurrenceIds))
         .include('courseUnit', (courseUnit) => courseUnit.select('acronym', 'name'))
         .all()
+
+      const occurrences = loadedOccurrences.filter((occurrence) =>
+        enrolledOccurrenceKeys.has(`${occurrence.id}:${occurrence.year}`),
+      )
 
       const candidateOccurrenceIds = [...new Set(occurrences.map((occurrence) => occurrence.id))]
       const activePeriods = await db.orm.public.ExchangePeriod.where((period) =>
