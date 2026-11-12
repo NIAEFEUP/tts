@@ -433,7 +433,15 @@ export function createCatalogApp({
   sessionRepository,
   exchangePeriodsRepository,
 }: CatalogRepositories = {}) {
-  const fixtures: CatalogFixtures = { courses, faculties, courseUnits, occurrences, classes, classStudents, exchangePeriods }
+  const fixtures: CatalogFixtures = {
+    courses,
+    faculties,
+    courseUnits,
+    occurrences,
+    classes,
+    classStudents,
+    exchangePeriods,
+  }
   const app = createApp({
     repositories: {
       courseRepository: courseRepository ?? createFakeCourseRepository(fixtures),

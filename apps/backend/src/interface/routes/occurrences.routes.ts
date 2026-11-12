@@ -43,7 +43,7 @@ type OccurrenceDependencies = {
   decorator: {
     repositories: {
       classRepository: ClassRepository
-      occurrenceRepository: OccurrenceRepository,
+      occurrenceRepository: OccurrenceRepository
       exchangePeriodsRepository: ExchangePeriodsRepository
     }
   }

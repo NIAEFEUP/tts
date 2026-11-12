@@ -47,7 +47,7 @@ export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePer
         if (periodsSeen.has(key)) continue
 
         periodsSeen.add(key)
-        courseExchangePeriod.push({ startsAt: period.startsAt, endsAt: period.endsAt })
+        courseExchangePeriod.push({ startsAt, endsAt })
       }
       return courseExchangePeriod
     },
