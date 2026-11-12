@@ -16,6 +16,13 @@ export const slotSchema = t.Object({
   professors: t.Array(professorSchema),
 })
 
+export const slotClassReferenceSchema = t.Object({
+  id: t.Number(),
+  name: t.String(),
+})
+
+export const slotDetailsSchema = t.Composite([slotSchema, t.Object({ classes: t.Array(slotClassReferenceSchema) })])
+
 export const occurrenceSchema = t.Object({
   id: t.Number(),
   year: t.Number(),

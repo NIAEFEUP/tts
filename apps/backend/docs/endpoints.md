@@ -320,6 +320,28 @@ Matches the frontend’s `CourseInfo` with embedded `ClassInfo`. The `id` here i
 }
 ```
 
+### `GET /occurrences/:id/slots` — query params and response
+
+`year` is required because Sigarra may reuse an occurrence id across academic
+years. Each slot appears once and includes all classes linked through
+`SlotClass`, so shared lectures remain represented as one slot with multiple
+class references.
+
+```json
+[
+  {
+    "id": 789,
+    "lessonType": "T",
+    "dayOfWeek": 1,
+    "startMinute": 570,
+    "durationMin": 90,
+    "location": "B001",
+    "classes": [{ "id": 456, "name": "1LEIC01" }],
+    "professors": [{ "id": 1, "acronym": "JAS", "name": "João Silva" }]
+  }
+]
+```
+
 Legacy mapping:
 
 - `GET /class/<int:course_unit_id>/` → `GET /occurrences/:id/classes`
@@ -337,6 +359,10 @@ Legacy mapping:
 | `GET`  | `/classes/:id/students` | admin | Students enrolled in this class  |
 | `GET`  | `/slots/:id`            | `?`   | Schedule slot detail             |
 | `GET`  | `/slots/:id/professors` | `?`   | Professors assigned to this slot |
+
+`GET /slots/:id` returns the slot's schedule fields, professors, and all
+classes linked to it. `GET /slots/:id/professors` returns only the assigned
+professor array. Both endpoints return `404 slot-not-found` for an unknown id.
 
 ---
 
