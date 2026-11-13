@@ -2,7 +2,7 @@
 # (branches that already exist on the remote can still be pushed to).
 # Format: <user>/<issue-number>-<short-description>
 # Keep in sync with .github/workflows/branch_name.yaml.
-pattern='^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*-?/[0-9]+-[a-z]+(-[a-z]+)*$'
+pattern='^[a-z0-9]+(-[a-z0-9]+)*-?/[0-9]+-[a-z]+(-[a-z]+)*$'
 zero=0000000000000000000000000000000000000000
 status=0
 
