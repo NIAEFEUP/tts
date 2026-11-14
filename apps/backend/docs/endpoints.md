@@ -201,6 +201,21 @@ Legacy mapping:
 - `GET /course/<int:year>` → `GET /courses?year=`
 - `GET /course_units/<int:course_id>/<int:year>/<int:semester>/` → `GET /courses/:id/occurrences?year=&semester=`
 
+### `GET /courses/:id/periods` — response
+
+The exchange windows of the course, derived from all its occurrences. Windows are distinct by `(startsAt, endsAt)`, since several occurrences usually share the same window, and are ordered by `startsAt`. An unknown course id answers `404 course-not-found`; a course with no periods answers an empty list. A non-numeric `id` answers `422 validation-error`.
+
+```json
+[
+  {
+    "startsAt": "2025-09-01T00:00:00.000Z",
+    "endsAt": "2025-09-15T00:00:00.000Z"
+  }
+]
+```
+
+`startsAt` and `endsAt` are ISO 8601 strings in UTC.
+
 ### `POST /courses/:id/periods` — body
 
 ```json
@@ -263,18 +278,18 @@ Every concrete occurrence of the unit, across the courses and academic years it 
 
 Occurrence is the concrete instance that carries classes, schedule, periods, and admin scope.
 
-| Method   | Path                                 | Auth  | Purpose                                    |
-| -------- | ------------------------------------ | ----- | ------------------------------------------ |
-| `GET`    | `/occurrences`                       | `?`   | List occurrences                           |
-| `GET`    | `/occurrences/:id`                   | `?`   | Single occurrence                          |
-| `GET`    | `/occurrences/:id/classes`           | `?`   | Classes for this occurrence                |
-| `GET`    | `/occurrences/:id/slots`             | `?`   | Schedule slots for this occurrence         |
-| `GET`    | `/occurrences/:id/periods`           | `?`   | Exchange periods for this occurrence       |
-| `POST`   | `/occurrences/:id/periods`           | admin | Create exchange period for this occurrence |
-| `PUT`    | `/occurrences/:id/periods/:periodId` | admin | Update period                              |
-| `DELETE` | `/occurrences/:id/periods/:periodId` | admin | Delete period                              |
-| `GET`    | `/occurrences/:id/exchange-metadata` | `?`   | Metadata for the exchange request card     |
-| `GET`    | `/occurrences/hashes`                | `?`   | Hashes for a list of occurrence IDs        |
+| Method   | Path                                 | Auth  | Purpose                                                |
+| -------- | ------------------------------------ | ----- | ------------------------------------------------------ |
+| `GET`    | `/occurrences`                       | `?`   | List occurrences                                       |
+| `GET`    | `/occurrences/:id`                   | `?`   | Single occurrence                                      |
+| `GET`    | `/occurrences/:id/classes`           | `?`   | Classes for this occurrence                            |
+| `GET`    | `/occurrences/:id/slots`             | `?`   | Schedule slots for this occurrence                     |
+| `GET`    | `/occurrences/:id/periods`           | `?`   | Exchange periods for this occurrence (`year` required) |
+| `POST`   | `/occurrences/:id/periods`           | admin | Create exchange period for this occurrence             |
+| `PUT`    | `/occurrences/:id/periods/:periodId` | admin | Update period                                          |
+| `DELETE` | `/occurrences/:id/periods/:periodId` | admin | Delete period                                          |
+| `GET`    | `/occurrences/:id/exchange-metadata` | `?`   | Metadata for the exchange request card                 |
+| `GET`    | `/occurrences/hashes`                | `?`   | Hashes for a list of occurrence IDs                    |
 
 ### `GET /occurrences` — query params
 
@@ -282,6 +297,27 @@ Occurrence is the concrete instance that carries classes, schedule, periods, and
 - `year` — academic year
 - `semester` — `1` or `2`
 - `courseUnit` — course unit id
+
+### `GET /occurrences/:id/periods` — query params
+
+- `year` — academic year, **required**. The occurrence's key is `(id, year)`, so the same id can have different periods in different years.
+
+### `GET /occurrences/:id/periods` — response
+
+The exchange periods of the occurrence `(id, year)`, ordered by `startsAt`. An unknown `(id, year)` answers `404 occurrence-not-found`; an occurrence with no periods answers an empty list. A non-numeric `id`, or a missing or non-numeric `year`, answers `422 validation-error`.
+
+```json
+[
+  {
+    "occurrenceId": 587177,
+    "occurrenceYear": 2025,
+    "startsAt": "2025-09-01T00:00:00.000Z",
+    "endsAt": "2025-09-15T00:00:00.000Z"
+  }
+]
+```
+
+`startsAt` and `endsAt` are ISO 8601 strings in UTC.
 
 ### `GET /occurrences/:id/classes` — response shape
 

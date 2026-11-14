@@ -49,3 +49,12 @@ export const occurrenceWithUnitSchema = t.Composite([
   occurrenceSchema,
   t.Object({ acronym: t.String(), name: t.String() }),
 ])
+
+/** A window during which exchange requests are accepted for one occurrence,
+ * Used by `GET /v1/occurrences/:id/periods`. */
+export const exchangePeriodSchema = t.Object({
+  occurrenceId: t.Number(),
+  occurrenceYear: t.Number(),
+  startsAt: t.Date(),
+  endsAt: t.Date(),
+})

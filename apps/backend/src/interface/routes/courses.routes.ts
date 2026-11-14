@@ -11,9 +11,10 @@ import type { CourseRepository } from '@/domain/ports/course.repository'
 import type { CourseUnitRepository } from '@/domain/ports/course-unit.repository'
 import type { OccurrenceRepository } from '@/domain/ports/occurrence.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
+import type { ExchangePeriodsRepository } from '@/domain/ports/exchange-period.repository'
 import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { apiError } from '@/interface/middleware/error-handler'
-import { courseSchema, courseUnitSchema, occurrenceSchema } from './catalog.schemas'
+import { courseSchema, courseUnitSchema, occurrenceSchema, exchangePeriodSchema } from './catalog.schemas'
 
 // Routes read `repositories` off the Elysia context — no infrastructure imports.
 // A missing course throws `HttpError('course-not-found')`; the global `onError`
@@ -31,6 +32,7 @@ type CourseDependencies = {
       courseRepository: CourseRepository
       courseUnitRepository: CourseUnitRepository
       occurrenceRepository: OccurrenceRepository
+      exchangePeriodsRepository: ExchangePeriodsRepository
     }
   }
   store: {}
@@ -130,5 +132,21 @@ export const courseRoutes = ({ sessions }: CourseRoutesDeps) =>
           semester: t.Optional(t.Integer({ minimum: 1, maximum: 2 })),
         }),
         detail: { tags: ['courses'], summary: 'Occurrences of a course' },
+      },
+    )
+    // GET /v1/courses/22841/periods
+    // Exchange periods of every occurrence of the course, ordered by `startsAt`.
+    // An unknown course is a 404; a course without periods returns `[]`.
+    .get(
+      '/:id/periods',
+      async ({ repositories, params }) => {
+        const course = await repositories.courseRepository.findById(params.id)
+        if (!course) throw new HttpError('course-not-found', `Course ${params.id} not found`, 404)
+        return repositories.exchangePeriodsRepository.findByCourse(params.id)
+      },
+      {
+        response: { 200: t.Array(t.Pick(exchangePeriodSchema, ['startsAt', 'endsAt'])), 404: 'ApiError' },
+        params: t.Object({ id: t.Integer() }),
+        detail: { tags: ['courses'], summary: 'List exchange periods of a course' },
       },
     )

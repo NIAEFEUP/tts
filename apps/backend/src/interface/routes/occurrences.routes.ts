@@ -8,12 +8,13 @@ import { HttpError } from '@/interface/errors/errors'
 // The ports define *what* methods exist — not *how* they work.
 // Imported as `type` only: the route never touches the database directly.
 import type { OccurrenceRepository } from '@/domain/ports/occurrence.repository'
+import type { ExchangePeriodsRepository } from '@/domain/ports/exchange-period.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import type { ClassRepository } from '@/domain/ports/class.repository'
 
 import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { apiError } from '@/interface/middleware/error-handler'
-import { occurrenceWithUnitSchema } from './catalog.schemas'
+import { exchangePeriodSchema, occurrenceWithUnitSchema } from './catalog.schemas'
 import { classWithSlotsSchema } from './users/schemas'
 
 const occurrenceWithClassesSchema = t.Composite([
@@ -26,6 +27,7 @@ const occurrenceWithClassesSchema = t.Composite([
 // read-only views of that data:
 //
 //   GET /v1/occurrences/:id — single occurrence with course unit info
+//   GET /v1/occurrences/:id/periods — exchange periods of one occurrence
 //
 // Both are behind a session (`?`): anonymous callers get a 401 before the
 // handler runs. `semester` is validated as `t.Integer({ minimum: 1, maximum: 2 })`
@@ -40,8 +42,9 @@ const occurrenceWithClassesSchema = t.Composite([
 type OccurrenceDependencies = {
   decorator: {
     repositories: {
-      occurrenceRepository: OccurrenceRepository
       classRepository: ClassRepository
+      occurrenceRepository: OccurrenceRepository
+      exchangePeriodsRepository: ExchangePeriodsRepository
     }
   }
   store: {}
@@ -80,6 +83,26 @@ export const occurrenceRoutes = ({ sessions }: OccurrenceRoutesDeps) =>
         params: t.Object({ id: t.Integer() }),
         query: t.Object({ year: t.Integer() }),
         detail: { tags: ['occurrences'], summary: 'Get one occurrence' },
+      },
+    )
+    // GET /v1/occurrences/587177/periods?year=2025
+    // Returns the exchange periods of one occurrence, ordered by `startsAt`.
+    // Sigarra can reuse the same id across academic years, so the real key
+    // is (id, year). An unknown (id, year) pair is a 404;
+    // An occurrence that exists but has no periods returns `[]`.
+    .get(
+      '/:id/periods',
+      async ({ repositories, params, query }) => {
+        const occurrence = await repositories.occurrenceRepository.findById(params.id, query.year)
+        if (!occurrence) throw new HttpError('occurrence-not-found', `Occurrence ${params.id} not found`, 404)
+
+        return repositories.exchangePeriodsRepository.findByOccurrence(params.id, query.year)
+      },
+      {
+        response: { 200: t.Array(exchangePeriodSchema), 404: 'ApiError' },
+        params: t.Object({ id: t.Integer() }),
+        query: t.Object({ year: t.Integer() }),
+        detail: { tags: ['occurrences'], summary: 'List exchange periods' },
       },
     )
     .get(
