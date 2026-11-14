@@ -32,24 +32,39 @@ export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePer
         .orderBy((period) => period.startsAt.asc())
         .all()
 
-      const courseOccurences = new Set(occurrences.map((occurrence) => `${occurrence.id}:${occurrence.year}`))
-      const periodsSeen = new Set<string>()
-      const courseExchangePeriod: CourseExchangePeriod[] = []
-
-      for (const period of periods) {
-        if (!courseOccurences.has(`${period.occurrenceId}:${period.occurrenceYear}`)) continue
-
-        const startsAt = new Date(period.startsAt.epochMilliseconds)
-        const endsAt = new Date(period.endsAt.epochMilliseconds)
-        const key = `${startsAt.getTime()}:${endsAt.getTime()}`
-
-        // skip periods already seen
-        if (periodsSeen.has(key)) continue
-
-        periodsSeen.add(key)
-        courseExchangePeriod.push({ startsAt, endsAt })
-      }
-      return courseExchangePeriod
+      return selectCourseWindows(occurrences, periods)
     },
   }
+}
+
+type PeriodRow = {
+  occurrenceId: number
+  occurrenceYear: number
+  startsAt: { epochMilliseconds: number }
+  endsAt: { epochMilliseconds: number }
+}
+
+// Pure so tests can run the real selection without a database. `periods` must already be ordered by `startsAt`.
+export function selectCourseWindows(
+  occurrences: { id: number; year: number }[],
+  periods: PeriodRow[],
+): CourseExchangePeriod[] {
+  const courseOccurences = new Set(occurrences.map((occurrence) => `${occurrence.id}:${occurrence.year}`))
+  const periodsSeen = new Set<string>()
+  const courseExchangePeriod: CourseExchangePeriod[] = []
+
+  for (const period of periods) {
+    if (!courseOccurences.has(`${period.occurrenceId}:${period.occurrenceYear}`)) continue
+
+    const startsAt = new Date(period.startsAt.epochMilliseconds)
+    const endsAt = new Date(period.endsAt.epochMilliseconds)
+    const key = `${startsAt.getTime()}:${endsAt.getTime()}`
+
+    // skip periods already seen
+    if (periodsSeen.has(key)) continue
+
+    periodsSeen.add(key)
+    courseExchangePeriod.push({ startsAt, endsAt })
+  }
+  return courseExchangePeriod
 }
