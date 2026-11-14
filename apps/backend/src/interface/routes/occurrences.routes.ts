@@ -10,11 +10,12 @@ import { HttpError } from '@/interface/errors/errors'
 import type { OccurrenceRepository } from '@/domain/ports/occurrence.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import type { ClassRepository } from '@/domain/ports/class.repository'
+import type { SlotRepository } from '@/domain/ports/slot.repository'
 
 import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { apiError } from '@/interface/middleware/error-handler'
 import { occurrenceWithUnitSchema } from './catalog.schemas'
-import { classWithSlotsSchema } from './users/schemas'
+import { classWithSlotsSchema, slotDetailsSchema } from './users/schemas'
 
 const occurrenceWithClassesSchema = t.Composite([
   occurrenceWithUnitSchema,
@@ -22,10 +23,12 @@ const occurrenceWithClassesSchema = t.Composite([
 ])
 
 // Occurrences are the concrete (course unit, course, academic year) tuples —
-// the place where a course unit is actually taught. These routes expose two
+// the place where a course unit is actually taught. These routes expose
 // read-only views of that data:
 //
 //   GET /v1/occurrences/:id — single occurrence with course unit info
+//   GET /v1/occurrences/:id/classes — classes, schedules, and professors
+//   GET /v1/occurrences/:id/slots — unique schedule slots and class sharing
 //
 // Both are behind a session (`?`): anonymous callers get a 401 before the
 // handler runs. `semester` is validated as `t.Integer({ minimum: 1, maximum: 2 })`
@@ -35,13 +38,13 @@ const occurrenceWithClassesSchema = t.Composite([
 // Elysia does not propagate a parent instance's `decorate` types into a
 // standalone plugin, so the dependency is declared on the instance's own type.
 // `use()` still merges the parent's decoration at runtime.
-// This tells TypeScript: "this plugin expects `occurrenceRepository` to be
-// available on the Elysia context."
+// This tells TypeScript which repositories are available on the Elysia context.
 type OccurrenceDependencies = {
   decorator: {
     repositories: {
       occurrenceRepository: OccurrenceRepository
       classRepository: ClassRepository
+      slotRepository: SlotRepository
     }
   }
   store: {}
@@ -105,5 +108,20 @@ export const occurrenceRoutes = ({ sessions }: OccurrenceRoutesDeps) =>
         params: t.Object({ id: t.Integer() }),
         query: t.Object({ year: t.Integer() }),
         detail: { tags: ['occurrences'], summary: 'Get occurrence with classes' },
+      },
+    )
+    .get(
+      '/:id/slots',
+      async ({ repositories, params, query }) => {
+        const occurrence = await repositories.occurrenceRepository.findById(params.id, query.year)
+        if (!occurrence) throw new HttpError('occurrence-not-found', `Occurrence ${params.id} not found`, 404)
+
+        return repositories.slotRepository.findByOccurrence(params.id, query.year)
+      },
+      {
+        response: { 200: t.Array(slotDetailsSchema), 404: 'ApiError' },
+        params: t.Object({ id: t.Integer() }),
+        query: t.Object({ year: t.Integer() }),
+        detail: { tags: ['occurrences'], summary: 'List occurrence schedule slots' },
       },
     )
