@@ -1,4 +1,4 @@
-import { Major, CourseInfo } from '../@types'
+import { Major } from '../@types'
 import { dev_config, getSemester, getAcademicYear } from '../utils'
 import Cookies from 'js-cookie'
 import { ENV } from 'varlock/env'
@@ -51,54 +51,6 @@ const getCoursesByMajorId = async (id: number) => {
 }
 
 /**
- * Retrieves all schedule options for a given course unit
- * @param course course of which to retrieve schedule
- * @returns array of schedule options
- */
-const getCourseClass = async (course: CourseInfo) => {
-  if (course === null) return []
-  return await apiRequest(`/class/${course.id}/`)
-}
-
-const createCourseClass = async (course: CourseInfo) => {
-  if (course.classes) return course
-
-  course.classes = await getCourseClass(course)
-  course.classes = course.classes?.map((c) => {
-    return {
-      ...c,
-      filteredTeachers: c.slots.flatMap((s) => s.professors.flatMap((p) => p.id)),
-    }
-  })
-  return course
-}
-
-const getCoursesClasses = async (courses: CourseInfo[]): Promise<CourseInfo[]> => {
-  const newCourses = [...courses]
-
-  return Promise.all(newCourses.map((course) => createCourseClass(course)))
-    .then(() => {
-      return newCourses
-    })
-    .catch((e) => {
-      console.error(e)
-      return []
-    })
-}
-
-/**
- * Retrieves full class information with classes
- * @param id class id
- * @returns CourseInfo
- */
-const getCourseUnit = async (id: number) => {
-  if (id === null) return []
-  const class_info = await apiRequest(`course_unit/${id}/`)
-  class_info['classes'] = await getCourseClass(class_info)
-  return class_info
-}
-
-/**
  * Retrieves the scrappe info from the backend
  */
 const getInfo = async () => {
@@ -135,9 +87,6 @@ const csrfTokenName = (): string => {
 const api = {
   getCourseUnits,
   getCoursesByMajorId,
-  getCourseClass,
-  getCoursesClasses,
-  getCourseUnit,
   getInfo,
   getCourseUnitHashes,
   getCSRFToken,
