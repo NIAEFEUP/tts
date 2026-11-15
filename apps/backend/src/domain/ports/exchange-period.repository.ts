@@ -15,7 +15,7 @@ export type CourseExchangePeriod = Pick<ExchangePeriod, 'startsAt' | 'endsAt'>
 
 /* The repository contract.*/
 export type ExchangePeriodsRepository = {
-  /**  Periods of the given occurrence, ordered by `startAt`. */
+  /** Periods of the given occurrence, ordered by `startsAt`. */
   findByOccurrence(occurrenceId: number, occurrenceYear: number): Promise<ExchangePeriod[]>
   /** Distinct windows across all occurrences of the course, ordered by `startsAt`. */
   findByCourse(courseId: number): Promise<CourseExchangePeriod[]>

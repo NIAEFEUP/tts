@@ -165,7 +165,7 @@ export const OCCURRENCES: Occurrence[] = [
   },
 ]
 
-/** Periods of occurrence 587177/2025 (out of order) plus one of the same id in 2024. Occurrence 587179 has none. */
+/** Periods of occurrence 587177/2025 (out of order) plus one of the same id in 2024. 587179/2025 repeats the September window; 587178/2024 has its own. */
 export const EXCHANGE_PERIODS: ExchangePeriod[] = [
   {
     occurrenceId: 587177,
