@@ -4,6 +4,7 @@ import {
   CLASSES,
   COURSE_UNITS,
   OCCURRENCES,
+  EXCHANGE_PERIODS,
   VALIDATION_ERROR_BODY,
   createCatalogApp,
   registerCatalogAuthGuard,
@@ -21,8 +22,10 @@ const { app, get } = createCatalogApp()
 describe('occurrence routes', () => {
   registerCatalogAuthGuard(app, [
     '/v1/courses/22841/occurrences',
+    '/v1/courses/22841/periods',
     '/v1/occurrences/587177?year=2025',
     '/v1/occurrences/587177/classes?year=2025',
+    '/v1/occurrences/587177/periods?year=2025',
   ])
 
   // --- GET /v1/courses/:id/occurrences ---
@@ -200,5 +203,124 @@ describe('occurrence routes', () => {
 
     expect(status).toBe(404)
     expect(body).toEqual({ error: 'Occurrence 587177 not found', code: 'occurrence-not-found' })
+  })
+
+  // --- GET /v1/occurrences/:id/periods ---
+
+  it('an occurrence lists its exchange periods ordered by startsAt', async () => {
+    const { status, contentType, body } = await get('/v1/occurrences/587177/periods?year=2025')
+
+    expect(status).toBe(200)
+    expect(contentType).toMatch(/^application\/json/)
+    // The fixture is out of order on purpose; Dates serialize to ISO strings.
+    expect(body).toEqual([
+      {
+        ...EXCHANGE_PERIODS[1],
+        startsAt: '2025-09-01T00:00:00.000Z',
+        endsAt: '2025-09-15T00:00:00.000Z',
+      },
+      {
+        ...EXCHANGE_PERIODS[0],
+        startsAt: '2026-02-01T00:00:00.000Z',
+        endsAt: '2026-02-15T00:00:00.000Z',
+      },
+    ])
+  })
+
+  it('only the periods of the requested (id, year) are returned', async () => {
+    // 587177 also has a period in 2024; it must not leak into 2025.
+    const { body } = await get('/v1/occurrences/587177/periods?year=2025')
+
+    expect(body).toHaveLength(2)
+  })
+
+  it('an occurrence with no periods answers an empty list, not an error', async () => {
+    const { get: getWithout } = createCatalogApp({
+      exchangePeriods: EXCHANGE_PERIODS.filter((p) => p.occurrenceId !== 587179),
+    })
+    const { status, body } = await getWithout('/v1/occurrences/587179/periods?year=2025')
+
+    expect(status).toBe(200)
+    expect(body).toEqual([])
+  })
+
+  it('an occurrence answers an empty list when there are no periods at all', async () => {
+    const { get: getEmpty } = createCatalogApp({ exchangePeriods: [] })
+    const { status, body } = await getEmpty('/v1/occurrences/587179/periods?year=2025')
+
+    expect(status).toBe(200)
+    expect(body).toEqual([])
+  })
+
+  it('an unknown occurrence answers 404 occurrence-not-found', async () => {
+    const { status, body } = await get('/v1/occurrences/99999/periods?year=2025')
+
+    expect(status).toBe(404)
+    expect(body).toEqual({ error: 'Occurrence 99999 not found', code: 'occurrence-not-found' })
+  })
+
+  it('the same occurrence id with a different year answers 404 on periods', async () => {
+    const { status, body } = await get('/v1/occurrences/587177/periods?year=2020')
+
+    expect(status).toBe(404)
+    expect(body).toEqual({ error: 'Occurrence 587177 not found', code: 'occurrence-not-found' })
+  })
+
+  it('omitting year on periods is rejected by the query schema', async () => {
+    const { status, body } = await get('/v1/occurrences/587177/periods')
+
+    expect(status).toBe(422)
+    expect(body).toEqual(VALIDATION_ERROR_BODY)
+  })
+
+  it('a non-numeric occurrence id on periods is rejected by the params schema', async () => {
+    const { status, body } = await get('/v1/occurrences/not-a-number/periods?year=2025')
+
+    expect(status).toBe(422)
+    expect(body).toEqual(VALIDATION_ERROR_BODY)
+  })
+
+  // --- GET /v1/courses/:id/periods ---
+
+  it('a course lists its distinct exchange windows ordered by startsAt', async () => {
+    const { status, contentType, body } = await get('/v1/courses/22841/periods')
+
+    expect(status).toBe(200)
+    expect(contentType).toMatch(/^application\/json/)
+    // 587179/2025 repeats the September window of 587177/2025: it appears once.
+    // The 2024 period of the same id and the other course's period are out.
+    expect(body).toEqual([
+      { startsAt: '2025-09-01T00:00:00.000Z', endsAt: '2025-09-15T00:00:00.000Z' },
+      { startsAt: '2026-02-01T00:00:00.000Z', endsAt: '2026-02-15T00:00:00.000Z' },
+    ])
+  })
+
+  it('another course only gets its own windows', async () => {
+    const { status, body } = await get('/v1/courses/22990/periods')
+
+    expect(status).toBe(200)
+    expect(body).toEqual([{ startsAt: '2024-10-01T00:00:00.000Z', endsAt: '2024-10-15T00:00:00.000Z' }])
+  })
+
+  it('a course with no periods answers an empty list, not an error', async () => {
+    // Course 22201 exists but has no occurrences.
+    const { status, body } = await get('/v1/courses/22201/periods')
+
+    expect(status).toBe(200)
+    expect(body).toEqual([])
+  })
+
+  it('an unknown course id answers 404 course-not-found on periods', async () => {
+    const { status, body } = await get('/v1/courses/99999/periods')
+
+    expect(status).toBe(404)
+    expect(body).toEqual({ error: 'Course 99999 not found', code: 'course-not-found' })
+  })
+
+  it('a non-numeric course id on periods is rejected by the params schema', async () => {
+    const { status, body } = await get('/v1/courses/not-a-number/periods')
+
+    expect(status).toBe(422)
+    expect(body).toEqual(VALIDATION_ERROR_BODY)
   })
 })
