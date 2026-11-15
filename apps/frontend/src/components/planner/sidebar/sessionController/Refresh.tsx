@@ -1,6 +1,6 @@
 import { useContext, useState } from 'react'
 import { ArrowPathIcon } from '@heroicons/react/24/solid'
-import BackendAPI from '../../../../api/backend'
+import occurrenceService from '../../../../api/services/occurrenceService'
 import StorageAPI from '../../../../api/storage'
 import { Button } from '../../../ui/new/button'
 import CourseContext from '../../../../contexts/CourseContext'
@@ -18,58 +18,67 @@ const Refresh = () => {
   const updateCourses = async () => {
     setIsLoading(true)
     if (mismatchedMap.size > 0) {
-      const coursesToUpdate = pickedCourses.filter((course) => mismatchedMap.has(course.id))
-      const updatedCoursesWithClasses = await Promise.all(
-        coursesToUpdate.map(async (course) => {
-          const updatedClasses = await BackendAPI.getCourseClass(course)
-          return {
-            ...course,
-            hash: mismatchedMap.get(course.id),
-            classes: updatedClasses,
-          }
-        }),
-      )
+      try {
+        const coursesToUpdate = pickedCourses.filter((course) => mismatchedMap.has(course.id))
+        const updatedCoursesWithClasses = await Promise.all(
+          coursesToUpdate.map(async (course) => {
+            const { classes } = await occurrenceService.getClasses(course.id)
+            return {
+              ...course,
+              hash: mismatchedMap.get(course.id),
+              classes,
+            }
+          }),
+        )
 
-      const finalCourses = pickedCourses.map((course) =>
-        mismatchedMap.has(course.id)
-          ? updatedCoursesWithClasses.find((updated) => updated.id === course.id) || course
-          : course,
-      )
+        const finalCourses = pickedCourses.map((course) =>
+          mismatchedMap.has(course.id)
+            ? updatedCoursesWithClasses.find((updated) => updated.id === course.id) || course
+            : course,
+        )
 
-      const classIdMap: Record<number, number> = {} //Maps old class ids to new class ids and is used to update the picked classes in multiple options
+        const classIdMap: Record<number, number> = {} //Maps old class ids to new class ids and is used to update the picked classes in multiple options
 
-      pickedCourses.forEach((course) => {
-        const oldClasses = course.classes || []
-        const newClasses = finalCourses.find((finalCourse) => finalCourse.id === course.id)?.classes || []
-        oldClasses.forEach((oldClass) => {
-          const newClass = newClasses.find((cls) => cls.name === oldClass.name)
-          if (newClass) {
-            classIdMap[oldClass.id] = newClass.id
-          } else {
-            classIdMap[oldClass.id] = null
-          }
+        pickedCourses.forEach((course) => {
+          const oldClasses = course.classes || []
+          const newClasses = finalCourses.find((finalCourse) => finalCourse.id === course.id)?.classes || []
+          oldClasses.forEach((oldClass) => {
+            const newClass = newClasses.find((cls) => cls.name === oldClass.name)
+            if (newClass) {
+              classIdMap[oldClass.id] = newClass.id
+            } else {
+              classIdMap[oldClass.id] = null
+            }
+          })
         })
-      })
 
-      const updatedMultipleOptions = [...multipleOptions]
-      for (let i = 0; i < updatedMultipleOptions.length; i++) {
-        for (let j = 0; j < updatedMultipleOptions[i].course_options.length; j++) {
-          const courseOption = updatedMultipleOptions[i].course_options[j]
-          const oldClassId = courseOption.picked_class_id
-          if (classIdMap[oldClassId] !== undefined) {
-            updatedMultipleOptions[i].course_options[j].picked_class_id = classIdMap[oldClassId]
+        const updatedMultipleOptions = [...multipleOptions]
+        for (let i = 0; i < updatedMultipleOptions.length; i++) {
+          for (let j = 0; j < updatedMultipleOptions[i].course_options.length; j++) {
+            const courseOption = updatedMultipleOptions[i].course_options[j]
+            const oldClassId = courseOption.picked_class_id
+            if (classIdMap[oldClassId] !== undefined) {
+              updatedMultipleOptions[i].course_options[j].picked_class_id = classIdMap[oldClassId]
+            }
           }
         }
+        setMultipleOptions(updatedMultipleOptions)
+        StorageAPI.setMultipleOptionsStorage(updatedMultipleOptions)
+        StorageAPI.setPickedCoursesStorage(finalCourses)
+        setPickedCourses(finalCourses)
+        mismatchedMap.clear()
+        toast({
+          title: 'Informação atualizada',
+          description: 'A informação das UCs foi atualizada com sucesso!',
+        })
+      } catch (error) {
+        console.error(error)
+        toast({
+          title: 'Erro ao atualizar',
+          description: 'Não foi possível atualizar as turmas das UCs.',
+          duration: 3000,
+        })
       }
-      setMultipleOptions(updatedMultipleOptions)
-      StorageAPI.setMultipleOptionsStorage(updatedMultipleOptions)
-      StorageAPI.setPickedCoursesStorage(finalCourses)
-      setPickedCourses(finalCourses)
-      mismatchedMap.clear()
-      toast({
-        title: 'Informação atualizada',
-        description: 'A informação das UCs foi atualizada com sucesso!',
-      })
     }
 
     setIsLoading(false)
