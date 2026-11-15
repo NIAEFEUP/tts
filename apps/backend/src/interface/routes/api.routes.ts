@@ -12,6 +12,7 @@ import { authCompatRoutes } from './auth/auth-compat.routes'
 import { enrollmentRoutes } from './users/enrollments.routes'
 import { studentRoutes } from './students/students.routes'
 import { meRoutes } from './users/me.routes'
+import { classRoutes } from './class.routes'
 
 export const createApiRoutes = (deps: AuthRoutesDeps) => {
   return new Elysia()
