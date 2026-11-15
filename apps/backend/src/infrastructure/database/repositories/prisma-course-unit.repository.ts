@@ -27,7 +27,7 @@ export function createCourseUnitRepository({ db }: { db: Db }): CourseUnitReposi
     // GET /v1/course-units/:id — one course unit by its id.
     async findById(id) {
       const row = await db.orm.public.CourseUnit.where({ id })
-        .select('id', 'courseId', 'acronym', 'name', 'semester')
+        .select('id', 'courseId', 'acronym', 'name', 'semester', 'courseUnitYear')
         .first()
 
       if (!row) return null
@@ -38,7 +38,7 @@ export function createCourseUnitRepository({ db }: { db: Db }): CourseUnitReposi
     // GET /v1/courses/:id/units — every unit the course offers, by acronym.
     async findByCourse(courseId) {
       const rows = await db.orm.public.CourseUnit.where((unit) => unit.courseId.eq(courseId))
-        .select('id', 'courseId', 'acronym', 'name', 'semester')
+        .select('id', 'courseId', 'acronym', 'name', 'semester', 'courseUnitYear')
         .orderBy((unit) => unit.acronym.asc())
         .all()
 

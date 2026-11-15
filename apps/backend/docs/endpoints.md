@@ -199,15 +199,41 @@ The abstract course units the course offers, ordered by acronym. An unknown cour
     "courseId": 22841,
     "acronym": "BD",
     "name": "Bases de Dados",
-    "semester": 1
+    "semester": 1,
+    "courseUnitYear": 2
   }
 ]
 ```
+
+`courseUnitYear` is the curricular year in the course plan (1..6) — the picker groups its year tabs by it. It is not the academic year: that lives on the occurrence as `year`.
 
 ### `GET /courses/:id/occurrences` — query params
 
 - `year` — academic year
 - `semester` — `1` or `2`
+
+### `GET /courses/:id/occurrences` — response
+
+Every occurrence of the course, enriched with its course unit's `acronym`, `name`, and `courseUnitYear`, newest academic year first. An unknown course id answers `404 course-not-found`; a course with no matching occurrences answers an empty list.
+
+```json
+[
+  {
+    "id": 587177,
+    "courseUnitId": 42,
+    "courseId": 22841,
+    "year": 2025,
+    "ects": 6,
+    "url": "https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587177",
+    "hash": "abc...",
+    "acronym": "BD",
+    "name": "Bases de Dados",
+    "courseUnitYear": 2
+  }
+]
+```
+
+`id` is the Sigarra occurrence id and is only unique per academic year — the row's real key is `(id, year)`. `year` is the academic year; `courseUnitYear` is the unit's position in the course plan.
 
 Legacy mapping:
 
@@ -259,7 +285,8 @@ Backend resolves all occurrences for the course, validates no overlap, and creat
   "courseId": 22841,
   "acronym": "BD",
   "name": "Bases de Dados",
-  "semester": 1
+  "semester": 1,
+  "courseUnitYear": 2
 }
 ```
 
@@ -343,6 +370,7 @@ Matches the frontend’s `CourseInfo` with embedded `ClassInfo`. The `id` here i
   "courseId": 22841,
   "year": 2025,
   "semester": 1,
+  "courseUnitYear": 2,
   "acronym": "BD",
   "name": "Bases de Dados",
   "ects": 6,

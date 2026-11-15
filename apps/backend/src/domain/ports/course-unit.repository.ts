@@ -24,6 +24,12 @@ export type CourseUnit = {
   acronym: string
   name: string
   semester: CourseUnitSemester
+  /**
+   * Curricular year of the unit in its course plan (1..6) — "BD is a 2nd-year
+   * unit". A plan-level position, distinct from `Occurrence.year`, the academic
+   * year the unit is taught in.
+   */
+  courseUnitYear: number
 }
 
 /**

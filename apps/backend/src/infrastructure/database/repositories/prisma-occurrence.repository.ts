@@ -23,11 +23,12 @@ const OCCURRENCE_COLUMNS = [
 
 /**
  * Single occurrence by its composite primary key `(id, year)`, joined with the
- * course unit's name and acronym so the endpoint needs no second round-trip.
+ * course unit's human-readable fields so the endpoint needs no second
+ * round-trip.
  */
 const findOccurrenceWithUnit = (db: Db, id: number, year: number) =>
   db.orm.public.Occurrence.where((occurrence) => and(occurrence.id.eq(id), occurrence.year.eq(year)))
-    .include('courseUnit', (unit) => unit.select('acronym', 'name'))
+    .include('courseUnit', (unit) => unit.select('acronym', 'name', 'courseUnitYear'))
     .select(...OCCURRENCE_COLUMNS)
     .first()
 
@@ -58,6 +59,7 @@ function toOccurrenceWithUnit(row: OccurrenceWithUnitRow): OccurrenceWithUnit {
     hash: row.hash,
     acronym: row.courseUnit.acronym,
     name: row.courseUnit.name,
+    courseUnitYear: row.courseUnit.courseUnitYear,
   }
 }
 
@@ -93,9 +95,9 @@ export function createOccurrenceRepository({ db }: { db: Db }): OccurrenceReposi
     async findByCourse(courseId, filter = {}) {
       const { year, semester } = filter
 
-      let query = db.orm.public.Occurrence.where((occurrence) => occurrence.courseId.eq(courseId)).select(
-        ...OCCURRENCE_COLUMNS,
-      )
+      let query = db.orm.public.Occurrence.where((occurrence) => occurrence.courseId.eq(courseId))
+        .include('courseUnit', (unit) => unit.select('acronym', 'name', 'courseUnitYear'))
+        .select(...OCCURRENCE_COLUMNS)
 
       if (year !== undefined) {
         query = query.where((occurrence) => occurrence.year.eq(year))
@@ -113,7 +115,11 @@ export function createOccurrenceRepository({ db }: { db: Db }): OccurrenceReposi
         query = query.where((occurrence) => occurrence.courseUnitId.in(courseUnits.map((unit) => unit.id)))
       }
 
-      return query.orderBy([(occurrence) => occurrence.year.desc(), (occurrence) => occurrence.id.asc()]).all()
+      const rows = await query
+        .orderBy([(occurrence) => occurrence.year.desc(), (occurrence) => occurrence.id.asc()])
+        .all()
+
+      return rows.map(toOccurrenceWithUnit)
     },
 
     // GET /v1/occurrences/:id — single occurrence by its composite primary

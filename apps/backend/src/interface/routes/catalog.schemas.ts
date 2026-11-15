@@ -22,13 +22,16 @@ export const courseSchema = t.Object({
 })
 
 /** An abstract, year-agnostic course unit ("BD" — Bases de Dados). It owns no
- * classes, periods, or enrollments — those belong to an `occurrence`. */
+ * classes, periods, or enrollments — those belong to an `occurrence`.
+ * `courseUnitYear` is the curricular year in the course plan (1..6), distinct
+ * from `occurrence.year`, the academic year it is taught in. */
 export const courseUnitSchema = t.Object({
   id: t.Number(),
   courseId: t.Number(),
   acronym: t.String(),
   name: t.String(),
   semester: t.Union([t.Literal(1), t.Literal(2)]),
+  courseUnitYear: t.Number(),
 })
 
 /** A concrete occurrence of a course unit: the (unit, course, year) tuple
@@ -44,10 +47,16 @@ export const occurrenceSchema = t.Object({
 })
 
 /** An occurrence joined with its course unit's human-readable fields. Used by
- * `GET /v1/occurrences/:id`. */
+ * `GET /v1/courses/:id/occurrences`, `GET /v1/occurrences/:id`, and
+ * `GET /v1/occurrences/:id/classes`. */
 export const occurrenceWithUnitSchema = t.Composite([
   occurrenceSchema,
-  t.Object({ acronym: t.String(), name: t.String() }),
+  t.Object({
+    acronym: t.String(),
+    name: t.String(),
+    /** Curricular year in the course plan (1..6) — not the academic year. */
+    courseUnitYear: t.Number(),
+  }),
 ])
 
 /** A window during which exchange requests are accepted for one occurrence,

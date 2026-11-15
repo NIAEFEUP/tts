@@ -14,7 +14,7 @@ import type { SessionRepository } from '@/domain/ports/session.repository'
 import type { ExchangePeriodsRepository } from '@/domain/ports/exchange-period.repository'
 import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { apiError } from '@/interface/middleware/error-handler'
-import { courseSchema, courseUnitSchema, occurrenceSchema, exchangePeriodSchema } from './catalog.schemas'
+import { courseSchema, courseUnitSchema, exchangePeriodSchema, occurrenceWithUnitSchema } from './catalog.schemas'
 
 // Routes read `repositories` off the Elysia context — no infrastructure imports.
 // A missing course throws `HttpError('course-not-found')`; the global `onError`
@@ -110,7 +110,8 @@ export const courseRoutes = ({ sessions }: CourseRoutesDeps) =>
       },
     )
     // GET /v1/courses/22841/occurrences?year=2025&semester=1
-    // Lists occurrences for a course, optionally filtered by academic year and
+    // Lists occurrences for a course, enriched with the course unit's acronym,
+    // name, and curricular year, optionally filtered by academic year and
     // semester. The course must exist first; a course with no matches returns
     // an empty list.
     .get(
@@ -125,7 +126,7 @@ export const courseRoutes = ({ sessions }: CourseRoutesDeps) =>
         })
       },
       {
-        response: { 200: t.Array(occurrenceSchema), 404: 'ApiError' },
+        response: { 200: t.Array(occurrenceWithUnitSchema), 404: 'ApiError' },
         params: t.Object({ id: t.Integer() }),
         query: t.Object({
           year: t.Optional(t.Integer()),
