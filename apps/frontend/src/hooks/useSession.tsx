@@ -14,17 +14,18 @@ export type SessionUser = {
   eligible_exchange: boolean
 }
 
-/** Normalises the backend session into the shape the components consume. */
-const useSession = () => {
-  const anonymous: SessionUser = {
-    signed: false,
-    username: '',
-    name: '',
-    is_admin: false,
-    role: 'USER',
-    eligible_exchange: false,
-  }
+/** The signed-out session, returned for 401s and for responses without a user. */
+const anonymous: SessionUser = {
+  signed: false,
+  username: '',
+  name: '',
+  is_admin: false,
+  role: 'USER',
+  eligible_exchange: false,
+}
 
+/** Normalizes the backend session into the shape the components consume. */
+const useSession = () => {
   /**
    * Fetches the current session. A 401 is the normal anonymous case; every
    * other failure is rethrown so SWR retries instead of rendering signed-out UI.
@@ -57,20 +58,30 @@ const useSession = () => {
     }
   }
 
-  const { data, isLoading, mutate, isValidating } = useSwr('v1/auth/me', trySession, {
+  const { data, error, mutate } = useSwr('v1/auth/me', trySession, {
     focusThrottleInterval: 1800000,
     revalidateOnMount: true,
   })
 
-  if (data?.signed) {
+  // SWR keeps the last successful payload when a revalidation fails. A failed
+  // check therefore cannot be shown as a live session: a user whose session
+  // expired mid-visit would keep seeing their profile and the Admin link. Treat
+  // it as unavailable (signed out) while SWR keeps retrying in the background.
+  const unavailable = Boolean(error)
+
+  if (!unavailable && data?.signed) {
     localStorage.setItem('signedIn', true.toString())
   }
 
   return {
-    signedIn: data ? data.signed : false,
-    user: data ? data : null,
+    signedIn: !unavailable && data?.signed === true,
+    user: unavailable ? null : (data ?? null),
     forceScheduleRevalidation: mutate,
-    isLoading: isLoading || isValidating || data === undefined,
+    // Only the initial load counts as loading. Background revalidations
+    // (`isValidating`) must not hide the login controls, and a failed check must
+    // fall back to the signed-out UI instead of leaving the app stuck loading,
+    // SWR's backoff can otherwise postpone the next attempt for minutes.
+    isLoading: data === undefined && !unavailable,
   }
 }
 
