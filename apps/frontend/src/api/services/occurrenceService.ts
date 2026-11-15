@@ -6,9 +6,7 @@ type OccurrenceWithClasses = NonNullable<
   Awaited<ReturnType<ReturnType<typeof client.v1.occurrences>['classes']['get']>>['data']
 >
 
-type OccurrenceCourseInfo = Omit<CourseInfo, 'course_unit_year'>
-
-const toCourseInfo = (occurrence: OccurrenceWithClasses): OccurrenceCourseInfo => ({
+const toCourseInfo = (occurrence: OccurrenceWithClasses): CourseInfo => ({
   id: occurrence.id,
   course: occurrence.courseId,
   course_unit_id: occurrence.courseUnitId,
@@ -39,7 +37,7 @@ const toCourseInfo = (occurrence: OccurrenceWithClasses): OccurrenceCourseInfo =
   })),
 })
 
-const getClasses = async (occurrenceId: number): Promise<OccurrenceCourseInfo> => {
+const getClasses = async (occurrenceId: number): Promise<CourseInfo> => {
   const { data, error } = await client.v1.occurrences({ id: occurrenceId }).classes.get({
     query: { year: getAcademicYear() },
   })
