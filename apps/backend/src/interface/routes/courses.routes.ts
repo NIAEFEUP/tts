@@ -142,7 +142,11 @@ export const courseRoutes = ({ sessions }: CourseRoutesDeps) =>
       async ({ repositories, params }) => {
         const course = await repositories.courseRepository.findById(params.id)
         if (!course) throw new HttpError('course-not-found', `Course ${params.id} not found`, 404)
-        return repositories.exchangePeriodsRepository.findByCourse(params.id)
+        const periods = await repositories.exchangePeriodsRepository.findByCourse(params.id)
+        return periods.map((period) => ({
+          startsAt: period.startsAt.toISOString(),
+          endsAt: period.endsAt.toISOString(),
+        }))
       },
       {
         response: { 200: t.Array(t.Pick(exchangePeriodSchema, ['startsAt', 'endsAt'])), 404: 'ApiError' },

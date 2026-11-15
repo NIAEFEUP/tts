@@ -96,7 +96,12 @@ export const occurrenceRoutes = ({ sessions }: OccurrenceRoutesDeps) =>
         const occurrence = await repositories.occurrenceRepository.findById(params.id, query.year)
         if (!occurrence) throw new HttpError('occurrence-not-found', `Occurrence ${params.id} not found`, 404)
 
-        return repositories.exchangePeriodsRepository.findByOccurrence(params.id, query.year)
+        const periods = await repositories.exchangePeriodsRepository.findByOccurrence(params.id, query.year)
+        return periods.map((period) => ({
+          ...period,
+          startsAt: period.startsAt.toISOString(),
+          endsAt: period.endsAt.toISOString(),
+        }))
       },
       {
         response: { 200: t.Array(exchangePeriodSchema), 404: 'ApiError' },

@@ -55,6 +55,7 @@ export const occurrenceWithUnitSchema = t.Composite([
 export const exchangePeriodSchema = t.Object({
   occurrenceId: t.Number(),
   occurrenceYear: t.Number(),
-  startsAt: t.Date(),
-  endsAt: t.Date(),
+  // ISO strings, not t.Date(): JSON carries strings, and t.Date() makes Eden type them as Date.
+  startsAt: t.String({ format: 'date-time' }),
+  endsAt: t.String({ format: 'date-time' }),
 })
