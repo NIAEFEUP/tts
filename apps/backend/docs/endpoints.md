@@ -439,8 +439,7 @@ the client can render them without sorting. `dayOfWeek` is `0` for Sunday;
 
 ### `GET /users/me/eligible-occurrences` — response
 
-Returns occurrences whose exchange period is currently open and whose course
-unit matches one of the student's current enrollments. The list is ordered by
+Returns the student’s enrolled occurrences whose exchange period is open. The list is ordered by
 academic year (newest first), then occurrence id. A missing or invalid session
 returns `401 unauthorized`.
 
