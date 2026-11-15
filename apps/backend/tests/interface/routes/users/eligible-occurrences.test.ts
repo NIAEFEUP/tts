@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'bun:test'
-import type { EligibleOccurrenceRepository } from '@/domain/ports/eligible-occurrence.repository'
-import { createApp } from '@/main'
-import { TEST_SESSION_TOKEN, TEST_USER, createFakeSessions } from '../support/auth-test-utils'
+
+import { TEST_USER } from '../support/auth-test-utils'
 import { UNAUTHORIZED_BODY } from '../support/catalog-test-utils'
+import { createUsersApp } from '../support/user-test-utils'
 
 const PATH = '/v1/users/me/eligible-occurrences'
 
@@ -23,58 +23,35 @@ const occurrences = [
 describe('eligible occurrences routes', () => {
   let queriedUserId: string | null = null
 
-  const eligibleOccurrenceRepository: EligibleOccurrenceRepository = {
+  const { get } = createUsersApp(undefined, {
     async findByUserId(userId) {
       queriedUserId = userId
       return occurrences
     },
-  }
-
-  const app = createApp({
-    repositories: {
-      eligibleOccurrenceRepository,
-      sessionRepository: createFakeSessions(),
-    },
   })
 
-  const getEligibleOccurrences = (cookie?: string) =>
-    app.handle(
-      new Request(`http://localhost${PATH}`, {
-        headers: cookie ? { cookie } : {},
-      }),
-    )
-
   it('returns the authenticated student eligible occurrences', async () => {
-    const response = await getEligibleOccurrences(`session=${TEST_SESSION_TOKEN}`)
+    const { status, body } = await get(PATH)
 
-    expect(response.status).toBe(200)
-    expect(await response.json()).toEqual(occurrences)
+    expect(status).toBe(200)
+    expect(body).toEqual(occurrences)
     expect(queriedUserId).toBe(TEST_USER.id)
   })
 
   it('returns an empty list when the student has no enrollments', async () => {
-    const emptyApp = createApp({
-      repositories: {
-        eligibleOccurrenceRepository: { findByUserId: async () => [] },
-        sessionRepository: createFakeSessions(),
-      },
-    })
-    const response = await emptyApp.handle(
-      new Request(`http://localhost${PATH}`, {
-        headers: { cookie: `session=${TEST_SESSION_TOKEN}` },
-      }),
-    )
+    const { get: getEmpty } = createUsersApp(undefined, { findByUserId: async () => [] })
+    const { status, body } = await getEmpty(PATH)
 
-    expect(response.status).toBe(200)
-    expect(await response.json()).toEqual([])
+    expect(status).toBe(200)
+    expect(body).toEqual([])
   })
 
   it('requires a valid session cookie', async () => {
-    for (const cookie of [undefined, 'session=invalid-session']) {
-      const response = await getEligibleOccurrences(cookie)
+    for (const cookie of [null, 'session=invalid-session']) {
+      const { status, body } = await get(PATH, { cookie })
 
-      expect(response.status).toBe(401)
-      expect(await response.json()).toEqual(UNAUTHORIZED_BODY)
+      expect(status).toBe(401)
+      expect(body).toEqual(UNAUTHORIZED_BODY)
     }
   })
 })
