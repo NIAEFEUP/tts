@@ -1,4 +1,5 @@
 import type { EligibleOccurrenceRepository } from '@/domain/ports/eligible-occurrence.repository'
+import { selectEligible } from '@/domain/services/select-eligible'
 import type { Db } from '@/infrastructure/database/prisma'
 
 export function createEligibleOccurrenceRepository({ db }: { db: Db }): EligibleOccurrenceRepository {
@@ -17,7 +18,7 @@ export function createEligibleOccurrenceRepository({ db }: { db: Db }): Eligible
       )
 
       // Only the occurrences the student is enrolled in: exchange items are occurrence-scoped
-      // (fromClass/toClass share the same (occurrenceId,occurrenceYear)),
+      // (fromClass/toClass share the same (occurrenceId, occurrenceYear)),
       // so another year or course of the same unit is not something they can exchange into.
       const loadedOccurrences = (
         await db.orm.public.Occurrence.where((occurrence) => occurrence.id.in(occurrenceIds))
@@ -48,16 +49,7 @@ export function createEligibleOccurrenceRepository({ db }: { db: Db }): Eligible
         }
       })
 
-      const now = Date.now()
-      const openOccurrenceKeys = new Set(
-        activePeriods
-          .filter((period) => period.startsAt.epochMilliseconds <= now && period.endsAt.epochMilliseconds >= now)
-          .map((period) => `${period.occurrenceId}:${period.occurrenceYear}`),
-      )
-
-      return withCourseUnits
-        .filter((occurrence) => openOccurrenceKeys.has(`${occurrence.id}:${occurrence.year}`))
-        .sort((a, b) => b.year - a.year || a.id - b.id)
+      return selectEligible({ occurrences: withCourseUnits, periods: activePeriods, now: Date.now() })
     },
   }
 }
