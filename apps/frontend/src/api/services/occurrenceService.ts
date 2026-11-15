@@ -1,0 +1,53 @@
+import { client } from '../client'
+import type { ClassInfo, CourseInfo, SlotInfo } from '../../@types'
+import { getAcademicYear } from '../../utils'
+
+type OccurrenceWithClasses = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof client.v1.occurrences>['classes']['get']>>['data']
+>
+
+type OccurrenceCourseInfo = Omit<CourseInfo, 'course_unit_year'>
+
+const toCourseInfo = (occurrence: OccurrenceWithClasses): OccurrenceCourseInfo => ({
+  id: occurrence.id,
+  course: occurrence.courseId,
+  course_unit_id: occurrence.courseUnitId,
+  ects: occurrence.ects,
+  acronym: occurrence.acronym,
+  name: occurrence.name,
+  url: occurrence.url,
+  hash: occurrence.hash,
+  classes: occurrence.classes.map((classInfo): ClassInfo => ({
+    id: classInfo.id,
+    name: classInfo.name,
+    vacancies: classInfo.vacancies ?? undefined,
+    filteredTeachers: classInfo.filteredTeachers,
+    slots: classInfo.slots.map((slot): SlotInfo => ({
+      id: slot.id,
+      lesson_type: slot.lessonType,
+      day: slot.dayOfWeek - 1,
+      start_time: slot.startMinute / 60,
+      duration: slot.durationMin / 60,
+      location: slot.location ?? '',
+      professors_link: '',
+      professors: slot.professors.map((professor) => ({
+        id: professor.id,
+        acronym: professor.acronym ?? '',
+        name: professor.name ?? '',
+      })),
+    })),
+  })),
+})
+
+const getClasses = async (occurrenceId: number): Promise<OccurrenceCourseInfo> => {
+  const { data, error } = await client.v1.occurrences({ id: occurrenceId }).classes.get({
+    query: { year: getAcademicYear() },
+  })
+
+  if (error) throw error
+  return toCourseInfo(data)
+}
+
+const occurrenceService = { getClasses }
+
+export default occurrenceService
