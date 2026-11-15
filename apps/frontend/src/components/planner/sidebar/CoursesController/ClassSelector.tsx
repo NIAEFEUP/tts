@@ -8,6 +8,7 @@ import ClassSelectorDropdownController from './ClassSelectorDropdownController'
 import ClassSelectorContext from '../../../../contexts/classSelector/ClassSelectorContext'
 import useCourseUnitClasses from '../../../../hooks/useCourseUnitClasses'
 import CourseContext from '../../../../contexts/CourseContext'
+import { toast } from '../../../ui/new/toaster'
 
 type Props = {
   course: CourseInfo
@@ -18,15 +19,25 @@ const ClassSelector = ({ course, lockFunctionality = true }: Props) => {
   const classSelectorTriggerRef = useRef(null)
   const classSelectorContentRef = useRef(null)
 
-  const { pickedCourses, setPickedCourses } = useContext(CourseContext)
+  const { setPickedCourses } = useContext(CourseContext)
 
-  const { classes, loading: classesLoading } = useCourseUnitClasses(course.id, pickedCourses)
+  const { classes, loading: classesLoading, error: classesError } = useCourseUnitClasses(course.id)
 
   useEffect(() => {
     if (classes) {
       setPickedCourses((prevCourses) => prevCourses.map((c) => (c.id === course.id ? { ...c, classes: classes } : c)))
     }
   }, [classes, setPickedCourses])
+
+  useEffect(() => {
+    if (classesError) {
+      toast({
+        title: 'Erro ao carregar as turmas',
+        description: `Não foi possível carregar as turmas de ${course.acronym}.`,
+        duration: 3000,
+      })
+    }
+  }, [classesError, course.acronym])
 
   const { selectedClassId, setSelectedClassId, display, setPreview, removePreview, toggleLocker, courseOption } =
     useContext(ClassSelectorContext)
