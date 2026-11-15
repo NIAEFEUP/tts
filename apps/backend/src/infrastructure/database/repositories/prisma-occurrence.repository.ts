@@ -1,15 +1,25 @@
 import { and } from '@prisma/orm-postgres/orm-client'
 
-import type { OccurrenceRepository, OccurrenceWithUnit } from '@/domain/ports/occurrence.repository'
+import type { Occurrence, OccurrenceRepository, OccurrenceWithUnit } from '@/domain/ports/occurrence.repository'
 import type { Db } from '@/infrastructure/database/prisma'
 
 /**
  * The `Occurrence` columns every occurrence read projects. One source of truth:
  * a column added or renamed in `contract.prisma` is fixed here once, and all
  * three reads pick it up. `as const` keeps the literal tuple so `.select(...)`
- * stays checked against the contract.
+ * stays checked against the contract; `satisfies readonly (keyof Occurrence)[]`
+ * ties the list to the port, so dropping or renaming a DTO field fails here
+ * instead of at each call site.
  */
-const OCCURRENCE_COLUMNS = ['id', 'courseUnitId', 'courseId', 'year', 'ects', 'url', 'hash'] as const
+const OCCURRENCE_COLUMNS = [
+  'id',
+  'courseUnitId',
+  'courseId',
+  'year',
+  'ects',
+  'url',
+  'hash',
+] as const satisfies readonly (keyof Occurrence)[]
 
 /**
  * Single occurrence by its composite primary key `(id, year)`, joined with the
