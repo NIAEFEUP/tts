@@ -4,7 +4,7 @@ import { Buffer } from 'buffer'
 import fillOptions from './fillOptions'
 import { Tooltip } from '../../../ui/new/tooltip'
 import { ImportedCourses, CourseOption, CourseInfo } from '../../../../@types'
-import api from '../../../../api/backend'
+import occurrenceService from '../../../../api/services/occurrenceService'
 import CourseContext from '../../../../contexts/CourseContext'
 import MultipleOptionsContext from '../../../../contexts/MultipleOptionsContext'
 import { convertCourseInfoToCourseOption } from '../../../../utils'
@@ -69,13 +69,20 @@ const PasteOption = () => {
     })
 
     if (uncheckedCoursesIds.length > 0) {
-      const courses: CourseInfo[] = (
-        await Promise.all(
-          uncheckedCoursesIds.map(async (course_unit_id) => {
-            return await api.getCourseUnit(Number(course_unit_id))
-          }),
+      let courses: CourseInfo[]
+      try {
+        courses = await Promise.all(
+          uncheckedCoursesIds.map((course_unit_id) => occurrenceService.getClasses(Number(course_unit_id))),
         )
-      ).flat()
+      } catch (error) {
+        console.error(error)
+        toast({
+          title: 'Erro ao colar a opção',
+          description: 'Não foi possível carregar as turmas das unidades curriculares importadas.',
+          duration: 3000,
+        })
+        return
+      }
 
       const newPickedCourses = [...pickedCourses]
       setPickedCourses(newPickedCourses.concat(courses))
