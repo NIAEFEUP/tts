@@ -18,7 +18,7 @@ const ClassSelector = ({ course, lockFunctionality = true }: Props) => {
   const classSelectorTriggerRef = useRef(null)
   const classSelectorContentRef = useRef(null)
 
-  const {setPickedCourses } = useContext(CourseContext)
+  const { setPickedCourses } = useContext(CourseContext)
 
   const { classes, loading: classesLoading } = useCourseUnitClasses(course.id)
 

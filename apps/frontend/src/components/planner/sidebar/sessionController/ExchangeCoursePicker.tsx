@@ -26,10 +26,9 @@ export const ExchangeCoursePicker = ({ enrollCourses, setEnrollCourses, allowedA
         const { classes } = await occurrenceService.getClasses(course.id)
         return { ...course, classes }
       }),
-    )
-      .then((coursesWithClasses) => {
-        if (!cancelled) setEnrollCourses(coursesWithClasses)
-      })
+    ).then((coursesWithClasses) => {
+      if (!cancelled) setEnrollCourses(coursesWithClasses)
+    })
 
     return () => {
       cancelled = true
