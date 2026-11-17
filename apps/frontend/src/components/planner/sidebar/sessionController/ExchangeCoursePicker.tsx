@@ -5,7 +5,6 @@ import { Major, CourseInfo } from '../../../../@types'
 import occurrenceService from '../../../../api/services/occurrenceService'
 import { Dispatch, SetStateAction } from 'react'
 import useLocalStorage from '../../../../hooks/useLocalStorage'
-import { toast } from '../../../ui/new/toaster'
 
 type Props = {
   enrollCourses: CourseInfo[]
@@ -14,7 +13,7 @@ type Props = {
 }
 
 export const ExchangeCoursePicker = ({ enrollCourses, setEnrollCourses, allowedAcronyms }: Props) => {
-  const [checkboxedCourses, setCheckboxedCourses] = useState<CourseInfo[]>([])
+  const [checkboxedCourses, setCheckboxedCourses] = useState([])
   const [coursesInfo, setCoursesInfo] = useState<CourseInfo[]>([])
   const [modalOpen, setModalOpen] = useState<boolean>(false)
   const [selectedMajor, setSelectedMajor] = useLocalStorage<Major>('enrollMajor', null)
@@ -30,17 +29,6 @@ export const ExchangeCoursePicker = ({ enrollCourses, setEnrollCourses, allowedA
     )
       .then((coursesWithClasses) => {
         if (!cancelled) setEnrollCourses(coursesWithClasses)
-      })
-      .catch((error) => {
-        console.error(error)
-        if (!cancelled) {
-          setEnrollCourses(checkboxedCourses)
-          toast({
-            title: 'Erro ao carregar as turmas',
-            description: 'Não foi possível carregar as turmas das UCs selecionadas.',
-            duration: 3000,
-          })
-        }
       })
 
     return () => {
