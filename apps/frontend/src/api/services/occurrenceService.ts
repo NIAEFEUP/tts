@@ -1,4 +1,4 @@
-import { client } from '../client'
+import { client } from '@/api/client'
 import type { ClassInfo, CourseInfo, SlotInfo } from '../../@types'
 import { getAcademicYear } from '../../utils'
 
@@ -19,7 +19,8 @@ const toCourseInfo = (occurrence: OccurrenceWithClasses): CourseInfo => ({
     id: classInfo.id,
     name: classInfo.name,
     vacancies: classInfo.vacancies ?? undefined,
-    filteredTeachers: classInfo.filteredTeachers,
+    filteredTeachers:
+      classInfo.filteredTeachers ?? classInfo.slots.flatMap((slot) => slot.professors.map((professor) => professor.id)),
     slots: classInfo.slots.map((slot): SlotInfo => ({
       id: slot.id,
       lesson_type: slot.lessonType,
