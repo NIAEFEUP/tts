@@ -84,6 +84,19 @@ when `NODE_ENV=production`). With no body it uses the configured
 `SIGARRA_USERNAME` / `SIGARRA_PASSWORD`; a `{ username, password }` body overrides
 them. It validates against Sigarra and sets the same session cookie as OIDC.
 
+### `GET /auth/me` and `GET /users/me`
+
+Both endpoints require a valid session and return the same profile payload.
+`/users/me` is an exact alias of `/auth/me`. With no session, or an invalid or
+expired one, they answer `401 unauthorized`:
+
+```json
+{ "error": "Authentication required", "code": "unauthorized" }
+```
+
+They never return `{ "signed": false }`. `POST /auth/logout` stays public and
+continues to return that marker.
+
 ### Compatibility-only auth routes
 
 Kept for older clients; the current frontend uses the canonical routes above, so
@@ -106,7 +119,7 @@ URLs from `BACKEND_URL` with an empty path prefix.
 3. Sigarra redirects to `GET /v1/auth/callback?code=...&state=...`.
 4. Backend exchanges the code for tokens, fetches user info (NMEC, name, email), creates or updates the `User` row, creates a `Session`, sets an HTTP-only cookie, and redirects to `return_to`.
 
-### `GET /auth/me` — response
+### `GET /auth/me` / `GET /users/me` — response
 
 ```json
 {
@@ -201,6 +214,21 @@ Legacy mapping:
 - `GET /course/<int:year>` → `GET /courses?year=`
 - `GET /course_units/<int:course_id>/<int:year>/<int:semester>/` → `GET /courses/:id/occurrences?year=&semester=`
 
+### `GET /courses/:id/periods` — response
+
+The exchange windows of the course, derived from all its occurrences. Windows are distinct by `(startsAt, endsAt)`, since several occurrences usually share the same window, and are ordered by `startsAt`. An unknown course id answers `404 course-not-found`; a course with no periods answers an empty list. A non-numeric `id` answers `422 validation-error`.
+
+```json
+[
+  {
+    "startsAt": "2025-09-01T00:00:00.000Z",
+    "endsAt": "2025-09-15T00:00:00.000Z"
+  }
+]
+```
+
+`startsAt` and `endsAt` are ISO 8601 strings in UTC.
+
 ### `POST /courses/:id/periods` — body
 
 ```json
@@ -263,18 +291,18 @@ Every concrete occurrence of the unit, across the courses and academic years it 
 
 Occurrence is the concrete instance that carries classes, schedule, periods, and admin scope.
 
-| Method   | Path                                 | Auth  | Purpose                                    |
-| -------- | ------------------------------------ | ----- | ------------------------------------------ |
-| `GET`    | `/occurrences`                       | `?`   | List occurrences                           |
-| `GET`    | `/occurrences/:id`                   | `?`   | Single occurrence                          |
-| `GET`    | `/occurrences/:id/classes`           | `?`   | Classes for this occurrence                |
-| `GET`    | `/occurrences/:id/slots`             | `?`   | Schedule slots for this occurrence         |
-| `GET`    | `/occurrences/:id/periods`           | `?`   | Exchange periods for this occurrence       |
-| `POST`   | `/occurrences/:id/periods`           | admin | Create exchange period for this occurrence |
-| `PUT`    | `/occurrences/:id/periods/:periodId` | admin | Update period                              |
-| `DELETE` | `/occurrences/:id/periods/:periodId` | admin | Delete period                              |
-| `GET`    | `/occurrences/:id/exchange-metadata` | `?`   | Metadata for the exchange request card     |
-| `GET`    | `/occurrences/hashes`                | `?`   | Hashes for a list of occurrence IDs        |
+| Method   | Path                                 | Auth  | Purpose                                                |
+| -------- | ------------------------------------ | ----- | ------------------------------------------------------ |
+| `GET`    | `/occurrences`                       | `?`   | List occurrences                                       |
+| `GET`    | `/occurrences/:id`                   | `?`   | Single occurrence                                      |
+| `GET`    | `/occurrences/:id/classes`           | `?`   | Classes for this occurrence                            |
+| `GET`    | `/occurrences/:id/slots`             | `?`   | Schedule slots for this occurrence                     |
+| `GET`    | `/occurrences/:id/periods`           | `?`   | Exchange periods for this occurrence (`year` required) |
+| `POST`   | `/occurrences/:id/periods`           | admin | Create exchange period for this occurrence             |
+| `PUT`    | `/occurrences/:id/periods/:periodId` | admin | Update period                                          |
+| `DELETE` | `/occurrences/:id/periods/:periodId` | admin | Delete period                                          |
+| `GET`    | `/occurrences/:id/exchange-metadata` | `?`   | Metadata for the exchange request card                 |
+| `GET`    | `/occurrences/hashes`                | `?`   | Hashes for a list of occurrence IDs                    |
 
 ### `GET /occurrences` — query params
 
@@ -282,6 +310,27 @@ Occurrence is the concrete instance that carries classes, schedule, periods, and
 - `year` — academic year
 - `semester` — `1` or `2`
 - `courseUnit` — course unit id
+
+### `GET /occurrences/:id/periods` — query params
+
+- `year` — academic year, **required**. The occurrence's key is `(id, year)`, so the same id can have different periods in different years.
+
+### `GET /occurrences/:id/periods` — response
+
+The exchange periods of the occurrence `(id, year)`, ordered by `startsAt`. An unknown `(id, year)` answers `404 occurrence-not-found`; an occurrence with no periods answers an empty list. A non-numeric `id`, or a missing or non-numeric `year`, answers `422 validation-error`.
+
+```json
+[
+  {
+    "occurrenceId": 587177,
+    "occurrenceYear": 2025,
+    "startsAt": "2025-09-01T00:00:00.000Z",
+    "endsAt": "2025-09-15T00:00:00.000Z"
+  }
+]
+```
+
+`startsAt` and `endsAt` are ISO 8601 strings in UTC.
 
 ### `GET /occurrences/:id/classes` — response shape
 
@@ -381,6 +430,11 @@ professor array. Both endpoints return `404 slot-not-found` for an unknown id.
 | `GET`  | `/students/:nmec/photo`                      | `?`                 | Redirect to the student photo                   |
 | `GET`  | `/students/:nmec/courses/:courseId/metadata` | admin               | `fest_id` metadata for a student in a course    |
 
+### `GET /users/me` — response
+
+Exact alias of `GET /auth/me`: same payload and same `401 unauthorized`
+semantics (see the Auth section above).
+
 ### `GET /users/me/enrollments` — response
 
 Returns an array containing one item per class enrollment. Each item includes
@@ -459,6 +513,28 @@ the client can render them without sorting. `dayOfWeek` is `0` for Sunday;
         "professors": [{ "id": 123, "acronym": "AS", "name": "Ana Silva" }]
       }
     ]
+  }
+]
+```
+
+### `GET /users/me/eligible-occurrences` — response
+
+Returns the student’s enrolled occurrences whose exchange period is open. The list is ordered by
+academic year (newest first), then occurrence id. A missing or invalid session
+returns `401 unauthorized`.
+
+```json
+[
+  {
+    "id": 12345,
+    "courseUnitId": 42,
+    "courseId": 22841,
+    "year": 2025,
+    "ects": 6,
+    "url": "https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=12345",
+    "hash": "occurrence-hash",
+    "acronym": "BD",
+    "name": "Bases de Dados"
   }
 ]
 ```

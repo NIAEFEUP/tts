@@ -50,8 +50,9 @@ type Props = {
   location: string
 }
 
+/** Site header with navigation, session controls, and the mobile menu. */
 const Header = ({ siteTitle, location }: Props) => {
-  const { signedIn, user } = useContext(SessionContext)
+  const { signedIn, user, isSessionLoading } = useContext(SessionContext)
 
   return (
     <Popover
@@ -62,7 +63,7 @@ const Header = ({ siteTitle, location }: Props) => {
         return (
           <>
             <div className={'p-2 relative flex items-center justify-between md:py-0'}>
-              <Hamburger open={open} signedIn={signedIn} />
+              <Hamburger open={open} signedIn={signedIn} isSessionLoading={isSessionLoading} />
               <div className="flex md:flex-1 items-center justify-between md:items-stretch md:justify-between">
                 <div className="relative hidden h-auto space-x-12 self-center duration-200 hover:opacity-75 md:inline-flex">
                   <Link to={config.pathPrefix} className="flex items-center space-x-2">
@@ -104,7 +105,7 @@ const Header = ({ siteTitle, location }: Props) => {
                 <div className="hidden self-center md:inline-flex items-center gap-x-4">
                   {/* DARK MODE DISABLED: uncomment to re-enable the toggle */}
                   {/* <DarkModeSwitch /> */}
-                  {signedIn ? <HeaderProfileDropdown /> : <LoginButton expanded={false} />}
+                  {signedIn ? <HeaderProfileDropdown /> : isSessionLoading ? null : <LoginButton expanded={false} />}
                 </div>
               </div>
             </div>
@@ -121,9 +122,11 @@ export default Header
 type HamburgerProps = {
   open: boolean
   signedIn: boolean
+  isSessionLoading: boolean
 }
 
-const Hamburger = ({ open, signedIn }: HamburgerProps) => {
+/** Mobile header bar with the session control and menu toggle. */
+const Hamburger = ({ open, signedIn, isSessionLoading }: HamburgerProps) => {
   return (
     <div className={'z-50 md:hidden flex w-full items-center justify-between'}>
       <Link to={config.pathPrefix}>
@@ -138,7 +141,7 @@ const Hamburger = ({ open, signedIn }: HamburgerProps) => {
         {/* DARK MODE DISABLED: uncomment to re-enable the toggle */}
         {/* <DarkModeSwitch /> */}
         <FeedbackReport />
-        {signedIn ? <HeaderProfileDropdown /> : <LoginButton expanded={false} />}
+        {signedIn ? <HeaderProfileDropdown /> : isSessionLoading ? null : <LoginButton expanded={false} />}
 
         <Popover.Button className="group text-gray-800 transition duration-200 ease-in dark:text-white md:hidden">
           <span className="sr-only">Open nav menu</span>

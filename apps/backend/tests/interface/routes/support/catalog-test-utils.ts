@@ -5,6 +5,7 @@ import type { ClassRepository, EnrolledStudent, ClassWithSlots } from '@/domain/
 import type { CourseUnit, CourseUnitRepository } from '@/domain/ports/course-unit.repository'
 import type { Faculty, FacultyRepository } from '@/domain/ports/faculty.repository'
 import type { Occurrence, OccurrenceWithUnit, OccurrenceRepository } from '@/domain/ports/occurrence.repository'
+import type { ExchangePeriod, ExchangePeriodsRepository } from '@/domain/ports/exchange-period.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import type { ScheduleSlotDetails, SlotRepository } from '@/domain/ports/slot.repository'
 import { createApp } from '@/main'
@@ -165,6 +166,40 @@ export const OCCURRENCES: Occurrence[] = [
   },
 ]
 
+/** Periods of occurrence 587177/2025 (out of order) plus one of the same id in 2024. 587179/2025 repeats the September window; 587178/2024 has its own. */
+export const EXCHANGE_PERIODS: ExchangePeriod[] = [
+  {
+    occurrenceId: 587177,
+    occurrenceYear: 2025,
+    startsAt: new Date('2026-02-01T00:00:00Z'),
+    endsAt: new Date('2026-02-15T00:00:00Z'),
+  },
+  {
+    occurrenceId: 587177,
+    occurrenceYear: 2025,
+    startsAt: new Date('2025-09-01T00:00:00Z'),
+    endsAt: new Date('2025-09-15T00:00:00Z'),
+  },
+  {
+    occurrenceId: 587177,
+    occurrenceYear: 2024,
+    startsAt: new Date('2024-09-01T00:00:00Z'),
+    endsAt: new Date('2024-09-15T00:00:00Z'),
+  },
+  {
+    occurrenceId: 587179,
+    occurrenceYear: 2025,
+    startsAt: new Date('2025-09-01T00:00:00Z'),
+    endsAt: new Date('2025-09-15T00:00:00Z'),
+  },
+  {
+    occurrenceId: 587178,
+    occurrenceYear: 2024,
+    startsAt: new Date('2024-10-01T00:00:00Z'),
+    endsAt: new Date('2024-10-15T00:00:00Z'),
+  },
+]
+
 /** Error bodies shared by every catalog route, so tests assert shapes, not literals. */
 export const UNAUTHORIZED_BODY = { error: 'Authentication required', code: 'unauthorized' }
 export const VALIDATION_ERROR_BODY = { error: 'Request failed validation', code: 'validation-error' }
@@ -177,6 +212,45 @@ export type CatalogFixtures = {
   occurrences?: Occurrence[]
   classes?: ClassWithSlots[]
   classStudents?: Record<number, EnrolledStudent[]>
+  exchangePeriods?: ExchangePeriod[]
+}
+
+/** In-memory `ExchangePeriodsRepository` over `exchangePeriods` (defaults to `EXCHANGE_PERIODS`). */
+export function createFakeExchangePeriodsRepository({
+  exchangePeriods = EXCHANGE_PERIODS,
+  occurrences = OCCURRENCES,
+}: CatalogFixtures = {}): ExchangePeriodsRepository {
+  return {
+    async findByOccurrence(occurrenceId, occurrenceYear) {
+      // Same scope and order as the Prisma repository: the composite key
+      // (id, year), chronological. `filter` returns a fresh array, so
+      // sorting never mutates the fixture.
+      return exchangePeriods
+        .filter((period) => period.occurrenceId === occurrenceId && period.occurrenceYear === occurrenceYear)
+        .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+    },
+    async findByCourse(courseId) {
+      // Same as the Prisma repository: join on (id, year) to the course's
+      // occurrences, then distinct windows by their dates, chronological.
+      const seen = new Set<string>()
+
+      return exchangePeriods
+        .filter((period) =>
+          occurrences.some(
+            (o) => o.id === period.occurrenceId && o.year === period.occurrenceYear && o.courseId === courseId,
+          ),
+        )
+        .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+        .filter((period) => {
+          const key = `${period.startsAt.getTime()}:${period.endsAt.getTime()}`
+          if (seen.has(key)) return false
+
+          seen.add(key)
+          return true
+        })
+        .map((period) => ({ startsAt: period.startsAt, endsAt: period.endsAt }))
+    },
+  }
 }
 
 /** In-memory `CourseRepository` over `courses` (defaults to `COURSES`). */
@@ -350,6 +424,7 @@ export type CatalogRepositories = CatalogFixtures & {
   classRepository?: ClassRepository
   slotRepository?: SlotRepository
   sessionRepository?: SessionRepository
+  exchangePeriodsRepository?: ExchangePeriodsRepository
 }
 
 export type CatalogResponse = {
@@ -391,6 +466,7 @@ export function createCatalogApp({
   occurrences,
   classes,
   classStudents,
+  exchangePeriods,
   courseRepository,
   courseUnitRepository,
   facultyRepository,
@@ -398,9 +474,17 @@ export function createCatalogApp({
   classRepository,
   slotRepository,
   sessionRepository,
+  exchangePeriodsRepository,
 }: CatalogRepositories = {}) {
-  const fixtures: CatalogFixtures = { courses, faculties, courseUnits, occurrences, classes, classStudents }
-
+  const fixtures: CatalogFixtures = {
+    courses,
+    faculties,
+    courseUnits,
+    occurrences,
+    classes,
+    classStudents,
+    exchangePeriods,
+  }
   const app = createApp({
     repositories: {
       courseRepository: courseRepository ?? createFakeCourseRepository(fixtures),
@@ -410,6 +494,7 @@ export function createCatalogApp({
       classRepository: classRepository ?? createFakeClassRepository(fixtures),
       slotRepository: slotRepository ?? createFakeSlotRepository(fixtures),
       sessionRepository: sessionRepository ?? createFakeSessions(),
+      exchangePeriodsRepository: exchangePeriodsRepository ?? createFakeExchangePeriodsRepository(fixtures),
     },
   })
 
