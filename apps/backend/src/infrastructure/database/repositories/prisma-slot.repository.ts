@@ -91,30 +91,27 @@ export function createSlotRepository({ db }: { db: Db }): SlotRepository {
     },
 
     async findById(id) {
+      const slot = await db.orm.public.ScheduleSlot.where((row) => row.id.eq(id)).first()
+      if (!slot) return null
       const assignments = await db.orm.public.SlotClass.where((slotClass) => slotClass.slotId.eq(id)).all()
-      if (assignments.length === 0) {
-        const slot = await db.orm.public.ScheduleSlot.where((row) => row.id.eq(id)).first()
-        if (!slot) return null
-
-        return {
-          id: slot.id,
-          lessonType: slot.lessonType,
-          dayOfWeek: slot.dayOfWeek,
-          startMinute: slot.startMinute,
-          durationMin: slot.durationMin,
-          location: slot.location,
-          classes: [],
-          professors: await loadProfessors(db, id),
-        }
-      }
-
       const classIds = [...new Set(assignments.map((assignment) => assignment.classId))]
-      const classRows = await db.orm.public.Class.where((classRow) => classRow.id.in(classIds))
-        .select('id', 'name', 'occurrenceId', 'occurrenceYear')
-        .orderBy((classRow) => classRow.id.asc())
-        .all()
-      const details = await loadSlotDetails(db, classRows)
-      return details.find((slot) => slot.id === id) ?? null
+      const classes =
+        classIds.length === 0
+          ? []
+          : await db.orm.public.Class.where((classRow) => classRow.id.in(classIds))
+              .select('id', 'name')
+              .orderBy((classRow) => classRow.id.asc())
+              .all()
+      return {
+        id: slot.id,
+        lessonType: slot.lessonType,
+        dayOfWeek: slot.dayOfWeek,
+        startMinute: slot.startMinute,
+        durationMin: slot.durationMin,
+        location: slot.location,
+        classes,
+        professors: await loadProfessors(db, id),
+      }
     },
   }
 }

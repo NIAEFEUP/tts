@@ -30,8 +30,8 @@ const occurrenceWithClassesSchema = t.Composite([
 //   GET /v1/occurrences/:id/classes — classes, schedules, and professors
 //   GET /v1/occurrences/:id/slots — unique schedule slots and class sharing
 //
-// Both are behind a session (`?`): anonymous callers get a 401 before the
-// handler runs. `semester` is validated as `t.Integer({ minimum: 1, maximum: 2 })`
+// All of these routes are behind a session (`?`): anonymous callers get a 401
+// before the handler runs. `semester` is validated as `t.Integer({ minimum: 1, maximum: 2 })`
 // so the incoming URL string is coerced to a number and range-checked before
 // the handler runs — values outside {1, 2} are rejected with a 422.
 

@@ -323,9 +323,9 @@ Matches the frontend’s `CourseInfo` with embedded `ClassInfo`. The `id` here i
 ### `GET /occurrences/:id/slots` — query params and response
 
 `year` is required because Sigarra may reuse an occurrence id across academic
-years. Each slot appears once and includes all classes linked through
-`SlotClass`, so shared lectures remain represented as one slot with multiple
-class references.
+years. Each slot appears once and includes all classes of this occurrence
+linked through `SlotClass`, so shared lectures remain represented as one slot
+with multiple class references.
 
 ```json
 [
