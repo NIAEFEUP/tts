@@ -7,6 +7,7 @@ import type { Faculty, FacultyRepository } from '@/domain/ports/faculty.reposito
 import type { Occurrence, OccurrenceWithUnit, OccurrenceRepository } from '@/domain/ports/occurrence.repository'
 import type { ExchangePeriod, ExchangePeriodsRepository } from '@/domain/ports/exchange-period.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
+import type { ScheduleSlotDetails, SlotRepository } from '@/domain/ports/slot.repository'
 import { createApp } from '@/main'
 import type { App } from '@/main'
 import { TEST_SESSION_TOKEN, createFakeSessions } from './auth-test-utils'
@@ -375,12 +376,53 @@ export function createFakeClassRepository({
   }
 }
 
+export function createFakeSlotRepository({ classes = CLASSES }: CatalogFixtures = {}): SlotRepository {
+  function findSlot(id: number, classRows: ClassWithSlots[]): ScheduleSlotDetails | null {
+    const memberships = classRows.flatMap((classRow) =>
+      classRow.slots
+        .filter((slot) => slot.id === id)
+        .map((slot) => ({ slot, classReference: { id: classRow.id, name: classRow.name } })),
+    )
+    const first = memberships[0]
+    if (!first) return null
+
+    return {
+      id: first.slot.id,
+      lessonType: first.slot.lessonType,
+      dayOfWeek: first.slot.dayOfWeek,
+      startMinute: first.slot.startMinute,
+      durationMin: first.slot.durationMin,
+      location: first.slot.location,
+      classes: memberships.map(({ classReference }) => classReference),
+      professors: first.slot.professors,
+    }
+  }
+
+  return {
+    async findByOccurrence(occurrenceId, occurrenceYear) {
+      const occurrenceClasses = classes.filter(
+        (classRow) => classRow.occurrenceId === occurrenceId && classRow.occurrenceYear === occurrenceYear,
+      )
+      const slotIds = [...new Set(occurrenceClasses.flatMap((classRow) => classRow.slots.map((slot) => slot.id)))]
+      return slotIds
+        .sort((a, b) => a - b)
+        .map((id) => findSlot(id, occurrenceClasses))
+        .filter((slot): slot is ScheduleSlotDetails => slot !== null)
+    },
+
+    async findById(id) {
+      return findSlot(id, classes)
+    },
+  }
+}
+
 export type CatalogRepositories = CatalogFixtures & {
   courseRepository?: CourseRepository
   courseUnitRepository?: CourseUnitRepository
   facultyRepository?: FacultyRepository
   occurrenceRepository?: OccurrenceRepository
   classRepository?: ClassRepository
+  slotRepository?: SlotRepository
   sessionRepository?: SessionRepository
   exchangePeriodsRepository?: ExchangePeriodsRepository
 }
@@ -430,6 +472,7 @@ export function createCatalogApp({
   facultyRepository,
   occurrenceRepository,
   classRepository,
+  slotRepository,
   sessionRepository,
   exchangePeriodsRepository,
 }: CatalogRepositories = {}) {
@@ -449,6 +492,7 @@ export function createCatalogApp({
       facultyRepository: facultyRepository ?? createFakeFacultyRepository(fixtures),
       occurrenceRepository: occurrenceRepository ?? createFakeOccurrenceRepository(fixtures),
       classRepository: classRepository ?? createFakeClassRepository(fixtures),
+      slotRepository: slotRepository ?? createFakeSlotRepository(fixtures),
       sessionRepository: sessionRepository ?? createFakeSessions(),
       exchangePeriodsRepository: exchangePeriodsRepository ?? createFakeExchangePeriodsRepository(fixtures),
     },

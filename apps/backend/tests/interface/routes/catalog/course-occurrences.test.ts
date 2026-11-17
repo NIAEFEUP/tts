@@ -25,6 +25,7 @@ describe('occurrence routes', () => {
     '/v1/courses/22841/periods',
     '/v1/occurrences/587177?year=2025',
     '/v1/occurrences/587177/classes?year=2025',
+    '/v1/occurrences/587177/slots?year=2025',
     '/v1/occurrences/587177/periods?year=2025',
   ])
 
@@ -205,6 +206,33 @@ describe('occurrence routes', () => {
     expect(body).toEqual({ error: 'Occurrence 587177 not found', code: 'occurrence-not-found' })
   })
 
+  it('lists each occurrence slot once and includes every class sharing it', async () => {
+    const sharedClass = {
+      ...CLASSES[0],
+      id: 504,
+      name: '1LEIC02',
+      slots: [CLASSES[0].slots[0]],
+    }
+    const { get: getWithSharedClass } = createCatalogApp({ classes: [...CLASSES, sharedClass] })
+    const { status, contentType, body } = await getWithSharedClass('/v1/occurrences/587177/slots?year=2025')
+
+    expect(status).toBe(200)
+    expect(contentType).toMatch(/^application\/json/)
+    expect(body).toEqual([
+      {
+        ...CLASSES[0].slots[0],
+        classes: [
+          { id: 501, name: '1LEIC01' },
+          { id: 504, name: '1LEIC02' },
+        ],
+      },
+      {
+        ...CLASSES[0].slots[1],
+        classes: [{ id: 501, name: '1LEIC01' }],
+      },
+    ])
+  })
+
   // --- GET /v1/occurrences/:id/periods ---
 
   it('an occurrence lists its exchange periods ordered by startsAt', async () => {
@@ -225,6 +253,13 @@ describe('occurrence routes', () => {
         endsAt: '2026-02-15T00:00:00.000Z',
       },
     ])
+  })
+
+  it('requires year when listing an occurrence schedule', async () => {
+    const { status, body } = await get('/v1/occurrences/587177/slots')
+
+    expect(status).toBe(422)
+    expect(body).toEqual(VALIDATION_ERROR_BODY)
   })
 
   it('only the periods of the requested (id, year) are returned', async () => {
@@ -271,6 +306,13 @@ describe('occurrence routes', () => {
 
     expect(status).toBe(422)
     expect(body).toEqual(VALIDATION_ERROR_BODY)
+  })
+
+  it('returns 404 for an occurrence with no match in the requested year', async () => {
+    const { status, body } = await get('/v1/occurrences/587177/slots?year=2020')
+
+    expect(status).toBe(404)
+    expect(body).toEqual({ error: 'Occurrence 587177 not found', code: 'occurrence-not-found' })
   })
 
   it('a non-numeric occurrence id on periods is rejected by the params schema', async () => {
