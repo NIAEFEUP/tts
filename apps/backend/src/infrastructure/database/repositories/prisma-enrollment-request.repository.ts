@@ -11,13 +11,14 @@ import type { Db } from '@/infrastructure/database/prisma'
 // stay in the driver's Temporal shape here and become Dates when hydrated.
 type RequestRow = {
   id: string
+  userId: string
   status: EnrollmentRequestStatus
   adminState: EnrollmentRequestAdminState
   createdAt: { epochMilliseconds: number }
   updatedAt: { epochMilliseconds: number }
 }
 
-const REQUEST_COLUMNS = ['id', 'status', 'adminState', 'createdAt', 'updatedAt'] as const
+const REQUEST_COLUMNS = ['id', 'userId', 'status', 'adminState', 'createdAt', 'updatedAt'] as const
 
 /**
  * Attaches options and their occurrence/course-unit data to the selected
@@ -76,6 +77,7 @@ async function loadRequests(db: Db, rows: RequestRow[]): Promise<EnrollmentReque
 
   return rows.map((row) => ({
     id: row.id,
+    userId: row.userId,
     status: row.status,
     adminState: row.adminState,
     createdAt: new Date(row.createdAt.epochMilliseconds),

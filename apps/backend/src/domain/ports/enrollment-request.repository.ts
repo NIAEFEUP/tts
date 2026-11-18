@@ -31,6 +31,7 @@ export type EnrollmentRequestOption = {
 /** A request as returned by the API, independent of transport formatting. */
 export type EnrollmentRequest = {
   id: string
+  userId: string
   status: EnrollmentRequestStatus
   adminState: EnrollmentRequestAdminState
   createdAt: Date
