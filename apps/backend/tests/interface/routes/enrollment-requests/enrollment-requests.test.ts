@@ -4,6 +4,7 @@ import { TEST_USER } from '../support/auth-test-utils'
 import { UNAUTHORIZED_BODY, VALIDATION_ERROR_BODY } from '../support/catalog-test-utils'
 import {
   CLOSED_PERIODS,
+  OTHER_USER_ID,
   createEnrollmentRequestsApp,
   makeRequest,
   occurrenceOption,
@@ -196,7 +197,7 @@ describe('enrollment requests routes', () => {
   it('rejects an enroll request for an occurrence I am already enrolled in', async () => {
     const { request } = createEnrollmentRequestsApp({
       requests: [],
-      enrolledOccurrences: [{ occurrenceId: 587177, occurrenceYear: 2025 }],
+      enrolledOccurrences: [{ userId: TEST_USER.id, occurrenceId: 587177, occurrenceYear: 2025 }],
     })
     const { status, body } = await request('POST', LIST_PATH, {
       body: postBody([{ occurrenceId: 587177, occurrenceYear: 2025, enrolling: true }]),
@@ -204,6 +205,18 @@ describe('enrollment requests routes', () => {
 
     expect(status).toBe(400)
     expect(errorCode(body)).toBe('already-enrolled')
+  })
+
+  it('does not block an enroll request when only another student is enrolled', async () => {
+    const { request } = createEnrollmentRequestsApp({
+      requests: [],
+      enrolledOccurrences: [{ userId: OTHER_USER_ID, occurrenceId: 587177, occurrenceYear: 2025 }],
+    })
+    const { status } = await request('POST', LIST_PATH, {
+      body: postBody([{ occurrenceId: 587177, occurrenceYear: 2025, enrolling: true }]),
+    })
+
+    expect(status).toBe(201)
   })
 
   it('rejects an option that references an unknown occurrence', async () => {

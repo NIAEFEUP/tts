@@ -21,7 +21,7 @@ import {
 // `support/` modules it drives the real app through `app.handle(request)` with
 // in-memory repositories: no listener and no database.
 
-const OTHER_USER_ID = '202054321'
+export const OTHER_USER_ID = '202054321'
 
 /** Looks up an occurrence and its course unit to build a request option view. */
 export function occurrenceOption(
@@ -93,20 +93,20 @@ export const CANCELLED_REQUEST = makeRequest({
 
 export const DEFAULT_REQUESTS = [MY_REQUEST, OTHER_REQUEST, CANCELLED_REQUEST]
 
-/** An open window for every occurrence fixture, anchored to the test run. */
+/** A wide open window for every occurrence fixture, independent of test runtime. */
 export const OPEN_PERIODS: ExchangePeriod[] = OCCURRENCES.map((occurrence) => ({
   occurrenceId: occurrence.id,
   occurrenceYear: occurrence.year,
-  startsAt: new Date(Date.now() - 60_000),
-  endsAt: new Date(Date.now() + 60_000),
+  startsAt: new Date('2000-01-01T00:00:00.000Z'),
+  endsAt: new Date('2100-01-01T00:00:00.000Z'),
 }))
 
-/** The same occurrences, but every window is in the past. */
+/** The same occurrences, but every window is far in the past. */
 export const CLOSED_PERIODS: ExchangePeriod[] = OCCURRENCES.map((occurrence) => ({
   occurrenceId: occurrence.id,
   occurrenceYear: occurrence.year,
-  startsAt: new Date('2020-01-01T00:00:00.000Z'),
-  endsAt: new Date('2020-01-02T00:00:00.000Z'),
+  startsAt: new Date('1990-01-01T00:00:00.000Z'),
+  endsAt: new Date('1991-01-01T00:00:00.000Z'),
 }))
 
 /**
@@ -189,15 +189,15 @@ export function createFakeEnrollmentRequestRepository({
 
 /** An enrollment repository that only answers `isEnrolledInOccurrence`. */
 export function createFakeEnrollmentRepository(
-  enrolled: Array<{ occurrenceId: number; occurrenceYear: number }> = [],
+  enrolled: Array<{ userId: string; occurrenceId: number; occurrenceYear: number }> = [],
 ): EnrollmentRepository {
-  const keys = new Set(enrolled.map((row) => `${row.occurrenceId}:${row.occurrenceYear}`))
+  const keys = new Set(enrolled.map((row) => `${row.userId}:${row.occurrenceId}:${row.occurrenceYear}`))
 
   return {
     findByUserId: async () => [],
     sharesOccurrence: async () => false,
-    isEnrolledInOccurrence: async (_userId, occurrenceId, occurrenceYear) =>
-      keys.has(`${occurrenceId}:${occurrenceYear}`),
+    isEnrolledInOccurrence: async (userId, occurrenceId, occurrenceYear) =>
+      keys.has(`${userId}:${occurrenceId}:${occurrenceYear}`),
   }
 }
 
@@ -243,7 +243,7 @@ export function createRouteRequest(app: App) {
 export type EnrollmentRequestsAppOptions = {
   requests?: EnrollmentRequest[]
   exchangePeriods?: ExchangePeriod[]
-  enrolledOccurrences?: Array<{ occurrenceId: number; occurrenceYear: number }>
+  enrolledOccurrences?: Array<{ userId: string; occurrenceId: number; occurrenceYear: number }>
 }
 
 /**
