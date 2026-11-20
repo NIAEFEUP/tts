@@ -55,14 +55,16 @@ export const enrollmentRequestSchema = t.Object({
   options: t.Array(enrollmentRequestOptionSchema),
 })
 
-/** Body of `POST /v1/enrollment-requests`. `minItems: 1` rejects empty requests. */
+/** Body of `POST /v1/enrollment-requests`. Between 1 and 20 options. */
 export const createEnrollmentRequestSchema = t.Object({
   options: t.Array(
     t.Object({
-      occurrenceId: t.Integer(),
+      // Occurrence.id is a PostgreSQL `integer`; larger values would fail in
+      // the database instead of the schema.
+      occurrenceId: t.Integer({ maximum: 2147483647 }),
       occurrenceYear: t.Integer(),
       enrolling: t.Boolean(),
     }),
-    { minItems: 1 },
+    { minItems: 1, maxItems: 20 },
   ),
 })

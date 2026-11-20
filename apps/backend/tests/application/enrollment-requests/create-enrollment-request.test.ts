@@ -44,6 +44,28 @@ const periods: ExchangePeriodsRepository = {
 }
 
 describe('create enrollment request use case', () => {
+  it('rejects an empty options array without touching any repository', async () => {
+    const fail = async () => {
+      throw new Error('repository should not be called')
+    }
+
+    const createEnrollmentRequest = createCreateEnrollmentRequest({
+      enrollmentRequests: {
+        findByUserId: fail,
+        findById: fail,
+        create: fail,
+        withdraw: fail,
+      },
+      enrollments: { findByUserId: fail, sharesOccurrence: fail, isEnrolledInOccurrence: fail },
+      occurrences: { findByCourseUnit: fail, findByCourse: fail, findById: fail },
+      periods: { findByOccurrence: fail, findByCourse: fail },
+    })
+
+    const result = await createEnrollmentRequest(USER_ID, [])
+
+    expect(result).toEqual({ kind: 'empty-options' })
+  })
+
   it('maps a duplicate found by the repository write to duplicate-request', async () => {
     const enrollmentRequests: EnrollmentRequestRepository = {
       findByUserId: async () => [],

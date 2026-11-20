@@ -9,6 +9,7 @@ import type { OccurrenceRepository } from '@/domain/ports/occurrence.repository'
 
 /** Why a request was rejected before anything was written. */
 export type CreateEnrollmentRequestFailure =
+  | { kind: 'empty-options' }
   | { kind: 'duplicate-option'; occurrenceId: number; occurrenceYear: number }
   | { kind: 'occurrence-not-found'; occurrenceId: number; occurrenceYear: number }
   | { kind: 'exchange-period-closed'; occurrenceId: number; occurrenceYear: number }
@@ -36,15 +37,15 @@ export function createCreateEnrollmentRequest(deps: {
   enrollments: EnrollmentRepository
   occurrences: OccurrenceRepository
   periods: ExchangePeriodsRepository
-  /** Clock override for tests; defaults to the real time. */
-  now?: () => number
 }) {
-  const now = deps.now ?? (() => Date.now())
-
   return async function createEnrollmentRequest(
     userId: string,
     options: NewEnrollmentRequestOption[],
   ): Promise<CreateEnrollmentRequestResult> {
+    // The HTTP schema rejects this with 422, but the use case owns the rule so
+    // other callers cannot create an optionless request either.
+    if (options.length === 0) return { kind: 'empty-options' }
+
     // Natural key of an option. Catching it here keeps the database's
     // per-request unique constraint from surfacing as a 500.
     const seen = new Set<string>()
@@ -60,7 +61,7 @@ export function createCreateEnrollmentRequest(deps: {
       seen.add(key)
     }
 
-    const currentTime = now()
+    const currentTime = Date.now()
 
     for (const option of options) {
       const { occurrenceId, occurrenceYear, enrolling } = option

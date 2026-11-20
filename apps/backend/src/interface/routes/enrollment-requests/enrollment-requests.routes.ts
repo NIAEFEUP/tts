@@ -35,6 +35,8 @@ export type EnrollmentRequestRoutesDeps = {
 /** Turns a creation rule failure into the matching HTTP error. */
 function toHttpError(failure: CreateEnrollmentRequestFailure): HttpError {
   switch (failure.kind) {
+    case 'empty-options':
+      return new HttpError('empty-enrollment-request', 'At least one option is required', 400)
     case 'duplicate-option':
       return new HttpError(
         'duplicate-enrollment-option',
@@ -92,7 +94,7 @@ export const enrollmentRequestRoutes = ({ sessions }: EnrollmentRequestRoutesDep
     // POST /v1/enrollment-requests
     .post(
       '/',
-      async ({ user, repositories, body, status }) => {
+      async ({ user, repositories, body }) => {
         if (!user) throw httpError.unauthorized()
 
         const createEnrollmentRequest = createCreateEnrollmentRequest({

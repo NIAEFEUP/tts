@@ -136,6 +136,30 @@ describe('enrollment requests routes', () => {
     expect(body).toEqual(VALIDATION_ERROR_BODY)
   })
 
+  it('rejects more than 20 options', async () => {
+    const { request } = createEnrollmentRequestsApp({ requests: [] })
+    const options = Array.from({ length: 21 }, () => ({
+      occurrenceId: 587177,
+      occurrenceYear: 2025,
+      enrolling: true,
+    }))
+
+    const { status, body } = await request('POST', LIST_PATH, { body: postBody(options) })
+
+    expect(status).toBe(422)
+    expect(body).toEqual(VALIDATION_ERROR_BODY)
+  })
+
+  it('rejects an occurrence id outside the PostgreSQL integer range', async () => {
+    const { request } = createEnrollmentRequestsApp({ requests: [] })
+    const { status, body } = await request('POST', LIST_PATH, {
+      body: postBody([{ occurrenceId: 2147483648, occurrenceYear: 2025, enrolling: true }]),
+    })
+
+    expect(status).toBe(422)
+    expect(body).toEqual(VALIDATION_ERROR_BODY)
+  })
+
   it('rejects the same occurrence twice in one payload', async () => {
     const { request } = createEnrollmentRequestsApp({ requests: [] })
     const options = [
