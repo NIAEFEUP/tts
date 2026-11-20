@@ -5,6 +5,7 @@ import { Major, CourseInfo } from '../../../../@types'
 import occurrenceService from '../../../../api/services/occurrenceService'
 import { Dispatch, SetStateAction } from 'react'
 import useLocalStorage from '../../../../hooks/useLocalStorage'
+import { toast } from '../../../ui/new/toaster'
 
 type Props = {
   enrollCourses: CourseInfo[]
@@ -26,9 +27,20 @@ export const ExchangeCoursePicker = ({ enrollCourses, setEnrollCourses, allowedA
         const { classes } = await occurrenceService.getClasses(course.id)
         return { ...course, classes }
       }),
-    ).then((coursesWithClasses) => {
-      if (!cancelled) setEnrollCourses(coursesWithClasses)
-    })
+    )
+      .then((coursesWithClasses) => {
+        if (!cancelled) setEnrollCourses(coursesWithClasses)
+      })
+      .catch((error) => {
+        console.error(error)
+        if (!cancelled) {
+          toast({
+            title: 'Erro ao carregar as turmas',
+            description: 'Não foi possível carregar as turmas das unidades curriculares selecionadas.',
+            duration: 3000,
+          })
+        }
+      })
 
     return () => {
       cancelled = true
