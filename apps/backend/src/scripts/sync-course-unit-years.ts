@@ -67,8 +67,12 @@ async function main(): Promise<void> {
       throw new Error(`Cannot sync catalog years — ${problems.join('\n')}`)
     }
 
-    for (const update of updates) {
-      await db.orm.public.CourseUnit.where({ id: update.id }).update({ courseUnitYear: update.year })
+    if (updates.length > 0) {
+      await db.transaction(async (tx) => {
+        for (const update of updates) {
+          await tx.orm.public.CourseUnit.where({ id: update.id }).update({ courseUnitYear: update.year })
+        }
+      })
     }
 
     console.log(

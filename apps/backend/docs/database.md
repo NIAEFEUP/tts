@@ -108,8 +108,10 @@ truncate every table and refuse non-loopback hosts, so neither can repair a shar
 
 `20261115T1830_add_course_unit_year` is the first migration that needs it: the migration backfills
 existing units to year `1`, and a database brought forward with `db:update` instead keeps the
-column's temporary default of `0`. For that upgrade, prefer `bun run migrate`; if the database
-already contains `0`, run `bun run catalog:sync-years` afterwards to repair it without a reset.
+column's temporary default of `0`. In both cases the placeholder is not the real curricular year,
+so **always run `bun run catalog:sync-years` after applying this migration** to copy the real years
+from the fixture. The same command also repairs any `0` rows left by an earlier `db:update` without
+a reset.
 
 ## Migration mental model
 

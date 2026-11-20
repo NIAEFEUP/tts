@@ -8,7 +8,7 @@ import postgres from '@prisma/orm-postgres/runtime'
 
 // The contract stores a `NOT NULL` column, but existing rows have no curricular
 // year to copy from: `course_metadata` lives in the scraper's SQLite dump, not
-// in Postgres. Seed every existing unit as year 1; afterwards run
+// in Postgres. Seed every existing unit as year 1; you must afterwards run
 // `bun run catalog:sync-years` on the same database to copy the real values
 // from the committed fixture. That command updates only
 // `CourseUnit.courseUnitYear` (matched by courseId + acronym + semester) and
