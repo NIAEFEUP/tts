@@ -22,7 +22,7 @@ export function createEligibleOccurrenceRepository({ db }: { db: Db }): Eligible
       // so another year or course of the same unit is not something they can exchange into.
       const loadedOccurrences = (
         await db.orm.public.Occurrence.where((occurrence) => occurrence.id.in(occurrenceIds))
-          .include('courseUnit', (courseUnit) => courseUnit.select('acronym', 'name'))
+          .include('courseUnit', (courseUnit) => courseUnit.select('acronym', 'name', 'courseUnitYear'))
           .all()
       ).filter((occurrence) => enrolledOccurrenceKeys.has(`${occurrence.id}:${occurrence.year}`))
 
@@ -46,6 +46,7 @@ export function createEligibleOccurrenceRepository({ db }: { db: Db }): Eligible
           hash: occurrence.hash,
           acronym: occurrence.courseUnit.acronym,
           name: occurrence.courseUnit.name,
+          courseUnitYear: occurrence.courseUnit.courseUnitYear,
         }
       })
 

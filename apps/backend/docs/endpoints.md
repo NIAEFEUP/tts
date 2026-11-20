@@ -536,7 +536,8 @@ returns `401 unauthorized`.
     "url": "https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=12345",
     "hash": "occurrence-hash",
     "acronym": "BD",
-    "name": "Bases de Dados"
+    "name": "Bases de Dados",
+    "courseUnitYear": 2
   }
 ]
 ```

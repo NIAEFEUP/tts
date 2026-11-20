@@ -17,6 +17,7 @@ const occurrences = [
     hash: 'occurrence-hash',
     acronym: 'BD',
     name: 'Bases de Dados',
+    courseUnitYear: 2,
   },
 ]
 
