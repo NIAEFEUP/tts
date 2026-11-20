@@ -54,6 +54,8 @@ export function createFakeEnrollments(byUser: Record<string, StudentEnrollment[]
       const a = new Set(keys(userIdA))
       return keys(userIdB).some((key) => a.has(key))
     },
+    isEnrolledInOccurrence: async (userId, occurrenceId, occurrenceYear) =>
+      keys(userId).includes(`${occurrenceId}:${occurrenceYear}`),
   }
 
   return { repository, sharesOccurrenceCalls }

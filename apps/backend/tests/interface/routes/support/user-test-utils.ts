@@ -41,7 +41,11 @@ export function createUsersApp(
 ) {
   const app = createApp({
     repositories: {
-      enrollmentRepository: { sharesOccurrence: async () => false, ...enrollmentRepository },
+      enrollmentRepository: {
+        sharesOccurrence: async () => false,
+        isEnrolledInOccurrence: async () => false,
+        ...enrollmentRepository,
+      },
       eligibleOccurrenceRepository,
       sessionRepository: createFakeSessions(),
     },
