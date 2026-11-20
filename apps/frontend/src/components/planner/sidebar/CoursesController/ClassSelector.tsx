@@ -20,7 +20,7 @@ const ClassSelector = ({ course, lockFunctionality = true }: Props) => {
 
   const { setPickedCourses } = useContext(CourseContext)
 
-  const { classes, loading: classesLoading } = useCourseUnitClasses(course.id)
+  const { classes, loading: classesLoading, error: classesError, mutate: retryClasses } = useCourseUnitClasses(course.id)
 
   useEffect(() => {
     if (classes) {
@@ -83,6 +83,8 @@ const ClassSelector = ({ course, lockFunctionality = true }: Props) => {
                 contentRef={classSelectorContentRef}
                 triggerRef={classSelectorTriggerRef}
                 classesLoading={classesLoading}
+                classesError={classesError}
+                onRetry={retryClasses}
                 closeDropdown={() => setIsDropdownOpen(false)}
               />
             </Popover.Content>
