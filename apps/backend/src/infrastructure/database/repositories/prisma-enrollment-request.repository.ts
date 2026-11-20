@@ -1,9 +1,11 @@
 import type {
+  CreateEnrollmentRequestOutcome,
   EnrollmentRequest,
   EnrollmentRequestAdminState,
   EnrollmentRequestOption,
   EnrollmentRequestRepository,
   EnrollmentRequestStatus,
+  NewEnrollmentRequestOption,
 } from '@/domain/ports/enrollment-request.repository'
 import type { Db } from '@/infrastructure/database/prisma'
 
@@ -20,15 +22,18 @@ type RequestRow = {
 
 const REQUEST_COLUMNS = ['id', 'userId', 'status', 'adminState', 'createdAt', 'updatedAt'] as const
 
+/** The slice of the client the reads need, shared by `db` and a transaction. */
+type OrmClient = { orm: Db['orm'] }
+
 /**
  * Attaches options and their occurrence/course-unit data to the selected
  * request rows. One options query and one occurrences query serve every
  * request, so listing N requests never becomes N+1.
  */
-async function loadRequests(db: Db, rows: RequestRow[]): Promise<EnrollmentRequest[]> {
+async function loadRequests(client: OrmClient, rows: RequestRow[]): Promise<EnrollmentRequest[]> {
   if (rows.length === 0) return []
 
-  const options = await db.orm.public.EnrollmentRequestOption.where((option) =>
+  const options = await client.orm.public.EnrollmentRequestOption.where((option) =>
     option.requestId.in(rows.map((row) => row.id)),
   )
     .orderBy((option) => option.occurrenceId.asc())
@@ -38,7 +43,7 @@ async function loadRequests(db: Db, rows: RequestRow[]): Promise<EnrollmentReque
 
   if (options.length > 0) {
     const occurrenceIds = [...new Set(options.map((option) => option.occurrenceId))]
-    const occurrences = await db.orm.public.Occurrence.where((occurrence) => occurrence.id.in(occurrenceIds))
+    const occurrences = await client.orm.public.Occurrence.where((occurrence) => occurrence.id.in(occurrenceIds))
       .include('courseUnit', (courseUnit) => courseUnit.select('id', 'acronym', 'name', 'semester'))
       .all()
 
@@ -86,6 +91,41 @@ async function loadRequests(db: Db, rows: RequestRow[]): Promise<EnrollmentReque
   }))
 }
 
+/**
+ * The first incoming option that already exists on one of the student's
+ * non-cancelled requests. Cancelled requests are excluded so a withdrawal
+ * unblocks resubmission, and `enrolling` is ignored: one active intent per
+ * occurrence is enough.
+ */
+async function findActiveDuplicate(
+  client: OrmClient,
+  userId: string,
+  options: NewEnrollmentRequestOption[],
+): Promise<{ occurrenceId: number; occurrenceYear: number } | null> {
+  const activeRequests = await client.orm.public.EnrollmentRequest.where((request) => request.userId.eq(userId))
+    .where((request) => request.status.neq('CANCELLED'))
+    .select('id')
+    .all()
+
+  if (activeRequests.length === 0) return null
+
+  const activeOptions = await client.orm.public.EnrollmentRequestOption.where((option) =>
+    option.requestId.in(activeRequests.map((request) => request.id)),
+  )
+    .select('occurrenceId', 'occurrenceYear')
+    .all()
+
+  const activeKeys = new Set(activeOptions.map((option) => `${option.occurrenceId}:${option.occurrenceYear}`))
+
+  for (const option of options) {
+    if (activeKeys.has(`${option.occurrenceId}:${option.occurrenceYear}`)) {
+      return { occurrenceId: option.occurrenceId, occurrenceYear: option.occurrenceYear }
+    }
+  }
+
+  return null
+}
+
 export function createEnrollmentRequestRepository({ db }: { db: Db }): EnrollmentRequestRepository {
   async function findById(id: string): Promise<EnrollmentRequest | null> {
     const row = await db.orm.public.EnrollmentRequest.where({ id })
@@ -111,7 +151,19 @@ export function createEnrollmentRequestRepository({ db }: { db: Db }): Enrollmen
     findById,
 
     async create({ userId, options }) {
-      const requestId = await db.transaction(async (tx) => {
+      return db.transaction(async (tx): Promise<CreateEnrollmentRequestOutcome> => {
+        // Serialize submissions for the same student. `forNoKeyUpdate` blocks
+        // a second transaction here while still allowing the `FOR KEY SHARE`
+        // taken by EnrollmentRequest's foreign-key check on this user row.
+        const user = await tx.orm.public.User.where({ id: userId }).forNoKeyUpdate().select('id').first()
+        if (!user) throw new Error(`User ${userId} not found`)
+
+        // Authoritative duplicate check: it runs after the lock and in the
+        // same transaction as the insert, so two concurrent requests cannot
+        // both create an active option for the same occurrence.
+        const duplicate = await findActiveDuplicate(tx, userId, options)
+        if (duplicate) return { kind: 'duplicate', ...duplicate }
+
         const request = await tx.orm.public.EnrollmentRequest.select('id').create({ userId })
 
         await tx.orm.public.EnrollmentRequestOption.createAll(
@@ -123,13 +175,18 @@ export function createEnrollmentRequestRepository({ db }: { db: Db }): Enrollmen
           })),
         )
 
-        return request.id
+        // Hydrate before committing: if this read fails, the request and its
+        // options roll back together and the student can retry safely.
+        const row = await tx.orm.public.EnrollmentRequest.where({ id: request.id })
+          .select(...REQUEST_COLUMNS)
+          .first()
+        if (!row) throw new Error(`Enrollment request ${request.id} not found after creation`)
+
+        const [created] = await loadRequests(tx, [row])
+        if (!created) throw new Error(`Enrollment request ${request.id} could not be hydrated`)
+
+        return { kind: 'created', request: created }
       })
-
-      const created = await findById(requestId)
-      if (!created) throw new Error(`Enrollment request ${requestId} not found after creation`)
-
-      return created
     },
 
     async withdraw(id) {
@@ -140,26 +197,6 @@ export function createEnrollmentRequestRepository({ db }: { db: Db }): Enrollmen
         .update({ status: 'CANCELLED' })
 
       return updated !== null
-    },
-
-    async hasActiveOptionForOccurrence({ userId, occurrenceId, occurrenceYear }) {
-      // Cancelled requests are explicitly excluded: a withdrawal must unblock
-      // the student from submitting the same occurrence again.
-      const activeRequests = await db.orm.public.EnrollmentRequest.where((request) => request.userId.eq(userId))
-        .where((request) => request.status.neq('CANCELLED'))
-        .select('id')
-        .all()
-
-      if (activeRequests.length === 0) return false
-
-      const option = await db.orm.public.EnrollmentRequestOption.where((row) =>
-        row.requestId.in(activeRequests.map((request) => request.id)),
-      )
-        .where((row) => row.occurrenceId.eq(occurrenceId))
-        .where((row) => row.occurrenceYear.eq(occurrenceYear))
-        .first()
-
-      return option !== null
     },
   }
 }

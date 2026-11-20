@@ -46,6 +46,15 @@ export type NewEnrollmentRequestOption = {
   enrolling: boolean
 }
 
+/**
+ * Result of a create attempt. `duplicate` means an active (non-cancelled)
+ * option already covers that occurrence, discovered inside the write
+ * transaction so concurrent submissions cannot both succeed.
+ */
+export type CreateEnrollmentRequestOutcome =
+  | { kind: 'created'; request: EnrollmentRequest }
+  | { kind: 'duplicate'; occurrenceId: number; occurrenceYear: number }
+
 export type EnrollmentRequestRepository = {
   /** Every request owned by `userId`, newest first. */
   findByUserId(userId: string): Promise<EnrollmentRequest[]>
@@ -53,8 +62,13 @@ export type EnrollmentRequestRepository = {
   /** A single request, or `null` when no row matches. Ownership is checked by the caller. */
   findById(id: string): Promise<EnrollmentRequest | null>
 
-  /** Creates the request and all of its options atomically. */
-  create(input: { userId: string; options: NewEnrollmentRequestOption[] }): Promise<EnrollmentRequest>
+  /**
+   * Creates the request and all of its options atomically, after serializing
+   * submissions for the same student. The duplicate check and the insert share
+   * one transaction, so two concurrent requests cannot both create an active
+   * option for the same occurrence.
+   */
+  create(input: { userId: string; options: NewEnrollmentRequestOption[] }): Promise<CreateEnrollmentRequestOutcome>
 
   /**
    * Moves a `PENDING` request to `CANCELLED`. Returns `false` when the request
@@ -62,15 +76,4 @@ export type EnrollmentRequestRepository = {
    * conflict instead of pretending the withdrawal succeeded.
    */
   withdraw(id: string): Promise<boolean>
-
-  /**
-   * Whether the student already has an option for this occurrence on a request
-   * that was not cancelled. The direction (`enrolling`) is deliberately
-   * ignored: one active request per occurrence is enough to reject a new one.
-   */
-  hasActiveOptionForOccurrence(input: {
-    userId: string
-    occurrenceId: number
-    occurrenceYear: number
-  }): Promise<boolean>
 }

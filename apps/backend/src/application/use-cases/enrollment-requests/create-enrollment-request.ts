@@ -18,14 +18,16 @@ export type CreateEnrollmentRequestFailure =
 export type CreateEnrollmentRequestResult = { kind: 'ok'; request: EnrollmentRequest } | CreateEnrollmentRequestFailure
 
 /**
- * Creation rules, all checked before the first write:
+ * Creation rules checked before the write:
  *
  * - an option cannot repeat an occurrence inside the same payload;
  * - the occurrence must exist for the given `(id, year)` pair;
  * - at least one exchange period of that occurrence must be open now;
- * - the student cannot already have a non-cancelled option for it;
- * - an `enroll` option cannot target an occurrence the student already holds.
+ * - an `enroll` option cannot target an occurrence the student already holds;
+ * - the student cannot already have a non-cancelled option for it.
  *
+ * The duplicate rule is enforced inside the repository's write transaction,
+ * after locking the student, so concurrent submissions cannot both succeed.
  * A `drop` option does not require an existing enrollment, matching the
  * legacy Django behavior.
  */
@@ -72,18 +74,20 @@ export function createCreateEnrollmentRequest(deps: {
       )
       if (!isOpen) return { kind: 'exchange-period-closed', occurrenceId, occurrenceYear }
 
-      const hasDuplicate = await deps.enrollmentRequests.hasActiveOptionForOccurrence({
-        userId,
-        occurrenceId,
-        occurrenceYear,
-      })
-      if (hasDuplicate) return { kind: 'duplicate-request', occurrenceId, occurrenceYear }
-
       if (enrolling && (await deps.enrollments.isEnrolledInOccurrence(userId, occurrenceId, occurrenceYear))) {
         return { kind: 'already-enrolled', occurrenceId, occurrenceYear }
       }
     }
 
-    return { kind: 'ok', request: await deps.enrollmentRequests.create({ userId, options }) }
+    const outcome = await deps.enrollmentRequests.create({ userId, options })
+    if (outcome.kind === 'duplicate') {
+      return {
+        kind: 'duplicate-request',
+        occurrenceId: outcome.occurrenceId,
+        occurrenceYear: outcome.occurrenceYear,
+      }
+    }
+
+    return { kind: 'ok', request: outcome.request }
   }
 }

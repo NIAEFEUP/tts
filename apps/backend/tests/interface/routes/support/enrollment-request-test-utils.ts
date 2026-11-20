@@ -136,6 +136,27 @@ export function createFakeEnrollmentRequestRepository({
     },
 
     async create({ userId, options }: { userId: string; options: NewEnrollmentRequestOption[] }) {
+      // Mirror the repository: the duplicate check runs at write time, so the
+      // tests exercise the transactional path rather than a pre-check.
+      for (const option of options) {
+        const duplicate = [...store.values()].some(
+          (request) =>
+            request.userId === userId &&
+            request.status !== 'CANCELLED' &&
+            request.options.some(
+              (existing) =>
+                existing.occurrence.id === option.occurrenceId && existing.occurrence.year === option.occurrenceYear,
+            ),
+        )
+        if (duplicate) {
+          return {
+            kind: 'duplicate' as const,
+            occurrenceId: option.occurrenceId,
+            occurrenceYear: option.occurrenceYear,
+          }
+        }
+      }
+
       const createdAt = new Date()
       const request: EnrollmentRequest = {
         id: `req-created-${nextId++}`,
@@ -150,7 +171,7 @@ export function createFakeEnrollmentRequestRepository({
       }
 
       store.set(request.id, request)
-      return request
+      return { kind: 'created' as const, request }
     },
 
     async withdraw(id) {
@@ -160,17 +181,6 @@ export function createFakeEnrollmentRequestRepository({
       request.status = 'CANCELLED'
       request.updatedAt = new Date()
       return true
-    },
-
-    async hasActiveOptionForOccurrence({ userId, occurrenceId, occurrenceYear }) {
-      return [...store.values()].some(
-        (request) =>
-          request.userId === userId &&
-          request.status !== 'CANCELLED' &&
-          request.options.some(
-            (option) => option.occurrence.id === occurrenceId && option.occurrence.year === occurrenceYear,
-          ),
-      )
     },
   }
 
