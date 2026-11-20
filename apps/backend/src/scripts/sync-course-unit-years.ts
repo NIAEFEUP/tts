@@ -21,59 +21,63 @@ function unitKey(unit: { courseId: number; acronym: string; semester: number }):
 }
 
 async function main(): Promise<void> {
-  const rows = await db.orm.public.CourseUnit.select('id', 'courseId', 'acronym', 'semester', 'courseUnitYear').all()
+  try {
+    const rows = await db.orm.public.CourseUnit.select('id', 'courseId', 'acronym', 'semester', 'courseUnitYear').all()
 
-  const rowsByKey = new Map<string, typeof rows>()
-  for (const row of rows) {
-    const key = unitKey(row)
-    const matching = rowsByKey.get(key)
-    if (matching) matching.push(row)
-    else rowsByKey.set(key, [row])
-  }
-
-  const updates: Array<{ id: number; year: number }> = []
-  const unmatched: string[] = []
-  const ambiguous: string[] = []
-
-  for (const unit of fixture.courseUnits) {
-    const key = unitKey(unit)
-    const matching = rowsByKey.get(key)
-
-    if (!matching) {
-      unmatched.push(`${unit.acronym} (course ${unit.courseId}, semester ${unit.semester})`)
-      continue
+    const rowsByKey = new Map<string, typeof rows>()
+    for (const row of rows) {
+      const key = unitKey(row)
+      const matching = rowsByKey.get(key)
+      if (matching) matching.push(row)
+      else rowsByKey.set(key, [row])
     }
 
-    if (matching.length > 1) {
-      ambiguous.push(`${key} → ids ${matching.map((row) => row.id).join(', ')}`)
-      continue
+    const updates: Array<{ id: number; year: number }> = []
+    const unmatched: string[] = []
+    const ambiguous: string[] = []
+
+    for (const unit of fixture.courseUnits) {
+      const key = unitKey(unit)
+      const matching = rowsByKey.get(key)
+
+      if (!matching) {
+        unmatched.push(`${unit.acronym} (course ${unit.courseId}, semester ${unit.semester})`)
+        continue
+      }
+
+      if (matching.length > 1) {
+        ambiguous.push(`${key} → ids ${matching.map((row) => row.id).join(', ')}`)
+        continue
+      }
+
+      const row = matching[0]
+      if (row.courseUnitYear !== unit.courseUnitYear) {
+        updates.push({ id: row.id, year: unit.courseUnitYear })
+      }
     }
 
-    const row = matching[0]
-    if (row.courseUnitYear !== unit.courseUnitYear) {
-      updates.push({ id: row.id, year: unit.courseUnitYear })
+    // Abort before writing anything when the database does not line up with the
+    // fixture: guessing which unit to update is worse than leaving it untouched.
+    if (unmatched.length > 0 || ambiguous.length > 0) {
+      const problems = [
+        unmatched.length > 0 ? `no matching CourseUnit for:\n  ${unmatched.join('\n  ')}` : '',
+        ambiguous.length > 0 ? `ambiguous natural key for:\n  ${ambiguous.join('\n  ')}` : '',
+      ].filter(Boolean)
+
+      throw new Error(`Cannot sync catalog years — ${problems.join('\n')}`)
     }
+
+    for (const update of updates) {
+      await db.orm.public.CourseUnit.where({ id: update.id }).update({ courseUnitYear: update.year })
+    }
+
+    console.log(
+      `Catalog years synced: ${updates.length} updated, ` +
+        `${fixture.courseUnits.length - updates.length} already correct.`,
+    )
+  } finally {
+    await db.close()
   }
-
-  // Abort before writing anything when the database does not line up with the
-  // fixture: guessing which unit to update is worse than leaving it untouched.
-  if (unmatched.length > 0 || ambiguous.length > 0) {
-    const problems = [
-      unmatched.length > 0 ? `no matching CourseUnit for:\n  ${unmatched.join('\n  ')}` : '',
-      ambiguous.length > 0 ? `ambiguous natural key for:\n  ${ambiguous.join('\n  ')}` : '',
-    ].filter(Boolean)
-
-    throw new Error(`Cannot sync catalog years — ${problems.join('\n')}`)
-  }
-
-  for (const update of updates) {
-    await db.orm.public.CourseUnit.where({ id: update.id }).update({ courseUnitYear: update.year })
-  }
-
-  console.log(
-    `Catalog years synced: ${updates.length} updated, ` +
-      `${fixture.courseUnits.length - updates.length} already correct.`,
-  )
 }
 
 await main()
