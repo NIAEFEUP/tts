@@ -23,6 +23,11 @@ export function createAuthMiddleware({ resolveSession }: { resolveSession: Sessi
  * Same as `createAuthMiddleware`, but every route on the instance that mounts it
  * requires a valid session: anonymous callers get a 401 before the handler runs.
  * A protected route group mounts this instead of re-checking `user` by hand.
+ *
+ * The guard runs in `onTransform`, not `onBeforeHandle`: Elysia validates the
+ * route's body/query/params before `beforeHandle`, so an anonymous POST with an
+ * invalid body would otherwise answer 422 instead of the documented 401.
+ * `onTransform` runs after the session `derive` and before validation.
  */
 export function createRequiredAuthMiddleware({ resolveSession }: { resolveSession: SessionResolver }) {
   // A distinct plugin name keeps this out of the deduplicated `auth/session`
@@ -30,7 +35,7 @@ export function createRequiredAuthMiddleware({ resolveSession }: { resolveSessio
   // protected route group) without leaking to its own parent.
   return new Elysia({ name: 'auth/required' })
     .use(createAuthMiddleware({ resolveSession }))
-    .onBeforeHandle({ as: 'scoped' }, ({ user }) => {
+    .onTransform({ as: 'scoped' }, ({ user }) => {
       if (!user) throw httpError.unauthorized()
     })
 }

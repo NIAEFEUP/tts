@@ -519,6 +519,28 @@ the client can render them without sorting. `dayOfWeek` is `0` for Sunday;
 ]
 ```
 
+### `GET /users/me/eligible-occurrences` — response
+
+Returns the student’s enrolled occurrences whose exchange period is open. The list is ordered by
+academic year (newest first), then occurrence id. A missing or invalid session
+returns `401 unauthorized`.
+
+```json
+[
+  {
+    "id": 12345,
+    "courseUnitId": 42,
+    "courseId": 22841,
+    "year": 2025,
+    "ects": 6,
+    "url": "https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=12345",
+    "hash": "occurrence-hash",
+    "acronym": "BD",
+    "name": "Bases de Dados"
+  }
+]
+```
+
 ### `/students/:nmec/*` — student lookup
 
 All four routes require a session (`401 unauthorized` otherwise). `:nmec` accepts
@@ -733,10 +755,59 @@ Legacy mapping:
 | `POST`   | `/admin/enrollment-requests/:id/accept` | admin | Approve                          |
 | `POST`   | `/admin/enrollment-requests/:id/reject` | admin | Reject                           |
 
-### `GET /admin/enrollment-requests` — query params
+The four `/enrollment-requests` routes require a session (`401 unauthorized`
+otherwise) and are scoped to the session user. The admin routes are tracked
+separately (#875) and are not part of this implementation.
 
-- `page` / `page_size`
-- `activeCourse`, `activeCurricularYear`, `activeStates` — admin filters
+### Response shape
+
+List responses return an array of request objects (`[]` when the student has
+no requests). Detail and create responses return one request object. Each
+option carries the occurrence `(id, year)` pair and the course-unit fields the
+UI renders; `enrolling: true` adds the occurrence and `false` drops it.
+
+```json
+{
+  "id": "3f2c8f04-6d6a-4a7f-9e0d-0d9f0a2b1c33",
+  "status": "PENDING",
+  "adminState": "UNTREATED",
+  "createdAt": "2026-02-01T10:00:00.000Z",
+  "updatedAt": "2026-02-01T10:00:00.000Z",
+  "options": [
+    {
+      "occurrence": {
+        "id": 123,
+        "year": 2025,
+        "courseUnit": {
+          "id": 42,
+          "acronym": "BD",
+          "name": "Bases de Dados",
+          "semester": 1
+        }
+      },
+      "enrolling": true
+    },
+    {
+      "occurrence": {
+        "id": 124,
+        "year": 2025,
+        "courseUnit": {
+          "id": 43,
+          "acronym": "COMP",
+          "name": "Computação",
+          "semester": 2
+        }
+      },
+      "enrolling": false
+    }
+  ]
+}
+```
+
+### `GET /enrollment-requests`
+
+Returns only the session user's requests, newest `createdAt` first. Cancelled
+requests are included; no requests is an empty list, not a `404`.
 
 ### `POST /enrollment-requests` — body
 
@@ -749,10 +820,47 @@ Legacy mapping:
 }
 ```
 
+At least one option and at most 20 are required; an empty array or more than 20
+fails schema validation with `422 validation-error`. Creation is all-or-nothing
+and answers `201` with the created request on success. It is rejected when:
+
+| Status | Code                           | Meaning                                                                 |
+| ------ | ------------------------------ | ----------------------------------------------------------------------- |
+| `400`  | `duplicate-enrollment-option`  | The same `(occurrenceId, occurrenceYear)` appears twice in the payload. |
+| `400`  | `duplicate-enrollment-request` | A non-cancelled request already has an option for that occurrence.      |
+| `400`  | `exchange-period-closed`       | No exchange period of that occurrence is open now.                      |
+| `400`  | `already-enrolled`             | An `enrolling: true` option targets an occurrence I am enrolled in.     |
+| `404`  | `occurrence-not-found`         | The `(occurrenceId, occurrenceYear)` pair does not exist.               |
+
+The duplicate rule is per occurrence and ignores `enrolling`: an active enroll
+and an active drop option for the same occurrence cannot coexist. Options on
+`CANCELLED` requests do not count, so a withdrawn request can be submitted
+again. A `drop` option does not require an existing enrollment, matching the
+legacy behavior.
+
+### `GET /enrollment-requests/:id`
+
+Returns one request. An unknown id answers `404 enrollment-request-not-found`;
+another student's request answers `403 forbidden`.
+
+### `DELETE /enrollment-requests/:id`
+
+Withdraws a `PENDING` request by setting `status` to `CANCELLED`; it does not
+delete the row. A successful withdrawal answers `204` with no body. An unknown
+id answers `404 enrollment-request-not-found`, another student's request
+answers `403 forbidden`, and a request that is already `ACCEPTED` or
+`CANCELLED` answers `409 enrollment-request-not-pending`.
+
+### `GET /admin/enrollment-requests` — not implemented yet (#875)
+
+The admin list, accept and reject routes are tracked separately in #875 and are
+not registered by this change. Their planned filters are `page` / `page_size`,
+`activeCourse`, `activeCurricularYear` and `activeStates`.
+
 Legacy mapping:
 
-- `POST /course_unit/enrollment/` → `POST /enrollment-requests`
-- `GET /course_unit/enrollment/?page=&page_size=` → `GET /admin/enrollment-requests?page=&page_size=`
+- `POST /course_unit/enrollment/` → `POST /enrollment-requests` (implemented)
+- `GET /course_unit/enrollment/?page=&page_size=` → `GET /admin/enrollment-requests?page=&page_size=` (planned, #875)
 
 ---
 
