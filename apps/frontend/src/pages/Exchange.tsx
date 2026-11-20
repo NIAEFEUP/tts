@@ -43,7 +43,7 @@ const ExchangePage = () => {
   const [loads, setLoads] = useState<number>(-1)
   const [creatingRequest] = useState<boolean>(false)
   const [sidebarStatus, setSidebarStatus] = useState<ExchangeSidebarStatus>(ExchangeSidebarStatus.SHOWING_REQUESTS)
-  const { schedule, loading: loadingSchedule, sigarraSynced } = useSchedule()
+  const { schedule, loading: loadingSchedule } = useSchedule()
   const [originalExchangeSchedule, setOriginalExchangeSchedule] = useState<Array<ClassDescriptor>>([])
   const [exchangeSchedule, setExchangeSchedule] = useState<Array<ClassDescriptor>>([])
 
@@ -131,7 +131,7 @@ const ExchangePage = () => {
         {/* Schedule Preview */}
         <div className="lg:min-h-adjusted order-1 col-span-12 min-h-min rounded-sm bg-lightest px-3 py-3 dark:bg-dark lg:col-span-9 2xl:px-5 2xl:py-5  ">
           <div className="h-full w-full">
-            {!sigarraSynced && !loadingSchedule && (
+            {refreshedSchedule?.noChanges === false && !loadingSchedule && (
               <>
                 <Alert variant="destructive" className="my-2 mb-4">
                   <AlertCircle className="h-4 w-4" />
