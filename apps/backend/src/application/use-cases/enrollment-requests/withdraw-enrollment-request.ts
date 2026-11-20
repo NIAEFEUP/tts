@@ -1,4 +1,5 @@
 import type { EnrollmentRequestRepository } from '@/domain/ports/enrollment-request.repository'
+import { createGetEnrollmentRequest } from './get-enrollment-request'
 
 export type WithdrawEnrollmentRequestResult =
   | { kind: 'ok' }
@@ -12,14 +13,15 @@ export type WithdrawEnrollmentRequestResult =
  * request can be withdrawn.
  */
 export function createWithdrawEnrollmentRequest(deps: { enrollmentRequests: EnrollmentRequestRepository }) {
+  const getEnrollmentRequest = createGetEnrollmentRequest(deps)
+
   return async function withdrawEnrollmentRequest(
     userId: string,
     requestId: string,
   ): Promise<WithdrawEnrollmentRequestResult> {
-    const request = await deps.enrollmentRequests.findById(requestId)
-    if (!request) return { kind: 'not-found' }
-    if (request.userId !== userId) return { kind: 'forbidden' }
-    if (request.status !== 'PENDING') return { kind: 'not-pending' }
+    const found = await getEnrollmentRequest(userId, requestId)
+    if (found.kind !== 'ok') return found
+    if (found.request.status !== 'PENDING') return { kind: 'not-pending' }
 
     // Conditional at the repository level too: if the request stopped being
     // PENDING between the read and the write, the withdrawal changed nothing.

@@ -2,6 +2,7 @@ import { Elysia, status, t } from 'elysia'
 
 import { createCreateEnrollmentRequest } from '@/application/use-cases/enrollment-requests/create-enrollment-request'
 import type { CreateEnrollmentRequestFailure } from '@/application/use-cases/enrollment-requests/create-enrollment-request'
+import { createGetEnrollmentRequest } from '@/application/use-cases/enrollment-requests/get-enrollment-request'
 import { createWithdrawEnrollmentRequest } from '@/application/use-cases/enrollment-requests/withdraw-enrollment-request'
 import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
 import type { EnrollmentRequestRepository } from '@/domain/ports/enrollment-request.repository'
@@ -126,13 +127,19 @@ export const enrollmentRequestRoutes = ({ sessions }: EnrollmentRequestRoutesDep
       async ({ user, repositories, params }) => {
         if (!user) throw httpError.unauthorized()
 
-        const request = await repositories.enrollmentRequestRepository.findById(params.id)
-        if (!request) {
-          throw new HttpError('enrollment-request-not-found', `Enrollment request ${params.id} not found`, 404)
-        }
-        if (request.userId !== user.id) throw httpError.forbidden()
+        const getEnrollmentRequest = createGetEnrollmentRequest({
+          enrollmentRequests: repositories.enrollmentRequestRepository,
+        })
+        const result = await getEnrollmentRequest(user.id, params.id)
 
-        return toEnrollmentRequestResponse(request)
+        switch (result.kind) {
+          case 'ok':
+            return toEnrollmentRequestResponse(result.request)
+          case 'not-found':
+            throw new HttpError('enrollment-request-not-found', `Enrollment request ${params.id} not found`, 404)
+          case 'forbidden':
+            throw httpError.forbidden()
+        }
       },
       {
         params: t.Object({ id: t.String({ minLength: 1 }) }),
