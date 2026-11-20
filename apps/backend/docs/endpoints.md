@@ -733,9 +733,10 @@ separately (#875) and are not part of this implementation.
 
 ### Response shape
 
-List, detail and create responses return the same request object. Each option
-carries the occurrence `(id, year)` pair and the course-unit fields the UI
-renders; `enrolling: true` adds the occurrence and `false` drops it.
+List responses return an array of request objects (`[]` when the student has
+no requests). Detail and create responses return one request object. Each
+option carries the occurrence `(id, year)` pair and the course-unit fields the
+UI renders; `enrolling: true` adds the occurrence and `false` drops it.
 
 ```json
 {
@@ -791,9 +792,9 @@ requests are included; no requests is an empty list, not a `404`.
 }
 ```
 
-At least one option is required; an empty array fails schema validation with
-`422 validation-error`. Creation is all-or-nothing and answers `201` with the
-created request on success. It is rejected when:
+At least one option and at most 20 are required; an empty array or more than 20
+fails schema validation with `422 validation-error`. Creation is all-or-nothing
+and answers `201` with the created request on success. It is rejected when:
 
 | Status | Code                           | Meaning                                                                 |
 | ------ | ------------------------------ | ----------------------------------------------------------------------- |
@@ -822,15 +823,16 @@ id answers `404 enrollment-request-not-found`, another student's request
 answers `403 forbidden`, and a request that is already `ACCEPTED` or
 `CANCELLED` answers `409 enrollment-request-not-pending`.
 
-### `GET /admin/enrollment-requests` — query params
+### `GET /admin/enrollment-requests` — not implemented yet (#875)
 
-- `page` / `page_size`
-- `activeCourse`, `activeCurricularYear`, `activeStates` — admin filters
+The admin list, accept and reject routes are tracked separately in #875 and are
+not registered by this change. Their planned filters are `page` / `page_size`,
+`activeCourse`, `activeCurricularYear` and `activeStates`.
 
 Legacy mapping:
 
-- `POST /course_unit/enrollment/` → `POST /enrollment-requests`
-- `GET /course_unit/enrollment/?page=&page_size=` → `GET /admin/enrollment-requests?page=&page_size=`
+- `POST /course_unit/enrollment/` → `POST /enrollment-requests` (implemented)
+- `GET /course_unit/enrollment/?page=&page_size=` → `GET /admin/enrollment-requests?page=&page_size=` (planned, #875)
 
 ---
 
