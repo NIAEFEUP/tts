@@ -190,13 +190,15 @@ export function createEnrollmentRequestRepository({ db }: { db: Db }): Enrollmen
     },
 
     async withdraw(id) {
-      // Filtering on PENDING makes the withdrawal conditional: if another
-      // operation already accepted or cancelled it, no row changes.
-      const updated = await db.orm.public.EnrollmentRequest.where({ id, status: 'PENDING' })
-        .select('id')
-        .update({ status: 'CANCELLED' })
+      // `updateAndCount` keeps the filter on the write itself, unlike scalar
+      // `update()` which first selects a row and then writes by its identity.
+      // Two concurrent withdrawals therefore cannot both change the row: only
+      // the one that matches `status = PENDING` reports an affected row.
+      const affected = await db.orm.public.EnrollmentRequest.where({ id, status: 'PENDING' }).updateAndCount({
+        status: 'CANCELLED',
+      })
 
-      return updated !== null
+      return affected === 1
     },
   }
 }
