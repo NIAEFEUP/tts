@@ -52,6 +52,17 @@ describe('enrollment requests routes', () => {
     })
   }
 
+  it('rejects an anonymous POST before validating its body', async () => {
+    const { request } = createEnrollmentRequestsApp()
+
+    for (const body of [{ options: [] }, undefined]) {
+      const { status, body: responseBody } = await request('POST', LIST_PATH, { cookie: null, body })
+
+      expect(status).toBe(401)
+      expect(responseBody).toEqual(UNAUTHORIZED_BODY)
+    }
+  })
+
   it('lists only my requests, newest first', async () => {
     const { request } = createEnrollmentRequestsApp()
     const { status, body } = await request('GET', LIST_PATH)
