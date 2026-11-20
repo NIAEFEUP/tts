@@ -69,13 +69,22 @@ const PasteOption = () => {
     })
 
     if (uncheckedCoursesIds.length > 0) {
-      const courses: CourseInfo[] = (
-        await Promise.all(
+      let courses: CourseInfo[]
+      try {
+        courses = await Promise.all(
           uncheckedCoursesIds.map(async (course_unit_id) => {
             return await occurrenceService.getClasses(Number(course_unit_id))
           }),
         )
-      ).flat()
+      } catch (error) {
+        console.error(error)
+        toast({
+          title: 'Erro ao colar a opção',
+          description: 'Não foi possível carregar as turmas das unidades curriculares importadas.',
+          duration: 3000,
+        })
+        return
+      }
 
       const newPickedCourses = [...pickedCourses]
       setPickedCourses(newPickedCourses.concat(courses))
