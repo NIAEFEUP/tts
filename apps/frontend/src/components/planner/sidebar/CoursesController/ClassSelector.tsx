@@ -20,7 +20,12 @@ const ClassSelector = ({ course, lockFunctionality = true }: Props) => {
 
   const { setPickedCourses } = useContext(CourseContext)
 
-  const { classes, loading: classesLoading, error: classesError, mutate: retryClasses } = useCourseUnitClasses(course.id)
+  const {
+    classes,
+    loading: classesLoading,
+    error: classesError,
+    mutate: retryClasses,
+  } = useCourseUnitClasses(course.id)
 
   useEffect(() => {
     if (classes) {
