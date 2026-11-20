@@ -15,7 +15,7 @@ import { Menu } from '../../../ui/new/menu'
 
 const PasteOption = () => {
   const { multipleOptions, setMultipleOptions, selectedOption } = useContext(MultipleOptionsContext)
-  const { pickedCourses, setPickedCourses } = useContext(CourseContext)
+  const { pickedCourses, setPickedCourses, checkboxedCourses, setCheckboxedCourses } = useContext(CourseContext)
 
   const [isClipboardSupported, setIsClipboardSupported] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -65,17 +65,22 @@ const PasteOption = () => {
     })
 
     const uncheckedCoursesIds = Object.keys(importedCourses).filter((course_unit_id) => {
-      return !checkedCoursesIds.includes(Number(course_unit_id))
+      return (
+        !checkedCoursesIds.includes(Number(course_unit_id)) ||
+        !pickedCourses.some((course) => course.id === Number(course_unit_id))
+      )
     })
 
     if (uncheckedCoursesIds.length > 0) {
       let courses: CourseInfo[]
       try {
-        courses = await Promise.all(
-          uncheckedCoursesIds.map(async (course_unit_id) => {
-            return await occurrenceService.getClasses(Number(course_unit_id))
-          }),
-        )
+        courses = (
+          await Promise.all(
+            uncheckedCoursesIds.map(async (course_unit_id) => {
+              return await occurrenceService.getClasses(Number(course_unit_id))
+            }),
+          )
+        ).flat()
       } catch (error) {
         console.error(error)
         toast({
@@ -86,13 +91,17 @@ const PasteOption = () => {
         return
       }
 
-      const newPickedCourses = [...pickedCourses]
-      setPickedCourses(newPickedCourses.concat(courses))
+      setPickedCourses(pickedCourses.concat(courses.filter((course) => !pickedCourses.some((c) => c.id === course.id))))
+      setCheckboxedCourses(
+        checkboxedCourses.concat(courses.filter((course) => !checkboxedCourses.some((c) => c.id === course.id))),
+      )
 
       const newMultipleOptions = [...multipleOptions]
       newMultipleOptions.forEach((option) => {
         option.course_options = option.course_options.concat(
-          courses.map((course) => convertCourseInfoToCourseOption(course)),
+          courses
+            .filter((course) => !checkedCoursesIds.includes(course.id))
+            .map((course) => convertCourseInfoToCourseOption(course)),
         )
       })
 
