@@ -6,10 +6,14 @@ import startContract from '../../snapshots/b8cf88cef780e6a64cd5f17b631daf8ea2da9
 import { Migration, MigrationCLI, col } from '@prisma/orm-postgres/migration'
 import postgres from '@prisma/orm-postgres/runtime'
 
-// The contract stores a `NOT NULL` column, but the existing rows have no
-// curricular year to copy from: `course_metadata` lives in the scraper's SQLite
-// dump, not in Postgres. Seed every existing unit as year 1 and let the next
-// catalog seed/re-sync overwrite it with the real value.
+// The contract stores a `NOT NULL` column, but existing rows have no curricular
+// year to copy from: `course_metadata` lives in the scraper's SQLite dump, not
+// in Postgres. Seed every existing unit as year 1; afterwards run
+// `bun run catalog:sync-years` on the same database to copy the real values
+// from the committed fixture. That command updates only
+// `CourseUnit.courseUnitYear` (matched by courseId + acronym + semester) and
+// works against any DATABASE_URL — unlike `db:seed`, which truncates every
+// table and refuses non-loopback hosts, so it cannot repair a shared database.
 const { sql: db, contract } = postgres<End>({ contractJson: endContract })
 
 export default class M extends Migration<Start, End> {

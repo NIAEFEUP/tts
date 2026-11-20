@@ -6,7 +6,7 @@
 // where a course unit is actually taught. It owns the classes, schedule,
 // exchange periods, and admin scope that the abstract `CourseUnit` does not.
 
-import type { CourseUnitSemester } from './course-unit.repository'
+import type { CourseUnitSemester, CourseUnitYear } from './course-unit.repository'
 
 /**
  * A concrete offering of a course unit. `id` is the Sigarra occurrence id and
@@ -32,7 +32,7 @@ export type OccurrenceWithUnit = Occurrence & {
   acronym: string
   name: string
   /** Curricular year of the unit in its course plan — see `CourseUnit`. */
-  courseUnitYear: number
+  courseUnitYear: CourseUnitYear
 }
 
 /**

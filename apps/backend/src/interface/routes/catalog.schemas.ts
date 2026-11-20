@@ -31,7 +31,7 @@ export const courseUnitSchema = t.Object({
   acronym: t.String(),
   name: t.String(),
   semester: t.Union([t.Literal(1), t.Literal(2)]),
-  courseUnitYear: t.Number(),
+  courseUnitYear: t.Integer({ minimum: 1, maximum: 6 }),
 })
 
 /** A concrete occurrence of a course unit: the (unit, course, year) tuple
@@ -55,7 +55,7 @@ export const occurrenceWithUnitSchema = t.Composite([
     acronym: t.String(),
     name: t.String(),
     /** Curricular year in the course plan (1..6) — not the academic year. */
-    courseUnitYear: t.Number(),
+    courseUnitYear: t.Integer({ minimum: 1, maximum: 6 }),
   }),
 ])
 

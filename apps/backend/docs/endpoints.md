@@ -205,7 +205,7 @@ The abstract course units the course offers, ordered by acronym. An unknown cour
 ]
 ```
 
-`courseUnitYear` is the curricular year in the course plan (1..6) — the picker groups its year tabs by it. It is not the academic year: that lives on the occurrence as `year`.
+`courseUnitYear` is the curricular year in the course plan (1..6) — the picker groups its year tabs by it. It is not the academic year: that lives on the occurrence as `year`. If the scraper's metadata lists the same unit under several plan years (electives), catalog extraction keeps the **earliest** year for that unit; the column is a single value, not a list.
 
 ### `GET /courses/:id/occurrences` — query params
 

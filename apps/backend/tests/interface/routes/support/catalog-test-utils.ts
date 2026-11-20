@@ -307,6 +307,20 @@ export function createFakeCourseUnitRepository({
   }
 }
 
+/**
+ * Join an occurrence with its course unit, mirroring the enriched shape the
+ * Prisma repositories return from `findByCourse` / `findById`. Shared by the
+ * fake repository and the assertions so the two cannot drift.
+ */
+export function withCourseUnit(occurrence: Occurrence, unit: CourseUnit): OccurrenceWithUnit {
+  return {
+    ...occurrence,
+    acronym: unit.acronym,
+    name: unit.name,
+    courseUnitYear: unit.courseUnitYear,
+  }
+}
+
 /** In-memory `OccurrenceRepository` over `occurrences` (defaults to `OCCURRENCES`). */
 export function createFakeOccurrenceRepository({
   occurrences = OCCURRENCES,
@@ -318,12 +332,7 @@ export function createFakeOccurrenceRepository({
     const unit = courseUnits.find((u) => u.id === occurrence.courseUnitId)
     if (!unit) throw new Error(`No CourseUnit for occurrence ${occurrence.id}`)
 
-    return {
-      ...occurrence,
-      acronym: unit.acronym,
-      name: unit.name,
-      courseUnitYear: unit.courseUnitYear,
-    }
+    return withCourseUnit(occurrence, unit)
   }
 
   return {

@@ -8,6 +8,7 @@ import {
   VALIDATION_ERROR_BODY,
   createCatalogApp,
   registerCatalogAuthGuard,
+  withCourseUnit,
 } from '../support/catalog-test-utils'
 
 // The fake repositories, fixtures, and `get` helper live in
@@ -21,16 +22,10 @@ const { app, get } = createCatalogApp()
 
 // The enriched occurrence shape: the occurrence joined with its course unit's
 // human-readable fields. `GET /v1/courses/:id/occurrences` and
-// `GET /v1/occurrences/:id` both return it.
-const occurrenceWithUnit = (occurrence: (typeof OCCURRENCES)[number], unit: (typeof COURSE_UNITS)[number]) => ({
-  ...occurrence,
-  acronym: unit.acronym,
-  name: unit.name,
-  courseUnitYear: unit.courseUnitYear,
-})
-
-const BD_2025 = occurrenceWithUnit(OCCURRENCES[0], COURSE_UNITS[0])
-const COMP_2025 = occurrenceWithUnit(OCCURRENCES[2], COURSE_UNITS[1])
+// `GET /v1/occurrences/:id` both return it. `withCourseUnit` is the same helper
+// the fake repository joins with, so the assertions cannot drift from it.
+const BD_2025 = withCourseUnit(OCCURRENCES[0], COURSE_UNITS[0])
+const COMP_2025 = withCourseUnit(OCCURRENCES[2], COURSE_UNITS[1])
 
 describe('occurrence routes', () => {
   registerCatalogAuthGuard(app, [
