@@ -10,6 +10,7 @@ import { toast } from '../../ui/new/toaster'
 import useStudentCourseUnits from '../../../hooks/useStudentCourseUnits'
 import { AlreadyEnrolledCourseUnitCard } from './AlreadyEnrolledCourseUnitCard'
 import { EnrollingCourseUnitCard } from './EnrollingCourseUnitCard'
+import { CourseUnitsError } from '../CourseUnitsError'
 import { LockClosedIcon } from '@heroicons/react/24/outline'
 import { Skeleton } from '../../ui/skeleton'
 
@@ -35,7 +36,11 @@ export const Enrollments = ({ setExchangeSidebarStatus }: Props) => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [coursesInfo, setCoursesInfo] = useState<CourseInfo[]>([])
 
-  const { enrolledCourseUnits: alreadyEnrolledCourseUnits, loading: loadingEnrolled } = useStudentCourseUnits()
+  const {
+    enrolledCourseUnits: alreadyEnrolledCourseUnits,
+    loading: loadingEnrolled,
+    error: courseUnitsError,
+  } = useStudentCourseUnits()
 
   useEffect(() => {
     if (!enrollCourses) return
@@ -88,7 +93,9 @@ export const Enrollments = ({ setExchangeSidebarStatus }: Props) => {
           </div>
 
           <div className="flex flex-col gap-y-2">
-            {loadingEnrolled ? (
+            {courseUnitsError ? (
+              <CourseUnitsError />
+            ) : loadingEnrolled ? (
               <div className="flex flex-col gap-y-2">
                 <Skeleton className="h-12 w-full rounded-xl" />
                 <Skeleton className="h-12 w-full rounded-xl" />
