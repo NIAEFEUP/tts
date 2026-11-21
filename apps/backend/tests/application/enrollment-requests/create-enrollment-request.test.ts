@@ -17,6 +17,7 @@ const OCCURRENCE: OccurrenceWithUnit = {
   hash: 'hash-bd-2025',
   acronym: 'BD',
   name: 'Bases de Dados',
+  courseUnitYear: 2,
 }
 
 const enrollments: EnrollmentRepository = {

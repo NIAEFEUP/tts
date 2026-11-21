@@ -51,6 +51,7 @@ type UnitRow = {
   acronym: string
   name: string
   semester: number
+  course_unit_year: number | null
   year: number
   url: string
   hash: string | null
@@ -66,6 +67,23 @@ function parseEcts(raw: string | number | null): number {
     throw new Error('Occurrence without ects — the scraper always writes one.')
   }
   return typeof raw === 'number' ? raw : Number(raw.replace(',', '.'))
+}
+
+/**
+ * `course_unit_year` is Sigarra's curricular year in the course plan (1..6).
+ * The picker groups its year tabs by this value, so refuse to emit a fixture
+ * with a missing or out-of-range one rather than break the planner silently.
+ * The unit identity is part of the message: a full dump has thousands of rows
+ * and the raw value alone is not actionable.
+ */
+function parseCourseUnitYear(raw: number | null, unit: UnitRow): number {
+  if (raw == null || !Number.isInteger(raw) || raw < 1 || raw > 6) {
+    throw new Error(
+      `Course unit ${unit.acronym} (course ${unit.course_id}, id ${unit.id}) ` +
+        `has no valid curricular year (got ${raw}).`,
+    )
+  }
+  return raw
 }
 
 /** The scraper leaves stray whitespace/newlines in some text columns. */
@@ -88,9 +106,30 @@ const courses = sqlite
   )
   .all(...COURSE_IDS)
 
+// `course_metadata` keys on (course, unit, curricular year), so a unit can have
+// more than one row for the same course — the key does not rule out a plan that
+// lists it under several years. `CourseUnit` carries a single curricular year,
+// so collapse to the earliest one and take `ects` from that same row — the API
+// and the picker's year tabs use that one value (documented in
+// `docs/endpoints.md`). Rows with a NULL year are skipped: one incomplete
+// metadata row must not shadow a valid one. The CTE is scoped to the target
+// courses so the window never ranks unrelated metadata.
 const units = sqlite
   .query<UnitRow, number[]>(
-    `SELECT cu.id,
+    `WITH unit_metadata AS (
+       SELECT course_id,
+              course_unit_id,
+              course_unit_year,
+              ects,
+              ROW_NUMBER() OVER (
+                PARTITION BY course_id, course_unit_id
+                ORDER BY course_unit_year
+              ) AS row_number
+         FROM course_metadata
+        WHERE course_id IN (${placeholders})
+          AND course_unit_year IS NOT NULL
+     )
+     SELECT cu.id,
             cu.course_id,
             cu.acronym,
             cu.name,
@@ -98,16 +137,17 @@ const units = sqlite
             cu.year,
             cu.url,
             cu.hash,
-            (SELECT m.ects
-               FROM course_metadata m
-              WHERE m.course_id = cu.course_id
-                AND m.course_unit_id = cu.id
-              LIMIT 1) AS ects
+            m.ects,
+            m.course_unit_year
        FROM course_unit cu
+       LEFT JOIN unit_metadata m
+         ON m.course_id = cu.course_id
+        AND m.course_unit_id = cu.id
+        AND m.row_number = 1
       WHERE cu.course_id IN (${placeholders})
       ORDER BY cu.course_id, cu.id`,
   )
-  .all(...COURSE_IDS)
+  .all(...COURSE_IDS, ...COURSE_IDS)
 
 sqlite.close()
 
@@ -119,6 +159,7 @@ const courseUnits: Array<{
   acronym: string
   name: string
   semester: number
+  courseUnitYear: number
 }> = []
 
 const occurrences = units.map((u) => {
@@ -129,6 +170,7 @@ const occurrences = units.map((u) => {
     acronym: clean(u.acronym),
     name: clean(u.name),
     semester: u.semester,
+    courseUnitYear: parseCourseUnitYear(u.course_unit_year, u),
   })
   return {
     id: u.id,

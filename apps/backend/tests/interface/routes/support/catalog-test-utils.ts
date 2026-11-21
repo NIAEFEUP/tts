@@ -129,9 +129,9 @@ export const CLASS_STUDENTS: Record<number, EnrolledStudent[]> = {
  * Course 22201 deliberately offers no units, and unit 44 has no occurrence.
  */
 export const COURSE_UNITS: CourseUnit[] = [
-  { id: 42, courseId: 22841, acronym: 'BD', name: 'Bases de Dados', semester: 1 },
-  { id: 43, courseId: 22841, acronym: 'COMP', name: 'Computação', semester: 2 },
-  { id: 44, courseId: 22990, acronym: 'BD', name: 'Bases de Dados', semester: 1 },
+  { id: 42, courseId: 22841, acronym: 'BD', name: 'Bases de Dados', semester: 1, courseUnitYear: 2 },
+  { id: 43, courseId: 22841, acronym: 'COMP', name: 'Computação', semester: 2, courseUnitYear: 1 },
+  { id: 44, courseId: 22990, acronym: 'BD', name: 'Bases de Dados', semester: 1, courseUnitYear: 3 },
 ]
 
 /** Concrete occurrences: unit 42 is taught in two courses across two years. */
@@ -307,11 +307,34 @@ export function createFakeCourseUnitRepository({
   }
 }
 
+/**
+ * Join an occurrence with its course unit, mirroring the enriched shape the
+ * Prisma repositories return from `findByCourse` / `findById`. Shared by the
+ * fake repository and the assertions so the two cannot drift.
+ */
+export function withCourseUnit(occurrence: Occurrence, unit: CourseUnit): OccurrenceWithUnit {
+  return {
+    ...occurrence,
+    acronym: unit.acronym,
+    name: unit.name,
+    courseUnitYear: unit.courseUnitYear,
+  }
+}
+
 /** In-memory `OccurrenceRepository` over `occurrences` (defaults to `OCCURRENCES`). */
 export function createFakeOccurrenceRepository({
   occurrences = OCCURRENCES,
   courseUnits = COURSE_UNITS,
 }: CatalogFixtures = {}): OccurrenceRepository {
+  // Join a course unit onto an occurrence, mirroring the enriched shape the
+  // Prisma implementation returns from `findByCourse` / `findById`.
+  const withUnit = (occurrence: Occurrence): OccurrenceWithUnit => {
+    const unit = courseUnits.find((u) => u.id === occurrence.courseUnitId)
+    if (!unit) throw new Error(`No CourseUnit for occurrence ${occurrence.id}`)
+
+    return withCourseUnit(occurrence, unit)
+  }
+
   return {
     async findByCourseUnit(courseUnitId) {
       // Newest year first, then by id — the order the Prisma repository uses.
@@ -335,6 +358,7 @@ export function createFakeOccurrenceRepository({
           return true
         })
         .sort((a, b) => b.year - a.year || a.id - b.id)
+        .map(withUnit)
     },
 
     async findById(id, year): Promise<OccurrenceWithUnit | null> {
@@ -343,12 +367,7 @@ export function createFakeOccurrenceRepository({
       const occurrence = occurrences.find((o) => o.id === id && o.year === year)
       if (!occurrence) return null
 
-      // Join the course unit to attach its name and acronym, mirroring the
-      // enriched shape the Prisma implementation returns.
-      const unit = courseUnits.find((u) => u.id === occurrence.courseUnitId)
-      if (!unit) return null
-
-      return { ...occurrence, acronym: unit.acronym, name: unit.name }
+      return withUnit(occurrence)
     },
   }
 }

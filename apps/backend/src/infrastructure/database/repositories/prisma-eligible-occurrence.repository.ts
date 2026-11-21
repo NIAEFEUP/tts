@@ -2,6 +2,8 @@ import type { EligibleOccurrenceRepository } from '@/domain/ports/eligible-occur
 import { selectEligible } from '@/domain/services/select-eligible'
 import type { Db } from '@/infrastructure/database/prisma'
 
+import { COURSE_UNIT_COLUMNS, toOccurrenceWithUnit } from './occurrence-with-unit'
+
 export function createEligibleOccurrenceRepository({ db }: { db: Db }): EligibleOccurrenceRepository {
   return {
     async findByUserId(userId) {
@@ -22,7 +24,7 @@ export function createEligibleOccurrenceRepository({ db }: { db: Db }): Eligible
       // so another year or course of the same unit is not something they can exchange into.
       const loadedOccurrences = (
         await db.orm.public.Occurrence.where((occurrence) => occurrence.id.in(occurrenceIds))
-          .include('courseUnit', (courseUnit) => courseUnit.select('acronym', 'name'))
+          .include('courseUnit', (courseUnit) => courseUnit.select(...COURSE_UNIT_COLUMNS))
           .all()
       ).filter((occurrence) => enrolledOccurrenceKeys.has(`${occurrence.id}:${occurrence.year}`))
 
@@ -33,21 +35,7 @@ export function createEligibleOccurrenceRepository({ db }: { db: Db }): Eligible
         period.occurrenceId.in(candidateOccurrenceIds),
       ).all()
 
-      const withCourseUnits = loadedOccurrences.map((occurrence) => {
-        if (!occurrence.courseUnit) throw new Error(`Course unit for occurrence ${occurrence.id} not found`)
-
-        return {
-          id: occurrence.id,
-          courseUnitId: occurrence.courseUnitId,
-          courseId: occurrence.courseId,
-          year: occurrence.year,
-          ects: occurrence.ects,
-          url: occurrence.url,
-          hash: occurrence.hash,
-          acronym: occurrence.courseUnit.acronym,
-          name: occurrence.courseUnit.name,
-        }
-      })
+      const withCourseUnits = loadedOccurrences.map(toOccurrenceWithUnit)
 
       return selectEligible({ occurrences: withCourseUnits, periods: activePeriods, now: Date.now() })
     },

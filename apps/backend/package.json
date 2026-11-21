@@ -18,6 +18,7 @@
     "test:coverage": "bun test --coverage",
     "contract:emit": "prisma contract emit",
     "catalog:extract": "bun scripts/extract-catalog.ts",
+    "catalog:sync-years": "varlock run -- tsx --tsconfig tsconfig.lib.json src/scripts/sync-course-unit-years.ts",
     "db:seed": "varlock run -- tsx --tsconfig tsconfig.lib.json src/scripts/seed.ts",
     "db:seed:demo": "varlock run -- tsx --tsconfig tsconfig.lib.json src/scripts/seed-demo.ts",
     "db:init": "varlock run -- prisma db init",
