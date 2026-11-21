@@ -11,7 +11,6 @@ export type SessionUser = {
   name: string
   is_admin: boolean
   role: 'USER' | 'ADMIN' | 'SUPERUSER'
-  eligible_exchange: boolean
 }
 
 /** The signed-out session, returned for 401s and for responses without a user. */
@@ -21,7 +20,6 @@ const anonymous: SessionUser = {
   name: '',
   is_admin: false,
   role: 'USER',
-  eligible_exchange: false,
 }
 
 /** Normalizes the backend session into the shape the components consume. */
@@ -53,8 +51,6 @@ const useSession = () => {
       name: data.name,
       is_admin: Boolean(data.isAdmin),
       role: data.role ?? (data.isAdmin ? 'ADMIN' : 'USER'),
-      // Exchange eligibility is not exposed by the backend yet.
-      eligible_exchange: false,
     }
   }
 
