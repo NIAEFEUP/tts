@@ -1,32 +1,23 @@
-import { useMemo } from 'react'
-import api from '../api/backend'
+import { useContext } from 'react'
 import useSWR from 'swr'
 
+import studentService from '../api/services/studentService'
+import SessionContext from '../contexts/SessionContext'
+
+const ELIGIBLE_OCCURRENCES_KEY = ['v1/users/me/eligible-occurrences'] as const
+
 export default () => {
-  const getEligibileCourseUnits = async () => {
-    try {
-      const res = await fetch(`${api.BACKEND_URL}/student/course_units/eligible`, {
-        credentials: 'include',
-      })
+  const { signedIn, isSessionLoading } = useContext(SessionContext)
 
-      if (res.ok) {
-        return await res.json()
-      }
-
-      return []
-    } catch (e) {
-      console.error(e)
-      return []
-    }
-  }
-
-  const { data, error, mutate, isValidating } = useSWR('eligibleCourseUnits', getEligibileCourseUnits, {})
-  const enrolledCourseUnits = useMemo(() => (data ? data : null), [data])
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
+    signedIn ? ELIGIBLE_OCCURRENCES_KEY : null,
+    studentService.getEligibleOccurrences,
+  )
 
   return {
-    enrolledCourseUnits,
+    enrolledCourseUnits: data ?? null,
     error,
-    loading: !data,
+    loading: isSessionLoading || isLoading,
     isValidating,
     forceCourseUnitsRevalidation: mutate,
   }
