@@ -165,10 +165,11 @@ Dependencies point inward. Domain must never import from Application, Interface,
 - Group route tests by feature under `tests/interface/routes/` — `auth/`, `catalog/`, `users/`, …. The grouping is tests-side for now: `src/interface/routes/` still keeps catalog routes flat (`courses.routes.ts`, `faculties.routes.ts`), so don't expect a 1:1 mirror. Shared helpers live in `tests/interface/routes/support/` (not test files, so Bun does not run them).
 - Drive the real app with `createApp().handle(request)` — no listener and no database. Fake repositories stand in for the database, so tests assert real HTTP behaviour: status codes, error bodies, and query validation.
 - Reuse the shared helpers instead of re-declaring fixtures, config, or fakes:
-  - `tests/interface/routes/support/catalog-test-utils.ts` — `COURSES`/`FACULTIES`, `createFakeCourseRepository`, `createFakeFacultyRepository`, `createCatalogApp()` → `{ app, get }`, `getCatalog`, `registerCatalogAuthGuard`, `UNAUTHORIZED_BODY`/`VALIDATION_ERROR_BODY`.
+  - `tests/interface/routes/support/http-test-utils.ts` — `request(app, path, { method, body, cookie, authenticated })`, the bound `createRequester(app)` → `get`/`post`/`put`/`patch`/`del`, and `UNAUTHORIZED_BODY`/`VALIDATION_ERROR_BODY`/`FORBIDDEN_BODY`. Every request in a route test goes through here: it sends JSON bodies, skips `response.json()` for `204`/non-JSON, and exposes `location`.
+  - `tests/interface/routes/support/catalog-test-utils.ts` — `COURSES`/`FACULTIES`, `createFakeCourseRepository`, `createFakeFacultyRepository`, `createCatalogApp()` → `{ app, get, post, put, patch, del }` (pass `{ user: ADMIN }` for admin routes), `getCatalog`, `registerCatalogAuthGuard`, `registerAdminGuard`.
   - `tests/interface/routes/support/auth-test-utils.ts` — `TEST_USER`/`ADMIN`, `TEST_SESSION_TOKEN`, `createTestAuthConfig`, `createFakeIdentityProvider`/`createFakeUsers`/`createFakeSessions`/`createFakeDevAuthenticator`, `getCookie`.
 - Do not hand-roll `new Request(...)` or copy fixtures/config/user/session fakes into a route test. When a new catalog route group lands (`course-units`, `occurrences`), add its fixtures and fake repository to `support/catalog-test-utils.ts` and default it in `createCatalogApp()`; add new auth fakes to `support/auth-test-utils.ts`.
-- Call `registerCatalogAuthGuard` inside the file's `describe`.
+- Call `registerCatalogAuthGuard` inside the file's `describe`; for an admin-only route also call `registerAdminGuard` (it asserts the `403`) and prove the allowed path with `createCatalogApp({ user: ADMIN })`.
 
 ```ts
 import { describe, expect, it } from 'bun:test'
