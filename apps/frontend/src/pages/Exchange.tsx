@@ -73,7 +73,8 @@ const ExchangePage = () => {
   }, [creatingRequest])
 
   useEffect(() => {
-    if (refreshedSchedule) setExchangeSchedule(refreshedSchedule.schedule)
+    // shortcut: the legacy PUT /student/schedule 404s on the v1 backend; drop this when the refresh moves to v1.
+    if (refreshedSchedule?.schedule) setExchangeSchedule(refreshedSchedule.schedule)
   }, [refreshedSchedule])
 
   useEffect(() => {
