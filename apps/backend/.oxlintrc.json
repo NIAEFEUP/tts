@@ -65,6 +65,19 @@
           }
         ]
       }
+    },
+    {
+      "files": ["src/**/*.ts"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "process",
+            "property": "env",
+            "message": "Read env through varlock's typed ENV (`import { ENV } from 'varlock/env'`); `.env.schema` is the single source of truth."
+          }
+        ]
+      }
     }
   ]
 }
