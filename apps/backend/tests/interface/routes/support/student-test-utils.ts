@@ -101,7 +101,7 @@ export function createStudentsApp({
 }
 
 /** Error bodies of the `/v1/students` routes, so tests assert shapes, not literals. */
-export const FORBIDDEN_BODY = { error: 'Not allowed', code: 'forbidden' }
+export { FORBIDDEN_BODY } from './http-test-utils'
 export const studentNotFoundBody = (nmec: string) => ({
   error: `Student ${nmec} not found`,
   code: 'student-not-found',

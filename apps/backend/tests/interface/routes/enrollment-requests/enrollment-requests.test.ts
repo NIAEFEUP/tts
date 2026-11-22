@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 
 import { TEST_USER } from '../support/auth-test-utils'
-import { UNAUTHORIZED_BODY, VALIDATION_ERROR_BODY } from '../support/catalog-test-utils'
+import { UNAUTHORIZED_BODY, VALIDATION_ERROR_BODY, registerCatalogAuthGuard } from '../support/catalog-test-utils'
 import {
   CLOSED_PERIODS,
   OTHER_USER_ID,
@@ -31,27 +31,10 @@ const AUTH_REQUESTS: Array<{ method: RouteMethod; path: string; body?: unknown }
 
 const errorCode = (body: unknown) => (body as { code: string }).code
 
+const { app } = createEnrollmentRequestsApp()
+
 describe('enrollment requests routes', () => {
-  for (const route of AUTH_REQUESTS) {
-    it(`${route.method} ${route.path} rejects an anonymous caller with a 401 unauthorized`, async () => {
-      const { request } = createEnrollmentRequestsApp()
-      const { status, body } = await request(route.method, route.path, { cookie: null, body: route.body })
-
-      expect(status).toBe(401)
-      expect(body).toEqual(UNAUTHORIZED_BODY)
-    })
-
-    it(`${route.method} ${route.path} rejects an unrecognised session cookie with a 401`, async () => {
-      const { request } = createEnrollmentRequestsApp()
-      const { status, body } = await request(route.method, route.path, {
-        cookie: 'session=forged',
-        body: route.body,
-      })
-
-      expect(status).toBe(401)
-      expect(body).toEqual(UNAUTHORIZED_BODY)
-    })
-  }
+  registerCatalogAuthGuard(app, AUTH_REQUESTS)
 
   it('rejects an anonymous POST before validating its body', async () => {
     const { request } = createEnrollmentRequestsApp()

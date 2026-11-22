@@ -9,7 +9,9 @@ import type { ExchangePeriod } from '@/domain/ports/exchange-period.repository'
 import { createApp } from '@/main'
 import type { App } from '@/main'
 
-import { TEST_SESSION_TOKEN, TEST_USER, createFakeSessions } from './auth-test-utils'
+import { TEST_USER, createFakeSessions } from './auth-test-utils'
+import { request } from './http-test-utils'
+import type { ApiResponse, HttpMethod, RequestOptions } from './http-test-utils'
 import {
   COURSE_UNITS,
   OCCURRENCES,
@@ -201,43 +203,22 @@ export function createFakeEnrollmentRepository(
   }
 }
 
-export type RouteMethod = 'GET' | 'POST' | 'DELETE'
+/** The methods this route group exposes (alias of the shared `HttpMethod`). */
+export type RouteMethod = HttpMethod
 
-export type RouteResponse = {
-  status: number
-  contentType: string
-  body: unknown
-}
+export type RouteResponse = ApiResponse
 
-export type RouteRequestOptions = {
-  /** Cookie header to send. Defaults to the signed-in test session; `null` sends none. */
-  cookie?: string | null
-  body?: unknown
-}
+export type RouteRequestOptions = RequestOptions
 
-/** A `request(method, path)` bound to `app`, signed in unless told otherwise. */
+/**
+ * A `request(method, path)` bound to `app`, signed in unless told otherwise.
+ * Thin adapter over `http-test-utils` so these tests keep their method-first
+ * call shape while sharing the request/response plumbing with every other
+ * route group.
+ */
 export function createRouteRequest(app: App) {
-  return async (method: RouteMethod, path: string, options: RouteRequestOptions = {}): Promise<RouteResponse> => {
-    const cookie = options.cookie === undefined ? `session=${TEST_SESSION_TOKEN}` : options.cookie
-    const hasBody = options.body !== undefined
-    const response = await app.handle(
-      new Request(`http://localhost${path}`, {
-        method,
-        headers: {
-          ...(cookie ? { cookie } : {}),
-          ...(hasBody ? { 'content-type': 'application/json' } : {}),
-        },
-        body: hasBody ? JSON.stringify(options.body) : undefined,
-      }),
-    )
-    const contentType = response.headers.get('content-type') ?? ''
-
-    return {
-      status: response.status,
-      contentType,
-      body: contentType.startsWith('application/json') ? ((await response.json()) as unknown) : null,
-    }
-  }
+  return (method: HttpMethod, path: string, options: RequestOptions = {}): Promise<ApiResponse> =>
+    request(app, path, { ...options, method })
 }
 
 export type EnrollmentRequestsAppOptions = {
