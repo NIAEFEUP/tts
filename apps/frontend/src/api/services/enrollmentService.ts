@@ -1,4 +1,6 @@
+import { readEdenError } from '../errors'
 import { client } from '../client'
+import { enrollmentErrorToText } from '../../utils/error'
 
 export type CreateEnrollmentRequestOption = {
   occurrenceId: number
@@ -6,21 +8,18 @@ export type CreateEnrollmentRequestOption = {
   enrolling: boolean
 }
 
-const errorMessage = (error: unknown): string => {
-  if (typeof error === 'object' && error !== null && 'error' in error) return String(error.error)
-  return 'Erro ao submeter o pedido'
-}
-
 /**
- * Submits an enrollment/drop request through the Elysia API.
- *
- * The shared client sends the session cookie (`credentials: 'include'`), so no
- * CSRF header or FormData is needed. Backend `{ error, code }` bodies are
- * turned into an `Error` whose message the submit handler can toast directly.
+ * Submits an enrollment/drop request through the Elysia API. The shared client
+ * sends the session cookie, so no CSRF header or FormData is needed.
  */
-const createRequest = async ({ options }: { options: CreateEnrollmentRequestOption[] }) => {
+const createRequest = async (options: CreateEnrollmentRequestOption[]) => {
   const { data, error } = await client.v1['enrollment-requests'].post({ options })
-  if (error) throw new Error(errorMessage(error))
+
+  if (error) {
+    const body = readEdenError(error)
+    throw new Error((body && enrollmentErrorToText[body.code]) ?? 'Erro ao submeter o pedido')
+  }
+
   return data
 }
 
