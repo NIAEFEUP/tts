@@ -53,7 +53,7 @@ function assertLocalDatabase(): void {
 // environment; falls back to a generic `admin` account. Its role comes from
 // `ADMIN_ROLE` (USER | ADMIN | SUPERUSER, default ADMIN). Both are declared and
 // validated by `.env.schema`, so `ADMIN_ROLE` is already narrowed to the enum.
-const ADMIN_ID = normalizeNmec(ENV.ADMIN_UP.trim() || 'admin')
+const ADMIN_ID = normalizeNmec(ENV.ADMIN_UP.trim())
 
 const ADMIN_ROLE = ENV.ADMIN_ROLE
 

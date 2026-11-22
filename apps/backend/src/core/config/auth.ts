@@ -8,10 +8,6 @@
 
 import { ENV } from 'varlock/env'
 
-const DEFAULT_AUTHORIZE_ENDPOINT = 'https://open-id.up.pt/realms/sigarra/protocol/openid-connect/auth'
-const DEFAULT_TOKEN_ENDPOINT = 'https://open-id.up.pt/realms/sigarra/protocol/openid-connect/token'
-const DEFAULT_USERINFO_ENDPOINT = 'https://open-id.up.pt/realms/sigarra/protocol/openid-connect/userinfo'
-
 export type AuthConfig = {
   /** True once a client id and secret are present; false disables the OIDC routes. */
   oidcConfigured: boolean
@@ -38,12 +34,6 @@ export type AuthConfig = {
   devAccount: { username: string; password: string }
 }
 
-/** Empty or whitespace-only values fall back, so `KEY=""` behaves like unset. */
-function readString(value: string | undefined, fallback: string): string {
-  const trimmed = value?.trim()
-  return trimmed ? trimmed : fallback
-}
-
 /**
  * Normalises a mount prefix to `''` or `/<segment>` (no trailing slash), so it
  * can be concatenated with a route path without producing `//` or `api/v1`.
@@ -55,12 +45,11 @@ function normalisePrefix(value: string): string {
 }
 
 export function loadAuthConfig(): AuthConfig {
-  const frontendUrl = readString(ENV.FRONTEND_URL, 'http://localhost:3100')
+  const frontendUrl = ENV.FRONTEND_URL.trim()
   const clientId = ENV.OIDC_CLIENT_ID?.trim() ?? ''
   const clientSecret = ENV.OIDC_CLIENT_SECRET ?? ''
 
-  const allowedOrigins = readString(ENV.ALLOWED_ORIGINS, frontendUrl)
-    .split(',')
+  const allowedOrigins = ENV.ALLOWED_ORIGINS.split(',')
     .map((origin) => origin.trim())
     .filter(Boolean)
 
@@ -68,21 +57,21 @@ export function loadAuthConfig(): AuthConfig {
     oidcConfigured: clientId.length > 0 && clientSecret.length > 0,
     clientId,
     clientSecret,
-    redirectUri: readString(ENV.OIDC_REDIRECT_URI, 'http://localhost:3000/v1/auth/callback'),
-    authorizeEndpoint: readString(ENV.OIDC_AUTHORIZE_ENDPOINT, DEFAULT_AUTHORIZE_ENDPOINT),
-    tokenEndpoint: readString(ENV.OIDC_TOKEN_ENDPOINT, DEFAULT_TOKEN_ENDPOINT),
-    userinfoEndpoint: readString(ENV.OIDC_USERINFO_ENDPOINT, DEFAULT_USERINFO_ENDPOINT),
-    scopes: readString(ENV.OIDC_SCOPES, 'openid email profile uporto_data'),
-    sessionTtlSeconds: (ENV.SESSION_TTL_DAYS ?? 30) * 24 * 60 * 60,
+    redirectUri: ENV.OIDC_REDIRECT_URI.trim(),
+    authorizeEndpoint: ENV.OIDC_AUTHORIZE_ENDPOINT.trim(),
+    tokenEndpoint: ENV.OIDC_TOKEN_ENDPOINT.trim(),
+    userinfoEndpoint: ENV.OIDC_USERINFO_ENDPOINT.trim(),
+    scopes: ENV.OIDC_SCOPES.trim(),
+    sessionTtlSeconds: ENV.SESSION_TTL_DAYS * 24 * 60 * 60,
     frontendUrl,
-    allowedOrigins: allowedOrigins.length > 0 ? allowedOrigins : [frontendUrl],
-    secureCookies: ENV.COOKIE_SECURE === true || ENV.NODE_ENV === 'production',
+    allowedOrigins,
+    secureCookies: ENV.COOKIE_SECURE || ENV.NODE_ENV === 'production',
     // On by default for local dev, but never in production — even if a deploy
     // forgets to set DEV_LOGIN_ENABLED=false, NODE_ENV=production disables it.
-    devLoginEnabled: ENV.DEV_LOGIN_ENABLED !== false && ENV.NODE_ENV !== 'production',
+    devLoginEnabled: ENV.DEV_LOGIN_ENABLED && ENV.NODE_ENV !== 'production',
     // Behind Niployments the service is exposed under `/api`; locally there is
     // no proxy, so the prefix is empty unless a deployment says otherwise.
-    publicApiPrefix: normalisePrefix(readString(ENV.PUBLIC_API_PREFIX, ENV.NODE_ENV === 'production' ? '/api' : '')),
+    publicApiPrefix: normalisePrefix(ENV.PUBLIC_API_PREFIX!),
     devAccount: {
       username: ENV.SIGARRA_USERNAME?.trim() ?? '',
       password: ENV.SIGARRA_PASSWORD ?? '',
