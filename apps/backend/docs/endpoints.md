@@ -440,7 +440,7 @@ semantics (see the Auth section above).
 ### `GET /users/me/enrollments` — response
 
 Returns an array containing one item per class enrollment. Each item includes
-the occurrence year and course-unit details (including semester), plus the
+the occurrence year, its Sigarra page (`url`) and course-unit details (including semester), plus the
 class, schedule slots, and each slot's professors. A missing or invalid session
 returns `401 unauthorized`.
 
@@ -450,6 +450,7 @@ returns `401 unauthorized`.
     "occurrence": {
       "id": 12345,
       "year": 2025,
+      "url": "https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=12345",
       "courseUnit": {
         "id": 42,
         "acronym": "BD",
@@ -480,8 +481,8 @@ returns `401 unauthorized`.
 ### `GET /users/me/schedule` — response
 
 Returns the authenticated student's class schedule, derived from their
-enrollments: one item per enrolled class, with the occurrence year, the
-course-unit details and the class's schedule slots (each with its professors).
+enrollments: one item per enrolled class, with the occurrence year, its Sigarra
+page (`url`), the course-unit details and the class's schedule slots (each with its professors).
 A missing or invalid session returns `401 unauthorized`.
 
 Ordering: items follow the order of the student's enrollments (by class id).
@@ -497,6 +498,7 @@ the client can render them without sorting. `dayOfWeek` is `0` for Sunday;
     "occurrence": {
       "id": 12345,
       "year": 2025,
+      "url": "https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=12345",
       "courseUnit": {
         "id": 42,
         "acronym": "BD",
