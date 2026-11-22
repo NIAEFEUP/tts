@@ -22,8 +22,14 @@ export const PlannerCoursePicker = () => {
   const [selectedMajor, setSelectedMajor] = useState<Major>(StorageAPI.getSelectedMajorStorage())
 
   useEffect(() => {
-    setPickedCourses(checkboxedCourses)
-    StorageAPI.setPickedCoursesStorage(checkboxedCourses)
+    setPickedCourses((prev) => {
+      const merged = checkboxedCourses.map((course) => ({
+        ...course,
+        classes: course.classes ?? prev.find((c) => c.id === course.id)?.classes,
+      }))
+      StorageAPI.setPickedCoursesStorage(merged)
+      return merged
+    })
   }, [checkboxedCourses])
 
   useEffect(() => {
