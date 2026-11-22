@@ -58,7 +58,7 @@ const ClassLoadError = ({ onRetry }: { onRetry: () => void }) => {
     <div className="mx-2 w-full">
       <Desert className="w-full h-24" />
       <p className="text-sm text-left my-4 w-full">Não foi possível carregar as turmas desta disciplina.</p>
-      <Button variant="outline" onClick={onRetry}>
+      <Button variant="outline" onClick={() => void onRetry()}>
         Tentar novamente
       </Button>
     </div>
@@ -205,7 +205,7 @@ const ClassSelectorDropdownController = ({
               <Tabs.Panel>
                 {/* Removed max-h-96 and overflow-y-auto to fix the double scrollbar issue - Added back for Popover migration */}
                 <div className="pt-2 w-full max-h-[50vh] overflow-y-auto">
-                  {classesError ? (
+                  {classesError && !course.classes ? (
                     <ClassLoadError onRetry={onRetry} />
                   ) : !course.classes || course.classes.length === 0 ? (
                     <NoOptionsFound mobile={false} />
