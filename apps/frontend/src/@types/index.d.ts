@@ -25,6 +25,8 @@ export type Major = {
 
 export type CourseInfo = {
   id: number
+  /** Academic year the occurrence belongs to. Distinct from `course_unit_year`. */
+  occurrenceYear: number
   course: number
   course_unit_year: number
   course_unit_id: number

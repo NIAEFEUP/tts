@@ -1,14 +1,10 @@
 import type { CourseInfo } from '../../@types'
 import { client } from '../client'
+import { edenErrorMessage } from '../errors'
 
 type EligibleOccurrence = NonNullable<
   Awaited<ReturnType<(typeof client.v1.users.me)['eligible-occurrences']['get']>>['data']
 >[number]
-
-const errorMessage = (error: unknown): string => {
-  if (typeof error === 'object' && error !== null && 'error' in error) return String(error.error)
-  return 'Erro ao carregar as unidades curriculares'
-}
 
 /**
  * Maps an occurrence-oriented eligible unit onto the `CourseInfo` shape the
@@ -20,6 +16,7 @@ const errorMessage = (error: unknown): string => {
  */
 const toCourseInfo = (occurrence: EligibleOccurrence): CourseInfo => ({
   id: occurrence.id,
+  occurrenceYear: occurrence.year,
   course: occurrence.courseId,
   course_unit_id: occurrence.courseUnitId,
   course_unit_year: occurrence.courseUnitYear,
@@ -32,7 +29,7 @@ const toCourseInfo = (occurrence: EligibleOccurrence): CourseInfo => ({
 
 const getEligibleOccurrences = async (): Promise<CourseInfo[]> => {
   const { data, error } = await client.v1.users.me['eligible-occurrences'].get()
-  if (error) throw new Error(errorMessage(error))
+  if (error) throw new Error(edenErrorMessage(error, 'Erro ao carregar as unidades curriculares'))
   return data.map(toCourseInfo)
 }
 

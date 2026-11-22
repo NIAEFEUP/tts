@@ -1,24 +1,15 @@
 import { Dispatch, SetStateAction, useState } from 'react'
 import { CourseInfo } from '../../../@types'
-import { EnrollmentOption } from './Enrollments'
-import { Card, CardHeader, CardTitle } from '../../ui/card'
 import { Button } from '../../ui/new/button'
+import { Card, CardHeader, CardTitle } from '../../ui/card'
 
 type Props = {
   courseUnit: CourseInfo
-  enrollmentChoices: Map<number, EnrollmentOption>
-  setEnrollmentChoices: Dispatch<SetStateAction<Map<number, EnrollmentOption>>>
   enrollCourses: CourseInfo[]
   setEnrollCourses: Dispatch<SetStateAction<CourseInfo[]>>
 }
 
-export const EnrollingCourseUnitCard = ({
-  courseUnit,
-  enrollmentChoices,
-  setEnrollmentChoices,
-  setEnrollCourses,
-  enrollCourses,
-}: Props) => {
+export const EnrollingCourseUnitCard = ({ courseUnit, enrollCourses, setEnrollCourses }: Props) => {
   const [remove, setRemove] = useState<boolean>(true)
 
   return (
@@ -33,14 +24,7 @@ export const EnrollingCourseUnitCard = ({
               className="text-red-600"
               onClick={() => {
                 setRemove(false)
-
-                const newEnrollmentChoices = new Map(enrollmentChoices)
-                newEnrollmentChoices.delete(courseUnit.id)
-
-                setEnrollmentChoices(newEnrollmentChoices)
-
-                const newEnrollCourses = enrollCourses.filter((course) => course.id !== courseUnit.id)
-                setEnrollCourses(newEnrollCourses)
+                setEnrollCourses(enrollCourses.filter((course) => course.id !== courseUnit.id))
               }}
             >
               Remover
