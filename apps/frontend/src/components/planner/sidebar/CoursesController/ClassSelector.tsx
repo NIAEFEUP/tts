@@ -25,7 +25,7 @@ const ClassSelector = ({ course, lockFunctionality = true }: Props) => {
     loading: classesLoading,
     error: classesError,
     mutate: retryClasses,
-  } = useCourseUnitClasses(course.id)
+  } = useCourseUnitClasses(course.id, course.year)
 
   useEffect(() => {
     if (classes) {

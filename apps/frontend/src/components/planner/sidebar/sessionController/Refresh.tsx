@@ -23,7 +23,7 @@ const Refresh = () => {
         const coursesToUpdate = pickedCourses.filter((course) => mismatchedMap.has(course.id))
         const updatedCoursesWithClasses = await Promise.all(
           coursesToUpdate.map(async (course) => {
-            const { classes } = await occurrenceService.getClasses(course.id)
+            const { classes } = await occurrenceService.getClasses(course.id, course.year)
             return {
               ...course,
               hash: mismatchedMap.get(course.id),

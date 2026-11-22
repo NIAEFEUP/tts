@@ -9,6 +9,7 @@ type OccurrenceWithClasses = NonNullable<
 const toCourseInfo = (occurrence: OccurrenceWithClasses): CourseInfo => ({
   id: occurrence.id,
   course: occurrence.courseId,
+  year: occurrence.year,
   course_unit_id: occurrence.courseUnitId,
   ects: occurrence.ects,
   acronym: occurrence.acronym,
@@ -37,9 +38,9 @@ const toCourseInfo = (occurrence: OccurrenceWithClasses): CourseInfo => ({
   })),
 })
 
-const getClasses = async (occurrenceId: number): Promise<CourseInfo> => {
+const getClasses = async (occurrenceId: number, year = getAcademicYear()): Promise<CourseInfo> => {
   const { data, error } = await client.v1.occurrences({ id: occurrenceId }).classes.get({
-    query: { year: getAcademicYear() },
+    query: { year },
   })
 
   if (error) throw error

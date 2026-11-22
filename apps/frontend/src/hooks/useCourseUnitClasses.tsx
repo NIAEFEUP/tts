@@ -2,14 +2,16 @@ import { useContext } from 'react'
 import useSWR from 'swr'
 import SessionContext from '../contexts/SessionContext'
 import occurrenceService from '../api/services/occurrenceService'
+import { getAcademicYear } from '../utils'
 
-export default (occurrenceId: number) => {
+export default (occurrenceId: number, year?: number) => {
   const { signedIn } = useContext(SessionContext)
-  const key = signedIn && occurrenceId ? ['v1/occurrences', occurrenceId, 'classes'] : null
+  const classYear = year ?? getAcademicYear()
+  const key = signedIn && occurrenceId ? ['v1/occurrences', occurrenceId, 'classes', classYear] : null
 
   const { data, error, mutate, isValidating } = useSWR(
     key,
-    ([, id]: [string, number, string]) => occurrenceService.getClasses(id),
+    ([, id, , requestYear]: [string, number, string, number]) => occurrenceService.getClasses(id, requestYear),
     { shouldRetryOnError: false },
   )
 
