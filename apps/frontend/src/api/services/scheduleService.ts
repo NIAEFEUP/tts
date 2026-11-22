@@ -5,9 +5,8 @@ type ScheduleEntry = NonNullable<Awaited<ReturnType<typeof client.v1.users.me.sc
 
 // Maps the v1 schedule onto the legacy `ClassDescriptor` the planner and exchange views render.
 // Shared with the admin hook (#864), which gets the same `ScheduleEntry[]` shape.
-// shortcut: `course`, `course_unit_year`, `ects`, `url`, `hash` and `professors_link` are not in
-// `ScheduleEntry`, so they are left empty. #983 adds `url`; open a backend issue for the rest if a
-// schedule consumer starts reading them.
+// shortcut: `course`, `course_unit_year`, `ects`, `hash` and `professors_link` are not in
+// `ScheduleEntry`, so they are left empty. Open a backend issue if a schedule consumer starts reading them.
 export const toClassDescriptor = ({ classId, className, occurrence, slots }: ScheduleEntry): ClassDescriptor => ({
   classInfo: {
     id: classId,
@@ -34,7 +33,7 @@ export const toClassDescriptor = ({ classId, className, occurrence, slots }: Sch
     ects: 0,
     acronym: occurrence.courseUnit.acronym,
     name: occurrence.courseUnit.name,
-    url: '',
+    url: occurrence.url,
     hash: '',
   },
 })
