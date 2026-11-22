@@ -1,5 +1,6 @@
 import { expect, it } from 'bun:test'
 
+import type { AuthUser } from '@/core/auth/user'
 import type { Course, CourseRepository } from '@/domain/ports/course.repository'
 import type { ClassRepository, EnrolledStudent, ClassWithSlots } from '@/domain/ports/class.repository'
 import type { CourseUnit, CourseUnitRepository } from '@/domain/ports/course-unit.repository'
@@ -9,7 +10,9 @@ import type { ExchangePeriod, ExchangePeriodsRepository } from '@/domain/ports/e
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import { createApp } from '@/main'
 import type { App } from '@/main'
-import { TEST_SESSION_TOKEN, createFakeSessions } from './auth-test-utils'
+import { createFakeSessions } from './auth-test-utils'
+import { FORBIDDEN_BODY, UNAUTHORIZED_BODY, createRequester, request } from './http-test-utils'
+import type { ApiResponse, HttpMethod } from './http-test-utils'
 
 // Shared infrastructure for the catalog route tests (`courses`, `faculties`,
 // and `course-units`).
@@ -23,6 +26,9 @@ import { TEST_SESSION_TOKEN, createFakeSessions } from './auth-test-utils'
 //
 // Adding a catalog route group means adding its fixtures + fake repository here
 // and defaulting it in `createCatalogApp`, so its test file stays assertions-only.
+//
+// Requests themselves go through `http-test-utils`, which owns the method, the
+// JSON body, the cookie, and the response parsing for every route test.
 
 export const COURSES: Course[] = [
   {
@@ -200,8 +206,7 @@ export const EXCHANGE_PERIODS: ExchangePeriod[] = [
 ]
 
 /** Error bodies shared by every catalog route, so tests assert shapes, not literals. */
-export const UNAUTHORIZED_BODY = { error: 'Authentication required', code: 'unauthorized' }
-export const VALIDATION_ERROR_BODY = { error: 'Request failed validation', code: 'validation-error' }
+export { FORBIDDEN_BODY, UNAUTHORIZED_BODY, VALIDATION_ERROR_BODY } from './http-test-utils'
 
 /** The catalog data both repository fakes are built from. */
 export type CatalogFixtures = {
@@ -402,39 +407,28 @@ export type CatalogRepositories = CatalogFixtures & {
   classRepository?: ClassRepository
   sessionRepository?: SessionRepository
   exchangePeriodsRepository?: ExchangePeriodsRepository
+  /** Signed-in user for this app. Defaults to `TEST_USER`; pass `ADMIN` for admin-only routes. */
+  user?: AuthUser
 }
 
-export type CatalogResponse = {
-  status: number
-  contentType: string
-  body: unknown
-}
+export type CatalogResponse = ApiResponse
 
 export type GetOptions = { authenticated?: boolean }
 
-/** GET `request` against `app`, authenticated as `USER` unless told otherwise. */
-export async function getCatalog(app: App, request: string, options: GetOptions = {}): Promise<CatalogResponse> {
-  const response = await app.handle(
-    new Request(`http://localhost${request}`, {
-      headers: options.authenticated === false ? undefined : { cookie: `session=${TEST_SESSION_TOKEN}` },
-    }),
-  )
-
-  return {
-    status: response.status,
-    contentType: response.headers.get('content-type') ?? '',
-    body: (await response.json()) as unknown,
-  }
+/** GET `path` against `app`, authenticated as `USER` unless told otherwise. */
+export async function getCatalog(app: App, path: string, options: GetOptions = {}): Promise<CatalogResponse> {
+  return request(app, path, options)
 }
 
 /**
- * Builds the app with the in-memory catalog and an always-signed-in session.
- * `courses`/`faculties`/`courseUnits`/`occurrences` feed the repository fakes,
- * so a custom course list and its faculty join stay consistent; any repository
- * can be overridden outright when a test needs different behaviour, or omitted
- * to use the fakes above.
+ * Builds the app with the in-memory catalog and a signed-in session (as
+ * `TEST_USER`, or as `user` when given). `courses`/`faculties`/`courseUnits`/
+ * `occurrences` feed the repository fakes, so a custom course list and its
+ * faculty join stay consistent; any repository can be overridden outright when
+ * a test needs different behaviour, or omitted to use the fakes above.
  *
- * Returns the app (for raw `app.handle` calls) and a `get` bound to it.
+ * Returns the app (for raw `app.handle` calls) and `get`/`post`/`put`/`patch`/
+ * `del` bound to it — a write test never has to build a `Request`.
  */
 export function createCatalogApp({
   courses,
@@ -451,6 +445,7 @@ export function createCatalogApp({
   classRepository,
   sessionRepository,
   exchangePeriodsRepository,
+  user,
 }: CatalogRepositories = {}) {
   const fixtures: CatalogFixtures = {
     courses,
@@ -468,39 +463,63 @@ export function createCatalogApp({
       facultyRepository: facultyRepository ?? createFakeFacultyRepository(fixtures),
       occurrenceRepository: occurrenceRepository ?? createFakeOccurrenceRepository(fixtures),
       classRepository: classRepository ?? createFakeClassRepository(fixtures),
-      sessionRepository: sessionRepository ?? createFakeSessions(),
+      sessionRepository: sessionRepository ?? createFakeSessions(user),
       exchangePeriodsRepository: exchangePeriodsRepository ?? createFakeExchangePeriodsRepository(fixtures),
     },
   })
 
-  return {
-    app,
-    get: (request: string, options: GetOptions = {}) => getCatalog(app, request, options),
+  return { app, ...createRequester(app) }
+}
+
+/** A route the guard helpers register, with the method and body the route expects. */
+export type GuardRequest = string | { method: HttpMethod; path: string; body?: unknown }
+
+function normaliseGuardRequest(entry: GuardRequest) {
+  return typeof entry === 'string' ? { method: 'GET' as HttpMethod, path: entry, body: undefined } : entry
+}
+
+/**
+ * Registers the auth-guard tests every route group needs. For each entry, an
+ * anonymous and a forged-session request must answer 401. Entries are either a
+ * path (a GET) or `{ method, path, body }` for a mutating route. Call once
+ * inside the file's `describe`, right after `createCatalogApp`; the titles name
+ * the route so a failure points straight at it.
+ */
+export function registerCatalogAuthGuard(app: App, requests: GuardRequest[]) {
+  for (const entry of requests) {
+    const { method, path, body } = normaliseGuardRequest(entry)
+
+    it(`${method} ${path} rejects an anonymous caller with a 401 unauthorized`, async () => {
+      const { status, body: responseBody } = await request(app, path, { method, body, authenticated: false })
+
+      expect(status).toBe(401)
+      expect(responseBody).toEqual(UNAUTHORIZED_BODY)
+    })
+
+    it(`${method} ${path} rejects an unrecognised session cookie with a 401`, async () => {
+      const { status, body: responseBody } = await request(app, path, { method, body, cookie: 'session=forged' })
+
+      expect(status).toBe(401)
+      expect(responseBody).toEqual(UNAUTHORIZED_BODY)
+    })
   }
 }
 
 /**
- * Registers the auth-guard tests every catalog route group needs. For each
- * `requests` path, an anonymous and a forged-session request must answer 401.
- * Call once inside the file's `describe`, right after `createCatalogApp`; the
- * titles name the path so a failure points straight at the broken route.
+ * Registers the admin-only variant: the app's own signed-in user must be a
+ * non-admin, so pass the app built with the default `TEST_USER` and every
+ * entry must answer 403. Pair with `createCatalogApp({ user: ADMIN })` in the
+ * test that asserts the allowed path.
  */
-export function registerCatalogAuthGuard(app: App, requests: string[]) {
-  for (const request of requests) {
-    it(`${request} rejects an anonymous caller with a 401 unauthorized`, async () => {
-      const { status, body } = await getCatalog(app, request, { authenticated: false })
+export function registerAdminGuard(app: App, requests: GuardRequest[]) {
+  for (const entry of requests) {
+    const { method, path, body } = normaliseGuardRequest(entry)
 
-      expect(status).toBe(401)
-      expect(body).toEqual(UNAUTHORIZED_BODY)
-    })
+    it(`${method} ${path} rejects a signed-in non-admin with a 403 forbidden`, async () => {
+      const { status, body: responseBody } = await request(app, path, { method, body })
 
-    it(`${request} rejects an unrecognised session cookie with a 401`, async () => {
-      const response = await app.handle(
-        new Request(`http://localhost${request}`, { headers: { cookie: 'session=forged' } }),
-      )
-
-      expect(response.status).toBe(401)
-      expect(await response.json()).toEqual(UNAUTHORIZED_BODY)
+      expect(status).toBe(403)
+      expect(responseBody).toEqual(FORBIDDEN_BODY)
     })
   }
 }
