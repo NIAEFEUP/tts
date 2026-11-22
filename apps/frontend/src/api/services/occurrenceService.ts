@@ -9,7 +9,7 @@ type OccurrenceWithClasses = NonNullable<
 const toCourseInfo = (occurrence: OccurrenceWithClasses): CourseInfo => ({
   id: occurrence.id,
   course: occurrence.courseId,
-  course_unit_id: occurrence.courseUnitId,
+  course_unit_id: occurrence.id,
   ects: occurrence.ects,
   acronym: occurrence.acronym,
   name: occurrence.name,
@@ -28,7 +28,6 @@ const toCourseInfo = (occurrence: OccurrenceWithClasses): CourseInfo => ({
       start_time: slot.startMinute / 60,
       duration: slot.durationMin / 60,
       location: slot.location ?? '',
-      professors_link: '',
       professors: slot.professors.map((professor) => ({
         id: professor.id,
         acronym: professor.acronym ?? '',
