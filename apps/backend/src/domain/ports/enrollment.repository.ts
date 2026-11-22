@@ -3,6 +3,8 @@ export type StudentEnrollment = {
   occurrence: {
     id: number
     year: number
+    /** Sigarra occurrence page. */
+    url: string
     courseUnit: {
       id: number
       acronym: string

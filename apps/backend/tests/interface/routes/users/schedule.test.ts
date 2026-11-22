@@ -22,6 +22,7 @@ const enrollments: StudentEnrollment[] = [
     occurrence: {
       id: 12345,
       year: 2025,
+      url: 'https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=12345',
       courseUnit: { id: 42, acronym: 'BD', name: 'Bases de Dados', semester: 1 },
     },
     class: {
@@ -78,6 +79,7 @@ describe('schedule routes', () => {
       occurrence: {
         id: 99,
         year: 2025,
+        url: 'https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=99',
         courseUnit: { id: 7, acronym: 'PROG', name: 'Programação', semester: 1 },
       },
       class: {
