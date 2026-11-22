@@ -54,7 +54,11 @@ describe('schedule routes', () => {
     expect(entries[0]).toMatchObject({
       classId: 678,
       className: '1LEIC01',
-      occurrence: { id: 12345, year: 2025 },
+      occurrence: {
+        id: 12345,
+        year: 2025,
+        url: 'https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=12345',
+      },
     })
   })
 
@@ -91,10 +95,15 @@ describe('schedule routes', () => {
     }
     const { get: getTwo } = createUsersApp({ findByUserId: async () => [...enrollments, second] })
     const { status, body } = await getTwo('/v1/users/me/schedule')
-    const entries = body as Array<{ classId: number; slots: Array<Record<string, unknown>> }>
+    const entries = body as Array<{ classId: number; occurrence: unknown; slots: Array<Record<string, unknown>> }>
 
     expect(status).toBe(200)
     expect(entries.map((entry) => entry.classId)).toEqual([678, 700])
+    expect(entries[1]?.occurrence).toMatchObject({
+      id: 99,
+      year: 2025,
+      url: 'https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=99',
+    })
     expect(entries[1]?.slots[0]).toMatchObject({
       location: 'B201',
       professors: [{ id: 5, acronym: 'JP', name: 'João Pinto' }],
