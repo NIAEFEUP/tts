@@ -16,7 +16,7 @@ type Props = {
 export const ViewRequestBadgeFilter = ({ courseUnit, filterCourseUnitsHook, classesFilterHook }: Props) => {
   const [classesFilter, setClassesFilter] = classesFilterHook
   const [filterCourseUnits, setFilterCourseUnits] = filterCourseUnitsHook
-  const { classes } = useCourseUnitClasses(courseUnit.id, courseUnit.year)
+  const { classes } = useCourseUnitClasses(courseUnit.id, courseUnit.occurrenceYear)
 
   const handleClassFilterChange = (className: string, checked: boolean) => {
     const classFilterItem = classesFilter.get(courseUnit.acronym)
