@@ -10,6 +10,7 @@
     ".devin/skills/**",
     ".pi/skills/**",
     "apps/backend/legacy/**",
+    "apps/backend/src/env.d.ts",
     "apps/frontend/src/env.d.ts",
     "packages/sigarra/src/generated"
   ]
