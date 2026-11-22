@@ -15,7 +15,7 @@ const useCourses = ({ enabled }: { enabled: boolean }) => {
 
   const { data, error, mutate, isValidating } = useSWR<Major[], Error>(
     enabled ? ['v1/courses', year] : null,
-    () => catalogService.getCourses({ year }),
+    () => catalogService.listCourses({ year }),
     {
       revalidateIfStale: false,
       revalidateOnFocus: false,
