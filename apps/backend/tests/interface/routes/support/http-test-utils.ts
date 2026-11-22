@@ -10,7 +10,7 @@ import { TEST_SESSION_TOKEN } from './auth-test-utils'
 
 /**
  * Anything that can serve a request. The real `App` satisfies it, and a tiny
- * stub can too, which is what lets `http-test-utils.test.ts` pin this helper's
+ * stub can too, which is what lets `routes/http.test.ts` pin this helper's
  * contract without depending on a route.
  */
 export type HttpApp = { handle: (request: Request) => Response | Promise<Response> }

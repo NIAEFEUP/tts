@@ -12,7 +12,7 @@ import { createApp } from '@/main'
 import type { App } from '@/main'
 import { createFakeSessions } from './auth-test-utils'
 import { FORBIDDEN_BODY, UNAUTHORIZED_BODY, createRequester, request } from './http-test-utils'
-import type { ApiResponse, HttpMethod } from './http-test-utils'
+import type { HttpMethod } from './http-test-utils'
 
 // Shared infrastructure for the catalog route tests (`courses`, `faculties`,
 // and `course-units`).
@@ -409,15 +409,6 @@ export type CatalogRepositories = CatalogFixtures & {
   exchangePeriodsRepository?: ExchangePeriodsRepository
   /** Signed-in user for this app. Defaults to `TEST_USER`; pass `ADMIN` for admin-only routes. */
   user?: AuthUser
-}
-
-export type CatalogResponse = ApiResponse
-
-export type GetOptions = { authenticated?: boolean }
-
-/** GET `path` against `app`, authenticated as `USER` unless told otherwise. */
-export async function getCatalog(app: App, path: string, options: GetOptions = {}): Promise<CatalogResponse> {
-  return request(app, path, options)
 }
 
 /**
