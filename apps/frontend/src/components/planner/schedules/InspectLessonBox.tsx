@@ -48,7 +48,7 @@ const InspectLessonBox = ({ courseInfo, classInfo, slotInfo, conflict }: Props) 
         <div className="flex w-full flex-col items-start gap-2">
           <div className="flex w-full items-center justify-between gap-4">
             <strong title="Sigla da Unidade Curricular">{courseInfo.acronym}</strong>
-            {/* The v1 schedule has no links yet (#858): render plain text instead of an anchor to ''. */}
+            {/* The v1 schedule has no links yet (#983): render plain text instead of an anchor to ''. */}
             {courseInfo.url ? (
               <a href={courseInfo.url} target="_blank" rel="noreferrer" className="cursor-pointer underline">
                 {courseName}
