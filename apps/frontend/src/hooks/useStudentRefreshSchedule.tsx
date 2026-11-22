@@ -1,5 +1,7 @@
+import { useContext } from 'react'
 import useSWR from 'swr'
 import studentScheduleRequestService from '../api/services/studentScheduleRequestService'
+import SessionContext from '../contexts/SessionContext'
 
 export default () => {
   const getEligibileCourseUnits = async () => {
@@ -17,7 +19,13 @@ export default () => {
     }
   }
 
-  const { data, error, mutate, isValidating } = useSWR('refresh-student-schedule', getEligibileCourseUnits, {})
+  const { signedIn } = useContext(SessionContext)
+  // `null` key: anonymous visitors make no request.
+  const { data, error, mutate, isValidating } = useSWR(
+    signedIn ? 'refresh-student-schedule' : null,
+    getEligibileCourseUnits,
+    {},
+  )
 
   return {
     refreshedSchedule: data,
