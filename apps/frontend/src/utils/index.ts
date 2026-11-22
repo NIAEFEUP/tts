@@ -45,19 +45,15 @@ const getSemester = () => {
   return month >= 0 && month <= 6 ? 2 : 1
 }
 
-const getSchoolYear = () => {
-  const date = new Date()
-  const month = date.getMonth()
-  const year = date.getFullYear()
-
-  return month >= 0 && month <= 6
-    ? `${year - 1}/${year.toString().slice(2, 4)}`
-    : `${year}/${(year + 1).toString().slice(2, 4)}`
-}
-
 const getAcademicYear = () => {
   const date = new Date()
   return date.getMonth() + 1 < 8 ? date.getFullYear() - 1 : date.getFullYear()
+}
+
+/** The `YYYY/YY` label of the current academic year, e.g. `2025/26`. */
+const getSchoolYear = () => {
+  const year = getAcademicYear()
+  return `${year}/${year.toString().slice(2, 4)}`
 }
 
 const convertWeekday = (dayNumber: number) => {
