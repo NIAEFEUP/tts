@@ -14,9 +14,15 @@ export default () => {
     studentService.getEligibleOccurrences,
   )
 
+  // SWR keeps the last successful response when a background revalidation
+  // fails, so `data` and `error` can both be set. Only a failure with nothing
+  // cached is a page-level error; otherwise keep rendering the cached list.
+
+  const loaded = data !== undefined
+
   return {
     enrolledCourseUnits: data ?? null,
-    error,
+    error: loaded ? null : (error ?? null),
     loading: isSessionLoading || isLoading,
     isValidating,
     forceCourseUnitsRevalidation: mutate,
