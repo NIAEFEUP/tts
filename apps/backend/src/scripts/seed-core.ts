@@ -18,6 +18,7 @@
 import 'temporal-polyfill/global' // Prisma 8 DateTime fields are Temporal.Instant
 
 import { Temporal } from 'temporal-polyfill'
+import { ENV } from 'varlock/env'
 import { normalizeNmec } from '@/core/auth/nmec'
 import { db } from '@/infrastructure/database/prisma'
 import fixture from './fixtures/feup-leic-meic-mesw.json' with { type: 'json' }
@@ -35,8 +36,7 @@ type AdminValidationState = 'UNTREATED' | 'TREATED' | 'REJECTED' | 'AWAITING_INF
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]'])
 
 function assertLocalDatabase(): void {
-  const databaseUrl = process.env.DATABASE_URL
-  if (!databaseUrl) throw new Error('DATABASE_URL is not set.')
+  const databaseUrl = ENV.DATABASE_URL
 
   const { hostname } = new URL(databaseUrl)
   if (!LOOPBACK_HOSTS.has(hostname)) {
@@ -51,16 +51,11 @@ function assertLocalDatabase(): void {
 
 // The demo admin is whoever sets `ADMIN_UP` (an NMEC / "up" number) in their
 // environment; falls back to a generic `admin` account. Its role comes from
-// `ADMIN_ROLE` (USER | ADMIN | SUPERUSER, default ADMIN). See `.env.schema`.
-const ADMIN_ID = normalizeNmec(process.env.ADMIN_UP?.trim() || 'admin')
+// `ADMIN_ROLE` (USER | ADMIN | SUPERUSER, default ADMIN). Both are declared and
+// validated by `.env.schema`, so `ADMIN_ROLE` is already narrowed to the enum.
+const ADMIN_ID = normalizeNmec(ENV.ADMIN_UP.trim() || 'admin')
 
-const USER_ROLES = ['USER', 'ADMIN', 'SUPERUSER'] as const
-type UserRole = (typeof USER_ROLES)[number]
-
-const ADMIN_ROLE = (process.env.ADMIN_ROLE?.trim().toUpperCase() || 'ADMIN') as UserRole
-if (!USER_ROLES.includes(ADMIN_ROLE)) {
-  throw new Error(`ADMIN_ROLE must be one of ${USER_ROLES.join(', ')} (got "${process.env.ADMIN_ROLE}").`)
-}
+const ADMIN_ROLE = ENV.ADMIN_ROLE
 
 // NMECs end in `999`: the frontend maps any username ending in 999 to a mock
 // avatar (see apps/frontend/src/api/services/studentInfo.ts).
