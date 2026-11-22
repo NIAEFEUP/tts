@@ -4,7 +4,8 @@ import { ExchangeCoursePicker } from '../../planner/sidebar/sessionController/Ex
 import { CourseInfo } from '../../../@types'
 import CourseContext from '../../../contexts/CourseContext'
 import { Button } from '../../ui/new/button'
-import courseUnitEnrollmentService from '../../../api/services/courseUnitEnrollmentService'
+import enrollmentService from '../../../api/services/enrollmentService'
+import { getAcademicYear } from '../../../utils'
 import { ExchangeSidebarStatus } from '../../../pages/Exchange'
 import { toast } from '../../ui/new/toaster'
 import useStudentCourseUnits from '../../../hooks/useStudentCourseUnits'
@@ -40,6 +41,7 @@ export const Enrollments = ({ setExchangeSidebarStatus }: Props) => {
     enrolledCourseUnits: alreadyEnrolledCourseUnits,
     loading: loadingEnrolled,
     error: courseUnitsError,
+    forceCourseUnitsRevalidation,
   } = useStudentCourseUnits()
 
   useEffect(() => {
@@ -138,25 +140,30 @@ export const Enrollments = ({ setExchangeSidebarStatus }: Props) => {
 
               setIsSubmitting(true)
               try {
-                const res = await courseUnitEnrollmentService.submitEnrollmentRequest(courses)
+                const occurrenceYear = getAcademicYear()
+                const options = Array.from(courses, ([occurrenceId, option]) => ({
+                  occurrenceId,
+                  occurrenceYear,
+                  enrolling: option.type === CourseUnitEnrollmentType.ENROLLING,
+                }))
 
-                if (res.ok) {
-                  setExchangeSidebarStatus(ExchangeSidebarStatus.SHOWING_REQUESTS)
-                  toast({
-                    title: 'Pedido submetido',
-                    description: 'Pedido de inscrição submetida com sucesso',
-                  })
-                  setEnrollCourses([])
-                  setEnrollmentChoices(new Map())
-                  setDisenrollmentChoices(new Map())
-                } else {
-                  const json = await res.json()
-                  toast({
-                    variant: 'negative',
-                    title: 'Erro',
-                    description: json.error,
-                  })
-                }
+                await enrollmentService.createRequest({ options })
+
+                setExchangeSidebarStatus(ExchangeSidebarStatus.SHOWING_REQUESTS)
+                toast({
+                  title: 'Pedido submetido',
+                  description: 'Pedido de inscrição submetida com sucesso',
+                })
+                setEnrollCourses([])
+                setEnrollmentChoices(new Map())
+                setDisenrollmentChoices(new Map())
+                void forceCourseUnitsRevalidation().catch(console.error)
+              } catch (error) {
+                toast({
+                  variant: 'negative',
+                  title: 'Erro',
+                  description: error instanceof Error ? error.message : 'Erro ao submeter o pedido',
+                })
               } finally {
                 setIsSubmitting(false)
               }
