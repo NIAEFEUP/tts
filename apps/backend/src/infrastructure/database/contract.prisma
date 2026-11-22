@@ -55,16 +55,17 @@ model User {
 
   createdAt DateTime @default(now())
 
-  enrollments        Enrollment[]
-  exchangesCreated   ExchangeRequest[]   @relation("ExchangeCreator")
-  exchangesTargeted  ExchangeRequest[]   @relation("ExchangeTarget")
-  exchangeItems      ExchangeItem[]
-  enrollmentRequests EnrollmentRequest[]
-  sessions           Session[]
-  adminCourses       AdminCourse[]
-  adminOccurrences   AdminOccurrence[]
-  courseMetadata     StudentCourseMetadata[]
-  plannerStates      PlannerState[]
+  enrollments            Enrollment[]
+  exchangesCreated       ExchangeRequest[]     @relation("ExchangeCreator")
+  exchangesTargeted      ExchangeRequest[]     @relation("ExchangeTarget")
+  exchangeItems          ExchangeItem[]
+  exchangeParticipations ExchangeParticipant[]
+  enrollmentRequests     EnrollmentRequest[]
+  sessions               Session[]
+  adminCourses           AdminCourse[]
+  adminOccurrences       AdminOccurrence[]
+  courseMetadata         StudentCourseMetadata[]
+  plannerStates          PlannerState[]
 }
 
 // Opaque random token in an httpOnly cookie. Chosen over JWT so sessions are
@@ -372,6 +373,23 @@ enum ExchangeStatus {
   CANCELLED
 }
 
+// Lifecycle of the approved swap. The cycle is the thing participants accept;
+// an unclaimed offer is not a cycle and has no cycle status.
+enum ExchangeCycleStatus {
+  PENDING
+  ACCEPTED
+  CANCELLED
+}
+
+// Where the swap came from: the two students (DIRECT), a claimed marketplace
+// offer, an admin-assigned urgent request, or the deferred auto-matcher.
+enum ExchangeCycleOrigin {
+  DIRECT
+  MARKETPLACE
+  URGENT
+  AUTO_MATCH
+}
+
 // The four real legacy values, previously free text:
 // "untreated" | "treated" | "rejected" | "awaiting-information"
 enum AdminValidationState {
@@ -420,7 +438,8 @@ model ExchangeRequest {
   createdAt DateTime @default(now())
   updatedAt temporal.updatedAt()
 
-  items ExchangeItem[]
+  items  ExchangeItem[]
+  cycles ExchangeCycleSource[]
 
   @@index([type, status])
   @@index([adminState, createdAt])
@@ -472,6 +491,57 @@ model ExchangeItem {
   // (fromClassId/toClassId, ...) composite FKs with an index lookup
   // automatically; explicit indexes here would trip Postgres' 63-byte
   // identifier cap with these column lists.
+}
+
+// The approved swap: at least two participants, each contributing their move.
+// Created when an offer is claimed or assigned, or by the two students of a
+// direct exchange; an unclaimed offer never gets one. Cycle-level fields that
+// used to live on the request: `adminState` (admin decision), `hash` (email
+// verification) and `lastValidatedAt` (revalidation).
+model ExchangeCycle {
+  id              String               @id @default(uuid())
+  status          ExchangeCycleStatus  @default(PENDING)
+  adminState      AdminValidationState @default(UNTREATED)
+  origin          ExchangeCycleOrigin
+  hash            String?
+  lastValidatedAt DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       temporal.updatedAt()
+
+  participants ExchangeParticipant[]
+  sources      ExchangeCycleSource[]
+
+  @@index([status, createdAt])
+  @@index([adminState, createdAt])
+  @@index([hash])
+}
+
+// One row per student in the swap. The moves themselves live on ExchangeItem,
+// so a participant with no item is an incomplete cycle, not a one-sided one.
+model ExchangeParticipant {
+  cycleId    String
+  cycle      ExchangeCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  userId     String
+  // Restrict, not Cascade: dropping a participant silently would turn a
+  // two-sided swap into a one-sided one. User deletion must cancel the cycle.
+  user       User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  acceptedAt DateTime?
+
+  @@id([cycleId, userId])
+  @@index([userId])
+}
+
+// The offer(s) that produced this cycle. A marketplace claim, an admin-assigned
+// urgent request and a direct exchange each bring one source; keeping it a
+// relation leaves room for a cycle citing more than one offer (bundles, #976).
+model ExchangeCycleSource {
+  cycleId   String
+  cycle     ExchangeCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  requestId String
+  request   ExchangeRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+
+  @@id([cycleId, requestId])
+  @@index([requestId])
 }
 
 // ===========================================================================
