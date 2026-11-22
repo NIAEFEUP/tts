@@ -47,7 +47,13 @@ const getCourseUnits = async (major: Major) => {
 }
 
 const getCoursesByMajorId = async (id: number) => {
-  return await apiRequest(`/course_units/${id}/${getAcademicYear()}/${SEMESTER}/`)
+  const year = getAcademicYear()
+  const courseUnits = await apiRequest(`/course_units/${id}/${year}/${SEMESTER}/`)
+  if (!Array.isArray(courseUnits)) return []
+
+  // The legacy endpoint has no per-row academic year; it was fetched for the
+  // current one, so tag each unit for the enrollment payload.
+  return courseUnits.map((courseUnit: CourseInfo) => ({ ...courseUnit, occurrenceYear: year }))
 }
 
 /**
