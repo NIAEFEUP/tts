@@ -24,7 +24,7 @@ export const ExchangeCoursePicker = ({ enrollCourses, setEnrollCourses, allowedA
 
     Promise.all(
       checkboxedCourses.map(async (course) => {
-        const { classes } = await occurrenceService.getClasses(course.id, course.year)
+        const { classes } = await occurrenceService.getClasses(course.id, course.occurrenceYear)
         return { ...course, classes }
       }),
     )

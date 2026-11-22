@@ -29,7 +29,7 @@ export type CourseInfo = {
   occurrenceYear: number
   course: number
   course_unit_year?: number
-  year?: number
+  occurrenceYear?: number
   // Not exposed by the occurrence endpoints; only catalog-derived courses have it.
   course_unit_id: number
   ects: number
