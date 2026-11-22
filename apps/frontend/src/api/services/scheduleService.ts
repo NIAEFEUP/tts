@@ -27,6 +27,7 @@ export const toClassDescriptor = ({ classId, className, occurrence, slots }: Sch
     // `id` is the Sigarra occurrence id (exchange endpoints still need it).
     // `course_unit_id` is the v1 catalog id (`GET /v1/course-units/:id`).
     id: occurrence.id,
+    occurrenceYear: occurrence.year,
     course: 0,
     course_unit_year: 0,
     course_unit_id: occurrence.courseUnit.id,
