@@ -28,8 +28,8 @@ export type CourseInfo = {
   /** Academic year the occurrence belongs to. Distinct from `course_unit_year`. */
   occurrenceYear: number
   course: number
+  year?: number
   // Not exposed by the occurrence endpoints; only catalog-derived courses have it.
-  course_unit_year?: number
   course_unit_id: number
   ects: number
   acronym: string
@@ -56,7 +56,7 @@ export type SlotInfo = {
   start_time: number
   duration: number
   location: string
-  professors_link: string
+  professors_link?: string
   professors: Array<ProfessorInfo>
 }
 
