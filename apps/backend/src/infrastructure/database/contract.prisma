@@ -144,9 +144,13 @@ model CourseUnit {
   acronym  String // "BD"
   name     String
   semester Int // 1 | 2
-  // `year` and `ects` moved to Occurrence: `year` is per-occurrence and
-  // `ects` can vary across courses sharing a CourseUnit (BD for LEIC and BD
-  // for MIEIC carry different weights in the plans).
+  // Curricular year of the unit in its course plan (1..6) — "BD is a 2nd-year
+  // unit". A plan-level position, distinct from `Occurrence.year`, which is the
+  // academic year the unit is taught in.
+  courseUnitYear Int
+  // `year` (the academic year) and `ects` moved to Occurrence: `year` is
+  // per-occurrence and `ects` can vary across courses sharing a CourseUnit (BD
+  // for LEIC and BD for MIEIC carry different weights in the plans).
   // `hash` and `url` moved to Occurrence too — the hash backs the planner's
   // timetable-change detection, which is per-occurrence; the URL is the
   // Sigarra ficha_uc_view, which is per-occurrence.

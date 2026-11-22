@@ -1,4 +1,5 @@
 import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
+import type { EligibleOccurrenceRepository } from '@/domain/ports/eligible-occurrence.repository'
 import { createApp } from '@/main'
 
 import { TEST_SESSION_TOKEN, createFakeSessions } from './auth-test-utils'
@@ -33,11 +34,19 @@ export function createGet(app: ReturnType<typeof createApp>) {
  * to "no", for the `/users/me/*` tests that never reach it.
  */
 export function createUsersApp(
-  enrollmentRepository: Pick<EnrollmentRepository, 'findByUserId'> & Partial<EnrollmentRepository>,
+  enrollmentRepository: Pick<EnrollmentRepository, 'findByUserId'> & Partial<EnrollmentRepository> = {
+    findByUserId: async () => [],
+  },
+  eligibleOccurrenceRepository: EligibleOccurrenceRepository = { findByUserId: async () => [] },
 ) {
   const app = createApp({
     repositories: {
-      enrollmentRepository: { sharesOccurrence: async () => false, ...enrollmentRepository },
+      enrollmentRepository: {
+        sharesOccurrence: async () => false,
+        isEnrolledInOccurrence: async () => false,
+        ...enrollmentRepository,
+      },
+      eligibleOccurrenceRepository,
       sessionRepository: createFakeSessions(),
     },
   })

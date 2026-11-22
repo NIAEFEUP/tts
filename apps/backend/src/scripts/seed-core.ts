@@ -145,6 +145,7 @@ async function seedCatalog(tx: Tx): Promise<void> {
       acronym: unit.acronym,
       name: unit.name,
       semester: unit.semester,
+      courseUnitYear: unit.courseUnitYear,
     })
     unitIdByKey.set(unit.key, row.id)
   }

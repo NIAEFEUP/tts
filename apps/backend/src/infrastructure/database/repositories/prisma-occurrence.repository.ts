@@ -1,7 +1,38 @@
 import { and } from '@prisma/orm-postgres/orm-client'
 
-import type { OccurrenceRepository, OccurrenceWithUnit } from '@/domain/ports/occurrence.repository'
+import type { Occurrence, OccurrenceRepository, OccurrenceWithUnit } from '@/domain/ports/occurrence.repository'
 import type { Db } from '@/infrastructure/database/prisma'
+
+import { COURSE_UNIT_COLUMNS, toOccurrenceWithUnit } from './occurrence-with-unit'
+
+/**
+ * The `Occurrence` columns every occurrence read projects. One source of truth:
+ * a column added or renamed in `contract.prisma` is fixed here once, and all
+ * three reads pick it up. `as const` keeps the literal tuple so `.select(...)`
+ * stays checked against the contract; `satisfies readonly (keyof Occurrence)[]`
+ * ties the list to the port, so dropping or renaming a DTO field fails here
+ * instead of at each call site.
+ */
+const OCCURRENCE_COLUMNS = [
+  'id',
+  'courseUnitId',
+  'courseId',
+  'year',
+  'ects',
+  'url',
+  'hash',
+] as const satisfies readonly (keyof Occurrence)[]
+
+/**
+ * Single occurrence by its composite primary key `(id, year)`, joined with the
+ * course unit's human-readable fields so the endpoint needs no second
+ * round-trip.
+ */
+const findOccurrenceWithUnit = (db: Db, id: number, year: number) =>
+  db.orm.public.Occurrence.where((occurrence) => and(occurrence.id.eq(id), occurrence.year.eq(year)))
+    .include('courseUnit', (unit) => unit.select(...COURSE_UNIT_COLUMNS))
+    .select(...OCCURRENCE_COLUMNS)
+    .first()
 
 /**
  * Prisma implementation of `OccurrenceRepository`.
@@ -21,7 +52,7 @@ export function createOccurrenceRepository({ db }: { db: Db }): OccurrenceReposi
     // course unit, across every course and academic year it is taught in.
     async findByCourseUnit(courseUnitId) {
       return db.orm.public.Occurrence.where((occurrence) => occurrence.courseUnitId.eq(courseUnitId))
-        .select('id', 'courseUnitId', 'courseId', 'year', 'ects', 'url', 'hash')
+        .select(...OCCURRENCE_COLUMNS)
         .orderBy([(occurrence) => occurrence.year.desc(), (occurrence) => occurrence.id.asc()])
         .all()
     },
@@ -35,15 +66,9 @@ export function createOccurrenceRepository({ db }: { db: Db }): OccurrenceReposi
     async findByCourse(courseId, filter = {}) {
       const { year, semester } = filter
 
-      let query = db.orm.public.Occurrence.where((occurrence) => occurrence.courseId.eq(courseId)).select(
-        'id',
-        'courseUnitId',
-        'courseId',
-        'year',
-        'ects',
-        'url',
-        'hash',
-      )
+      let query = db.orm.public.Occurrence.where((occurrence) => occurrence.courseId.eq(courseId))
+        .include('courseUnit', (unit) => unit.select(...COURSE_UNIT_COLUMNS))
+        .select(...OCCURRENCE_COLUMNS)
 
       if (year !== undefined) {
         query = query.where((occurrence) => occurrence.year.eq(year))
@@ -61,38 +86,20 @@ export function createOccurrenceRepository({ db }: { db: Db }): OccurrenceReposi
         query = query.where((occurrence) => occurrence.courseUnitId.in(courseUnits.map((unit) => unit.id)))
       }
 
-      return query.orderBy([(occurrence) => occurrence.year.desc(), (occurrence) => occurrence.id.asc()]).all()
+      const rows = await query
+        .orderBy([(occurrence) => occurrence.year.desc(), (occurrence) => occurrence.id.asc()])
+        .all()
+
+      return rows.map(toOccurrenceWithUnit)
     },
 
     // GET /v1/occurrences/:id — single occurrence by its composite primary
-    // key `(id, year)`. Joined with `courseUnit` to attach the unit's name
-    // and acronym, so the endpoint returns the enriched shape without a
-    // second round-trip. Returns null when no row matches — the route turns
+    // key `(id, year)`. Returns null when no row matches — the route turns
     // this into a 404.
     async findById(id, year): Promise<OccurrenceWithUnit | null> {
-      const occurrence = await db.orm.public.Occurrence.where((o) => and(o.id.eq(id), o.year.eq(year)))
-        .include('courseUnit', (unit) => unit.select('acronym', 'name'))
-        .first()
+      const occurrence = await findOccurrenceWithUnit(db, id, year)
 
-      if (!occurrence) return null
-
-      // The `courseUnit` relation is required in the contract (no `?`) and
-      // protected by `onDelete: Cascade`, so it can never be null in practice.
-      // The ORM still types included to-one relations as nullable, so a guard
-      // is needed to satisfy the compiler.
-      if (!occurrence.courseUnit) throw new Error(`Occurrence (${id}, ${year}) has no course unit`)
-
-      return {
-        id: occurrence.id,
-        courseUnitId: occurrence.courseUnitId,
-        courseId: occurrence.courseId,
-        year: occurrence.year,
-        ects: occurrence.ects,
-        url: occurrence.url,
-        hash: occurrence.hash,
-        acronym: occurrence.courseUnit.acronym,
-        name: occurrence.courseUnit.name,
-      }
+      return occurrence ? toOccurrenceWithUnit(occurrence) : null
     },
   }
 }

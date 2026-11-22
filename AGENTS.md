@@ -45,6 +45,7 @@ bun run contract:emit    # Regenerate contract.json + contract.d.ts
 bun run db:init          # Create tables on empty DB
 bun run db:seed          # Seed catalog only (truncates all tables)
 bun run db:seed:demo     # Seed catalog + demo data (truncates all tables)
+bun run catalog:sync-years # Repair CourseUnit.courseUnitYear from the fixture (non-destructive)
 bun run db:verify        # Verify live DB matches contract
 bun run db:studio        # Open Prisma Studio
 bun run migrate          # Apply pending migrations
