@@ -121,7 +121,10 @@ const ClassSelectorDropdownController = ({
   const getOptions = (): Array<ClassInfo> => {
     return (
       course.classes?.filter((c) => {
-        return c.slots.every((slot) => slot.professors.every((prof) => filteredTeachers.includes(prof.id)))
+        return (
+          c.slots.length > 0 &&
+          c.slots.every((slot) => slot.professors.every((prof) => filteredTeachers.includes(prof.id)))
+        )
       }) ?? []
     )
   }
