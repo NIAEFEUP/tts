@@ -3,10 +3,6 @@
   "plugins": ["typescript"],
   "ignorePatterns": [
     ".agents/skills/**",
-    ".claude/skills/**",
-    ".cursor/skills/**",
-    ".devin/skills/**",
-    ".pi/skills/**",
     "packages/sigarra/src/generated"
   ],
   "categories": {
