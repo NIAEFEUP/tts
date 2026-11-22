@@ -9,7 +9,7 @@ type OccurrenceWithClasses = NonNullable<
 const toCourseInfo = (occurrence: OccurrenceWithClasses): CourseInfo => ({
   id: occurrence.id,
   course: occurrence.courseId,
-  course_unit_id: occurrence.id,
+  course_unit_id: occurrence.courseUnitId,
   ects: occurrence.ects,
   acronym: occurrence.acronym,
   name: occurrence.name,

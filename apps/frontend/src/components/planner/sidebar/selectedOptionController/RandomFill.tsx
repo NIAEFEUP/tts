@@ -202,7 +202,7 @@ const RandomFill = (props: Props) => {
         for (const classInfo of classesCombinations) {
           if (!classInfo) continue
 
-          const courseUnit = pickedCourses.find((other_course) => other_course.course_unit_id === course.course_id)
+          const courseUnit = pickedCourses.find((other_course) => other_course.id === course.course_id)
           // Double safety chaining added here (courseUnit could potentially be undefined too)
           const matchedClassInfo = courseUnit?.classes?.find((courseUnitClass) => courseUnitClass.id === classInfo.id)
 
