@@ -313,6 +313,11 @@ model Enrollment {
 // visible through one endpoint and invisible through the other, depending on
 // the flag it was created with.
 model ExchangePeriod {
+  // Surrogate id: the admin UI edits and deletes a period by id
+  // (PUT|DELETE /v1/occurrences/:id/periods/:periodId), so a period must be
+  // addressable on its own.
+  id String @id @default(uuid())
+
   occurrenceId    Int
   occurrenceYear  Int
   occurrence      Occurrence @relation(fields: [occurrenceId, occurrenceYear], references: [id, year], onDelete: Cascade)
@@ -320,8 +325,8 @@ model ExchangePeriod {
   endsAt       DateTime
   createdAt    DateTime   @default(now())
 
-  // Natural key — an occurrence is open exactly once per window.
-  @@id([occurrenceId, occurrenceYear, startsAt, endsAt])
+  // Natural key — an occurrence is still open exactly once per window.
+  @@unique([occurrenceId, occurrenceYear, startsAt, endsAt])
 }
 
 model AdminCourse {

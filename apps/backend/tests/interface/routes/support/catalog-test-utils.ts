@@ -6,7 +6,11 @@ import type { ClassRepository, EnrolledStudent, ClassWithSlots } from '@/domain/
 import type { CourseUnit, CourseUnitRepository } from '@/domain/ports/course-unit.repository'
 import type { Faculty, FacultyRepository } from '@/domain/ports/faculty.repository'
 import type { Occurrence, OccurrenceWithUnit, OccurrenceRepository } from '@/domain/ports/occurrence.repository'
-import type { ExchangePeriod, ExchangePeriodsRepository } from '@/domain/ports/exchange-period.repository'
+import type {
+  CourseExchangePeriod,
+  ExchangePeriod,
+  ExchangePeriodsRepository,
+} from '@/domain/ports/exchange-period.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import { createApp } from '@/main'
 import type { App } from '@/main'
@@ -174,30 +178,37 @@ export const OCCURRENCES: Occurrence[] = [
 /** Periods of occurrence 587177/2025 (out of order) plus one of the same id in 2024. 587179/2025 repeats the September window; 587178/2024 has its own. */
 export const EXCHANGE_PERIODS: ExchangePeriod[] = [
   {
+    id: 'period-587177-2025-02',
     occurrenceId: 587177,
     occurrenceYear: 2025,
     startsAt: new Date('2026-02-01T00:00:00Z'),
     endsAt: new Date('2026-02-15T00:00:00Z'),
   },
   {
+    // Lexicographically smaller than `period-587179-2025-09`, so this is the
+    // representative id the course-level endpoint returns for the shared window.
+    id: 'period-587177-2025-09',
     occurrenceId: 587177,
     occurrenceYear: 2025,
     startsAt: new Date('2025-09-01T00:00:00Z'),
     endsAt: new Date('2025-09-15T00:00:00Z'),
   },
   {
+    id: 'period-587177-2024-09',
     occurrenceId: 587177,
     occurrenceYear: 2024,
     startsAt: new Date('2024-09-01T00:00:00Z'),
     endsAt: new Date('2024-09-15T00:00:00Z'),
   },
   {
+    id: 'period-587179-2025-09',
     occurrenceId: 587179,
     occurrenceYear: 2025,
     startsAt: new Date('2025-09-01T00:00:00Z'),
     endsAt: new Date('2025-09-15T00:00:00Z'),
   },
   {
+    id: 'period-587178-2024-10',
     occurrenceId: 587178,
     occurrenceYear: 2024,
     startsAt: new Date('2024-10-01T00:00:00Z'),
@@ -226,7 +237,7 @@ export function createFakeExchangePeriodsRepository({
 }: CatalogFixtures = {}): ExchangePeriodsRepository {
   return {
     async findByOccurrence(occurrenceId, occurrenceYear) {
-      // Same scope and order as the Prisma repository: the composite key
+      // Same scope and order as the Prisma repository: occurrence
       // (id, year), chronological. `filter` returns a fresh array, so
       // sorting never mutates the fixture.
       return exchangePeriods
@@ -235,24 +246,23 @@ export function createFakeExchangePeriodsRepository({
     },
     async findByCourse(courseId) {
       // Same as the Prisma repository: join on (id, year) to the course's
-      // occurrences, then distinct windows by their dates, chronological.
-      const seen = new Set<string>()
+      // occurrences, then collapse repeated windows to the smallest id.
+      const windows = new Map<string, CourseExchangePeriod>()
 
-      return exchangePeriods
-        .filter((period) =>
-          occurrences.some(
-            (o) => o.id === period.occurrenceId && o.year === period.occurrenceYear && o.courseId === courseId,
-          ),
+      for (const period of exchangePeriods) {
+        const belongsToCourse = occurrences.some(
+          (o) => o.id === period.occurrenceId && o.year === period.occurrenceYear && o.courseId === courseId,
         )
-        .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
-        .filter((period) => {
-          const key = `${period.startsAt.getTime()}:${period.endsAt.getTime()}`
-          if (seen.has(key)) return false
+        if (!belongsToCourse) continue
 
-          seen.add(key)
-          return true
-        })
-        .map((period) => ({ startsAt: period.startsAt, endsAt: period.endsAt }))
+        const key = `${period.startsAt.getTime()}:${period.endsAt.getTime()}`
+        const seen = windows.get(key)
+        if (seen === undefined || period.id < seen.id) {
+          windows.set(key, { id: period.id, startsAt: period.startsAt, endsAt: period.endsAt })
+        }
+      }
+
+      return [...windows.values()].sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
     },
   }
 }

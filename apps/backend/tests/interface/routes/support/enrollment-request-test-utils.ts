@@ -97,6 +97,7 @@ export const DEFAULT_REQUESTS = [MY_REQUEST, OTHER_REQUEST, CANCELLED_REQUEST]
 
 /** A wide open window for every occurrence fixture, independent of test runtime. */
 export const OPEN_PERIODS: ExchangePeriod[] = OCCURRENCES.map((occurrence) => ({
+  id: `open-${occurrence.id}-${occurrence.year}`,
   occurrenceId: occurrence.id,
   occurrenceYear: occurrence.year,
   startsAt: new Date('2000-01-01T00:00:00.000Z'),
@@ -105,6 +106,7 @@ export const OPEN_PERIODS: ExchangePeriod[] = OCCURRENCES.map((occurrence) => ({
 
 /** The same occurrences, but every window is far in the past. */
 export const CLOSED_PERIODS: ExchangePeriod[] = OCCURRENCES.map((occurrence) => ({
+  id: `closed-${occurrence.id}-${occurrence.year}`,
   occurrenceId: occurrence.id,
   occurrenceYear: occurrence.year,
   startsAt: new Date('1990-01-01T00:00:00.000Z'),
