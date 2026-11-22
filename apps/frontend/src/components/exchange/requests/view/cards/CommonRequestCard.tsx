@@ -100,6 +100,7 @@ export const CommonRequestCard = ({
               classInfo: {
                 id: matchingClass.id,
                 name: matchingClass.name,
+                filteredTeachers: [],
                 slots: [slot],
               },
             })

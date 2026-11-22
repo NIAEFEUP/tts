@@ -17,6 +17,7 @@ const enrollments: StudentEnrollment[] = [
     occurrence: {
       id: 12345,
       year: 2025,
+      url: 'https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=12345',
       courseUnit: {
         id: 42,
         acronym: 'BD',

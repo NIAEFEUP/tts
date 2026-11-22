@@ -128,6 +128,7 @@ export function createEnrollmentRepository({ db }: { db: Db }): EnrollmentReposi
           occurrence: {
             id: occurrence.id,
             year: occurrence.year,
+            url: occurrence.url,
             courseUnit: {
               id: courseUnit.id,
               acronym: courseUnit.acronym,

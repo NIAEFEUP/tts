@@ -32,6 +32,7 @@ export function enrollmentIn(occurrenceId: number, year: number, classId: number
     occurrence: {
       id: occurrenceId,
       year,
+      url: `https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=${occurrenceId}`,
       courseUnit: { id: occurrenceId, acronym: `UC${occurrenceId}`, name: `Unit ${occurrenceId}`, semester: 1 },
     },
     class: { id: classId, name: `1LEIC0${classId}`, vacancies: null, slots: [] },
