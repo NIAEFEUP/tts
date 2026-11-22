@@ -60,7 +60,7 @@ Every failing response is `{ error, code }`: `error` is written for the caller, 
 
 - **`Faculty` ↔ `Course`** is many-to-many via `FacultyCourse`.
 - **`CourseUnit`** is abstract/year-agnostic (e.g. _“BD”_). It does **not** own classes, periods, or enrollments.
-- **`Occurrence`** is the concrete per-course, per-year instance (e.g. _“BD in LEIC, 2025/26”_). It owns `Class`, `ExchangePeriod`, `ExchangeItem`, `EnrollmentRequestOption`, `AdminOccurrence`.
+- **`Occurrence`** is the concrete per-course, per-year instance (e.g. _“BD in LEIC, 2025/26”_). It owns `Class`, `ExchangePeriod`, exchange offers and items, `EnrollmentRequestOption`, `AdminOccurrence`.
 - `Occurrence` PK is `(id, year)` because Sigarra reuses the same occurrence id across academic years.
 - **`PlannerState`** stores the user’s planner choices and timetable drafts per academic year.
 
@@ -632,6 +632,14 @@ The backend stores the blob as JSON and updates `updatedAt`. The frontend compar
 ---
 
 ## 9. Exchanges
+
+> **Post-#966 model.** `ExchangeRequest` is an **offer**: exactly one proposed
+> move, with `ExchangeOfferStatus` (`OPEN | MATCHED | CANCELLED | EXPIRED`).
+> A `ExchangeCycle` is created only when the offer is claimed or assigned
+> (`PENDING | ACCEPTED | CANCELLED`); it owns the participants, their moves
+> (`ExchangeItem`), the offers that produced it (`ExchangeCycleSource`) and the
+> admin decision (`adminState`). The routes below are still the planned shapes
+> and are finalised by #865–#874.
 
 Unified resource for direct, marketplace, and urgent exchanges. `type` is a discriminator on `ExchangeRequest`.
 
