@@ -246,7 +246,7 @@
       {
         "description": "Run backfill-ExchangeItem-updatedAt",
         "sql": "UPDATE \"public\".\"ExchangeItem\" SET \"updatedAt\" = $1 WHERE \"updatedAt\" IS NULL",
-        "params": ["2026-11-23T12:36:00.086822Z"]
+        "params": ["2026-11-23T13:05:19.073Z"]
       }
     ],
     "postcheck": [

@@ -5,6 +5,7 @@ import type { Contract as Start } from '../../snapshots/8bb43f0b67bb9088d07dd8f3
 import startContract from '../../snapshots/8bb43f0b67bb9088d07dd8f34bccaa1bb45027e27e92c846d4966fa7c568b9c4/contract.json' with { type: 'json' }
 import { Migration, MigrationCLI, col, lit, rawSql } from '@prisma/orm-postgres/migration'
 import postgres from '@prisma/orm-postgres/runtime'
+import 'temporal-polyfill/global'
 import 'temporal-polyfill/types/global'
 
 const { sql: db, contract } = postgres<End>({ contractJson: endContract })
