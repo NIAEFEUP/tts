@@ -2,6 +2,7 @@ import type { Course } from '@/domain/ports/course.repository'
 import type { OccurrenceWithUnit } from '@/domain/ports/occurrence.repository'
 import type { AdminRepository } from '@/domain/ports/admin.repository'
 import type { Db } from '@/infrastructure/database/prisma'
+import { toCourseUnitYear } from './course-unit-mapper'
 
 import { loadCourses } from './course-mapper'
 
@@ -36,7 +37,7 @@ export function createAdminRepository({ db }: { db: Db }): AdminRepository {
 
       const courseUnitIds = [...new Set(occurrences.map((occurrence) => occurrence.courseUnitId))]
       const courseUnits = await db.orm.public.CourseUnit.where((unit) => unit.id.in(courseUnitIds))
-        .select('id', 'acronym', 'name')
+        .select('id', 'acronym', 'name', 'courseUnitYear')
         .all()
       const courseUnitsById = new Map(courseUnits.map((unit) => [unit.id, unit] as const))
 
@@ -55,6 +56,7 @@ export function createAdminRepository({ db }: { db: Db }): AdminRepository {
             hash: occurrence.hash,
             acronym: courseUnit.acronym,
             name: courseUnit.name,
+            courseUnitYear: toCourseUnitYear(courseUnit.courseUnitYear),
           }
         })
         .sort((a, b) => b.year - a.year || a.id - b.id)

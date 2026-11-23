@@ -10,6 +10,7 @@ const COURSES_PATH = '/v1/admin/courses'
 const OCCURRENCES_PATH = '/v1/admin/occurrences'
 
 const FORBIDDEN_BODY = { error: 'Admin access required', code: 'forbidden' }
+const BD_UNIT = { acronym: 'BD', name: 'Bases de Dados', courseUnitYear: 2 }
 
 // A repository that fails if it is reached: the 401 and 403 must stop before it.
 const unreachable: AdminRepository = {
@@ -99,8 +100,8 @@ describe('GET /v1/admin/occurrences', () => {
 
     expect(status).toBe(200)
     expect(body).toEqual([
-      { ...OCCURRENCES[0], acronym: 'BD', name: 'Bases de Dados' },
-      { ...OCCURRENCES[1], acronym: 'BD', name: 'Bases de Dados' },
+      { ...OCCURRENCES[0], ...BD_UNIT },
+      { ...OCCURRENCES[1], ...BD_UNIT },
     ])
   })
 
@@ -115,7 +116,7 @@ describe('GET /v1/admin/occurrences', () => {
     const { status, body } = await get(OCCURRENCES_PATH)
 
     expect(status).toBe(200)
-    expect(body).toEqual([{ ...OCCURRENCES[0], acronym: 'BD', name: 'Bases de Dados' }])
+    expect(body).toEqual([{ ...OCCURRENCES[0], ...BD_UNIT }])
   })
 
   it('returns an empty list when I have no scope', async () => {

@@ -55,7 +55,7 @@ export function createFakeAdminRepository({
         const unit = courseUnits.find((u) => u.id === occurrence.courseUnitId)
         if (!unit) continue
 
-        result.push({ ...occurrence, acronym: unit.acronym, name: unit.name })
+        result.push({ ...occurrence, acronym: unit.acronym, name: unit.name, courseUnitYear: unit.courseUnitYear })
       }
 
       return result.sort((a, b) => b.year - a.year || a.id - b.id)

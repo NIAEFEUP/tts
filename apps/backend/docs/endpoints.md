@@ -918,8 +918,8 @@ Ordered by `acronym`.
 ### `GET /admin/occurrences` — response
 
 Ordered by `year` (newest first), then `id`. Each item has the course unit
-`acronym` and `name`. An occurrence is the `(id, year)` pair, because Sigarra
-reuses the id across years.
+`acronym`, `name` and `courseUnitYear`. An occurrence is the `(id, year)` pair,
+because Sigarra reuses the id across years.
 
 ```json
 [
@@ -932,7 +932,8 @@ reuses the id across years.
     "url": "https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586990",
     "hash": "",
     "acronym": "BD",
-    "name": "Bases de Dados"
+    "name": "Bases de Dados",
+    "courseUnitYear": 2
   }
 ]
 ```
