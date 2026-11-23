@@ -8,21 +8,21 @@ import { format } from 'date-fns'
 import * as React from 'react'
 
 export interface ExchangePeriod {
-  id: number
-  startDate: string
-  endDate: string
+  id: string
+  startsAt: string
+  endsAt: string
 }
 
 interface ExchangePeriodTableProps {
   periods: ExchangePeriod[]
-  editingPeriodId: number | null
+  editingPeriodId: string | null
   editingStartDate: Date | undefined
   editingEndDate: Date | undefined
   isLoading: boolean
-  onEditChange: (periodId: number, newStartDate: Date, newEndDate: Date) => void
+  onEditChange: (periodId: string, newStartDate: Date, newEndDate: Date) => void
   onEditSubmit: (e) => void
   onCancelEdit: () => void
-  onDelete: (periodId: number) => void
+  onDelete: (periodId: string) => void
   formatDate?: (dateString: string) => string
 }
 
@@ -60,7 +60,7 @@ export const ExchangePeriodTable: React.FC<ExchangePeriodTableProps> = ({
                     onChange={(date) => onEditChange(period.id, date!, editingEndDate!)}
                   />
                 ) : (
-                  formatDate(period.startDate)
+                  formatDate(period.startsAt)
                 )}
               </TableCell>
               <TableCell className="text-center font-mono">
@@ -70,7 +70,7 @@ export const ExchangePeriodTable: React.FC<ExchangePeriodTableProps> = ({
                     onChange={(date) => onEditChange(period.id, editingStartDate!, date!)}
                   />
                 ) : (
-                  formatDate(period.endDate)
+                  formatDate(period.endsAt)
                 )}
               </TableCell>
               <TableCell className="flex justify-center gap-2">
@@ -86,7 +86,7 @@ export const ExchangePeriodTable: React.FC<ExchangePeriodTableProps> = ({
                 ) : (
                   <>
                     <Button
-                      onClick={() => onEditChange(period.id, new Date(period.startDate), new Date(period.endDate))}
+                      onClick={() => onEditChange(period.id, new Date(period.startsAt), new Date(period.endsAt))}
                       size="sm"
                       variant="ghost"
                     >

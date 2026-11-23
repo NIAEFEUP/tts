@@ -189,7 +189,9 @@ const addCourseUnitExchangePeriod = async (startDate: Date, endDate: Date, selec
   })
 }
 
-const editCourseExchangePeriod = async (startDate: Date, endDate: Date, selectedCourse: number, periodId: number) => {
+// shortcut: edit/delete send v1 UUID period ids to legacy <int:period_id> routes, which 404 on them;
+// move all four to PUT/DELETE /v1/{courses,occurrences}/:id/periods/:periodId once #954 adds them.
+const editCourseExchangePeriod = async (startDate: Date, endDate: Date, selectedCourse: number, periodId: string) => {
   const payload = {
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
@@ -210,7 +212,7 @@ const editCourseUnitExchangePeriod = async (
   startDate: Date,
   endDate: Date,
   selectedCourseUnit: number,
-  periodId: number,
+  periodId: string,
 ) => {
   const payload = {
     startDate: startDate.toISOString(),
@@ -226,7 +228,7 @@ const editCourseUnitExchangePeriod = async (
   })
 }
 
-const deleteCourseExchangePeriod = async (selectedCourse: number, periodId: number) => {
+const deleteCourseExchangePeriod = async (selectedCourse: number, periodId: string) => {
   return fetch(`${api.BACKEND_URL}/exchange/admin/course/${selectedCourse}/period/${periodId}/`, {
     method: 'DELETE',
     credentials: 'include',
@@ -236,7 +238,7 @@ const deleteCourseExchangePeriod = async (selectedCourse: number, periodId: numb
   })
 }
 
-const deleteCourseUnitExchangePeriod = async (selectedCourseUnit: number, periodId: number) => {
+const deleteCourseUnitExchangePeriod = async (selectedCourseUnit: number, periodId: string) => {
   return fetch(`${api.BACKEND_URL}/exchange/admin/course_unit/${selectedCourseUnit}/period/${periodId}/`, {
     method: 'DELETE',
     credentials: 'include',

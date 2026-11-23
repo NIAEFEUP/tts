@@ -4,39 +4,38 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/new/button'
 import { useEffect, useState } from 'react'
 import { PlusIcon } from 'lucide-react'
-import useAdminExchangeCourseUnitPeriods from '../../hooks/admin/useAdminExchangeCourseUnitPeriods'
+import useAdminScopedOccurrences from '../../hooks/admin/useAdminScopedOccurrences'
+import useOccurrencePeriods from '../../hooks/admin/useOccurrencePeriods'
 import exchangeRequestService from '../../api/services/exchangeRequestService'
 import { AdminExchangePeriodDeleteConfirmation } from './AdminExchangePeriodDeleteConfirmation'
 import { ExchangePeriodForm } from './AdminExchangePeriodForm'
-import { ExchangePeriodTable, ExchangePeriod } from './AdminExchangePeriodTable'
-import { cn } from '../../lib/utils'
+import { ExchangePeriodTable } from './AdminExchangePeriodTable'
 
 export const AdminExchangeCourseUnitSettings = () => {
-  const { courseUnitPeriods, mutate } = useAdminExchangeCourseUnitPeriods()
-  const [selectedGroup, setSelectedGroup] = useState<number>(0)
-  const [selectedCourseUnit, setSelectedCourseUnit] = useState<number | null>(null)
+  const { data: occurrences = [] } = useAdminScopedOccurrences()
+  const [selectedOccurrence, setSelectedOccurrence] = useState<{ id: number; year: number } | null>(null)
+  const { data: periods = [], mutate } = useOccurrencePeriods(selectedOccurrence)
+  // shortcut: the legacy write calls below still take this id, replaced by /v1/occurrences/:id/periods in #954
+  const selectedCourseUnit = selectedOccurrence?.id ?? null
 
   const [addingPeriod, setAddingPeriod] = useState<boolean>(false)
   const [startDate, setStartDate] = useState<Date>()
   const [endDate, setEndDate] = useState<Date>()
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  const [editingPeriodId, setEditingPeriodId] = useState<number | null>(null)
+  const [editingPeriodId, setEditingPeriodId] = useState<string | null>(null)
   const [editingStartDate, setEditingStartDate] = useState<Date | undefined>(undefined)
   const [editingEndDate, setEditingEndDate] = useState<Date | undefined>(undefined)
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false)
-  const [periodToDelete, setPeriodToDelete] = useState<number | null>(null)
+  const [periodToDelete, setPeriodToDelete] = useState<string | null>(null)
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const courseUnits = courseUnitPeriods?.courseUnits || []
-
   useEffect(() => {
-    if (courseUnits.length > 0 && !selectedCourseUnit) {
-      setSelectedCourseUnit(courseUnits[0].id)
-    }
-  }, [courseUnits])
+    const isSelected = (o) => o.id === selectedOccurrence?.id && o.year === selectedOccurrence.year
+    if (!occurrences.some(isSelected)) setSelectedOccurrence(occurrences[0] ?? null)
+  }, [occurrences])
 
   useEffect(() => {
     if (!addingPeriod && editingPeriodId === null) {
@@ -97,11 +96,12 @@ export const AdminExchangeCourseUnitSettings = () => {
     }
   }
 
-  const handleDeletePeriod = async (periodId: number) => {
+  const handleDeletePeriod = async (periodId: string) => {
     if (!selectedCourseUnit) return
     try {
       setIsLoading(true)
-      await exchangeRequestService.deleteCourseUnitExchangePeriod(selectedCourseUnit, periodId)
+      const response = await exchangeRequestService.deleteCourseUnitExchangePeriod(selectedCourseUnit, periodId)
+      if (!response.ok) setErrorMessage('Erro ao remover período.')
       mutate()
     } catch (error) {
       console.error('Failed to delete exchange period:', error)
@@ -118,13 +118,7 @@ export const AdminExchangeCourseUnitSettings = () => {
     setDeleteDialogOpen(false)
   }
 
-  const getCurrentPeriods = (): ExchangePeriod[] => {
-    if (!courseUnits || !selectedCourseUnit) return []
-    const unit = courseUnits.find((u) => u.id === selectedCourseUnit)
-    return unit?.exchangePeriods || []
-  }
-
-  const onEditChange = (periodId: number, newStartDate: Date, newEndDate: Date) => {
+  const onEditChange = (periodId: string, newStartDate: Date, newEndDate: Date) => {
     if (editingPeriodId === null) {
       setEditingPeriodId(periodId)
     }
@@ -139,7 +133,7 @@ export const AdminExchangeCourseUnitSettings = () => {
     setErrorMessage(null)
   }
 
-  const onDelete = (periodId: number) => {
+  const onDelete = (periodId: string) => {
     setPeriodToDelete(periodId)
     setDeleteDialogOpen(true)
   }
@@ -187,7 +181,7 @@ export const AdminExchangeCourseUnitSettings = () => {
               />
             )}
             <ExchangePeriodTable
-              periods={getCurrentPeriods()}
+              periods={periods}
               editingPeriodId={editingPeriodId}
               editingStartDate={editingStartDate}
               editingEndDate={editingEndDate}
@@ -204,17 +198,18 @@ export const AdminExchangeCourseUnitSettings = () => {
             <CardTitle className="text-lg">Cadeiras responsáveis</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            {courseUnits.map((courseUnit, idx) => (
+            {occurrences.map((occurrence) => (
               <Button
-                key={courseUnit.id}
-                variant={selectedGroup === idx ? 'primary' : 'ghost'}
-                className={cn('justify-start', selectedGroup === idx)}
-                onClick={() => {
-                  setSelectedGroup(idx)
-                  setSelectedCourseUnit(courseUnit.id)
-                }}
+                key={`${occurrence.id}-${occurrence.year}`}
+                variant={
+                  selectedOccurrence?.id === occurrence.id && selectedOccurrence.year === occurrence.year
+                    ? 'primary'
+                    : 'ghost'
+                }
+                className="justify-start"
+                onClick={() => setSelectedOccurrence(occurrence)}
               >
-                {courseUnit.name}
+                {occurrence.name}
               </Button>
             ))}
           </CardContent>
