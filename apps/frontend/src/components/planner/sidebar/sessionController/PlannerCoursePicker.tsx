@@ -25,7 +25,7 @@ export const PlannerCoursePicker = () => {
     setPickedCourses((prev) => {
       const merged = checkboxedCourses.map((course) => ({
         ...course,
-        classes: course.classes ?? prev.find((c) => c.id === course.id)?.classes,
+        classes: prev.find((c) => c.id === course.id)?.classes ?? course.classes,
       }))
       StorageAPI.setPickedCoursesStorage(merged)
       return merged
