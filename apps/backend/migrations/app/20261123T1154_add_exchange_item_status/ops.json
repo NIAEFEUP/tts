@@ -103,6 +103,35 @@
     ]
   },
   {
+    "id": "data_migration.backfill-exchange-item-cancelled",
+    "label": "Data transform: backfill-exchange-item-cancelled",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [
+      {
+        "description": "Check backfill-exchange-item-cancelled has work to do",
+        "sql": "SELECT EXISTS (SELECT 1 FROM \"public\".\"ExchangeItem\" AS i INNER JOIN \"public\".\"ExchangeCycle\" AS c ON c.\"id\" = i.\"cycleId\" WHERE c.\"status\" = 'CANCELLED' AND i.\"status\" <> 'CANCELLED' LIMIT 1) AS ok",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "Run backfill-exchange-item-cancelled",
+        "sql": "UPDATE \"public\".\"ExchangeItem\" AS i SET \"status\" = 'CANCELLED' FROM \"public\".\"ExchangeCycle\" AS c WHERE c.\"id\" = i.\"cycleId\" AND c.\"status\" = 'CANCELLED' AND i.\"status\" <> 'CANCELLED'",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "Verify backfill-exchange-item-cancelled resolved all violations",
+        "sql": "SELECT NOT EXISTS (SELECT 1 FROM \"public\".\"ExchangeItem\" AS i INNER JOIN \"public\".\"ExchangeCycle\" AS c ON c.\"id\" = i.\"cycleId\" WHERE c.\"status\" = 'CANCELLED' AND i.\"status\" <> 'CANCELLED' LIMIT 1) AS ok",
+        "params": []
+      }
+    ]
+  },
+  {
     "id": "data_migration.backfill-exchange-item-status",
     "label": "Data transform: backfill-exchange-item-status",
     "operationClass": "data",
@@ -112,21 +141,21 @@
     "precheck": [
       {
         "description": "Check backfill-exchange-item-status has work to do",
-        "sql": "SELECT EXISTS (SELECT 1 FROM \"public\".\"ExchangeItem\" WHERE \"accepted\" = true AND \"status\" <> 'ACCEPTED' LIMIT 1) AS ok",
+        "sql": "SELECT EXISTS (SELECT 1 FROM \"public\".\"ExchangeItem\" AS i INNER JOIN \"public\".\"ExchangeCycle\" AS c ON c.\"id\" = i.\"cycleId\" WHERE c.\"status\" <> 'CANCELLED' AND i.\"accepted\" = true AND i.\"status\" <> 'ACCEPTED' LIMIT 1) AS ok",
         "params": []
       }
     ],
     "execute": [
       {
         "description": "Run backfill-exchange-item-status",
-        "sql": "UPDATE \"public\".\"ExchangeItem\" SET \"status\" = 'ACCEPTED' WHERE \"accepted\" = true",
+        "sql": "UPDATE \"public\".\"ExchangeItem\" AS i SET \"status\" = 'ACCEPTED' FROM \"public\".\"ExchangeCycle\" AS c WHERE c.\"id\" = i.\"cycleId\" AND c.\"status\" <> 'CANCELLED' AND i.\"accepted\" = true AND i.\"status\" <> 'ACCEPTED'",
         "params": []
       }
     ],
     "postcheck": [
       {
         "description": "Verify backfill-exchange-item-status resolved all violations",
-        "sql": "SELECT NOT EXISTS (SELECT 1 FROM \"public\".\"ExchangeItem\" WHERE \"accepted\" = true AND \"status\" <> 'ACCEPTED' LIMIT 1) AS ok",
+        "sql": "SELECT NOT EXISTS (SELECT 1 FROM \"public\".\"ExchangeItem\" AS i INNER JOIN \"public\".\"ExchangeCycle\" AS c ON c.\"id\" = i.\"cycleId\" WHERE c.\"status\" <> 'CANCELLED' AND i.\"accepted\" = true AND i.\"status\" <> 'ACCEPTED' LIMIT 1) AS ok",
         "params": []
       }
     ]
@@ -246,7 +275,7 @@
       {
         "description": "Run backfill-ExchangeItem-updatedAt",
         "sql": "UPDATE \"public\".\"ExchangeItem\" SET \"updatedAt\" = $1 WHERE \"updatedAt\" IS NULL",
-        "params": ["2026-11-23T13:05:19.073Z"]
+        "params": ["2026-11-23T13:24:20.655Z"]
       }
     ],
     "postcheck": [

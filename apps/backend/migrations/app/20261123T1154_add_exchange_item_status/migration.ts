@@ -14,12 +14,16 @@ const { sql: db, contract } = postgres<End>({ contractJson: endContract })
 // accepted -> ACCEPTED backfill, and the typed dataTransform builder is built
 // against the end contract, where `accepted` no longer exists — so a rawSql
 // op carries it between the status addColumn and the accepted dropColumn.
-// A second rawSql op copies the accept timestamp from ExchangeParticipant
-// (keyed by cycleId + userId) onto the accepted items, so ACCEPTED rows keep
-// their "accepted at" instead of starting at NULL; participants without a
-// timestamp stay NULL. Rows left at the column default PENDING are already
-// correct; updatedAt is NOT NULL with no default, so it lands nullable, is
-// backfilled, then gains NOT NULL.
+// Items of a CANCELLED cycle are backfilled to CANCELLED first (whatever their
+// accept flag says): the cycle was cut after the accept, and the cycle status
+// is derived from the items, so leaving them PENDING/ACCEPTED would contradict
+// it. `statusReason` stays NULL because the original reason was never stored.
+// The accepted backfill then skips cancelled cycles. A third rawSql op copies
+// the accept timestamp from ExchangeParticipant (keyed by cycleId + userId)
+// onto the accepted items, so ACCEPTED rows keep their "accepted at" instead of
+// starting at NULL; participants without a timestamp stay NULL. Rows left at
+// the column default PENDING are already correct; updatedAt is NOT NULL with no
+// default, so it lands nullable, is backfilled, then gains NOT NULL.
 export default class M extends Migration<Start, End> {
   override readonly startContractJson = startContract
   override readonly endContractJson = endContract
@@ -48,6 +52,33 @@ export default class M extends Migration<Start, End> {
         }),
       }),
       rawSql({
+        id: 'data_migration.backfill-exchange-item-cancelled',
+        label: 'Data transform: backfill-exchange-item-cancelled',
+        operationClass: 'data',
+        target: { id: 'postgres' },
+        precheck: [
+          {
+            description: 'Check backfill-exchange-item-cancelled has work to do',
+            sql: 'SELECT EXISTS (SELECT 1 FROM "public"."ExchangeItem" AS i INNER JOIN "public"."ExchangeCycle" AS c ON c."id" = i."cycleId" WHERE c."status" = \'CANCELLED\' AND i."status" <> \'CANCELLED\' LIMIT 1) AS ok',
+            params: [],
+          },
+        ],
+        execute: [
+          {
+            description: 'Run backfill-exchange-item-cancelled',
+            sql: 'UPDATE "public"."ExchangeItem" AS i SET "status" = \'CANCELLED\' FROM "public"."ExchangeCycle" AS c WHERE c."id" = i."cycleId" AND c."status" = \'CANCELLED\' AND i."status" <> \'CANCELLED\'',
+            params: [],
+          },
+        ],
+        postcheck: [
+          {
+            description: 'Verify backfill-exchange-item-cancelled resolved all violations',
+            sql: 'SELECT NOT EXISTS (SELECT 1 FROM "public"."ExchangeItem" AS i INNER JOIN "public"."ExchangeCycle" AS c ON c."id" = i."cycleId" WHERE c."status" = \'CANCELLED\' AND i."status" <> \'CANCELLED\' LIMIT 1) AS ok',
+            params: [],
+          },
+        ],
+      }),
+      rawSql({
         id: 'data_migration.backfill-exchange-item-status',
         label: 'Data transform: backfill-exchange-item-status',
         operationClass: 'data',
@@ -55,21 +86,21 @@ export default class M extends Migration<Start, End> {
         precheck: [
           {
             description: 'Check backfill-exchange-item-status has work to do',
-            sql: 'SELECT EXISTS (SELECT 1 FROM "public"."ExchangeItem" WHERE "accepted" = true AND "status" <> \'ACCEPTED\' LIMIT 1) AS ok',
+            sql: 'SELECT EXISTS (SELECT 1 FROM "public"."ExchangeItem" AS i INNER JOIN "public"."ExchangeCycle" AS c ON c."id" = i."cycleId" WHERE c."status" <> \'CANCELLED\' AND i."accepted" = true AND i."status" <> \'ACCEPTED\' LIMIT 1) AS ok',
             params: [],
           },
         ],
         execute: [
           {
             description: 'Run backfill-exchange-item-status',
-            sql: 'UPDATE "public"."ExchangeItem" SET "status" = \'ACCEPTED\' WHERE "accepted" = true',
+            sql: 'UPDATE "public"."ExchangeItem" AS i SET "status" = \'ACCEPTED\' FROM "public"."ExchangeCycle" AS c WHERE c."id" = i."cycleId" AND c."status" <> \'CANCELLED\' AND i."accepted" = true AND i."status" <> \'ACCEPTED\'',
             params: [],
           },
         ],
         postcheck: [
           {
             description: 'Verify backfill-exchange-item-status resolved all violations',
-            sql: 'SELECT NOT EXISTS (SELECT 1 FROM "public"."ExchangeItem" WHERE "accepted" = true AND "status" <> \'ACCEPTED\' LIMIT 1) AS ok',
+            sql: 'SELECT NOT EXISTS (SELECT 1 FROM "public"."ExchangeItem" AS i INNER JOIN "public"."ExchangeCycle" AS c ON c."id" = i."cycleId" WHERE c."status" <> \'CANCELLED\' AND i."accepted" = true AND i."status" <> \'ACCEPTED\' LIMIT 1) AS ok',
             params: [],
           },
         ],
