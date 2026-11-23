@@ -1,0 +1,466 @@
+[
+  {
+    "id": "dropIndex.ExchangeItem.ExchangeItem_userId_accepted_idx_b8232572",
+    "label": "Drop index \"ExchangeItem_userId_accepted_idx_b8232572\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ExchangeItem_userId_accepted_idx_b8232572",
+        "table": "ExchangeItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ExchangeItem_userId_accepted_idx_b8232572\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeItem_userId_accepted_idx_b8232572\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop index \"ExchangeItem_userId_accepted_idx_b8232572\"",
+        "sql": "DROP INDEX \"public\".\"ExchangeItem_userId_accepted_idx_b8232572\"",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ExchangeItem_userId_accepted_idx_b8232572\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeItem_userId_accepted_idx_b8232572\""]
+      }
+    ]
+  },
+  {
+    "id": "column.public.ExchangeItem.acceptedAt",
+    "label": "Add column \"acceptedAt\" to \"ExchangeItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "acceptedAt",
+        "table": "ExchangeItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"acceptedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeItem", "acceptedAt"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"acceptedAt\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeItem\" ADD COLUMN \"acceptedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"acceptedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeItem", "acceptedAt"]
+      }
+    ]
+  },
+  {
+    "id": "column.public.ExchangeItem.status",
+    "label": "Add column \"status\" to \"ExchangeItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "status",
+        "table": "ExchangeItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"status\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeItem", "status"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"status\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeItem\" ADD COLUMN \"status\" text DEFAULT 'PENDING' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"status\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeItem", "status"]
+      }
+    ]
+  },
+  {
+    "id": "data_migration.backfill-exchange-item-cancelled",
+    "label": "Data transform: backfill-exchange-item-cancelled",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [
+      {
+        "description": "Check backfill-exchange-item-cancelled has work to do",
+        "sql": "SELECT EXISTS (SELECT 1 FROM \"public\".\"ExchangeItem\" AS i INNER JOIN \"public\".\"ExchangeCycle\" AS c ON c.\"id\" = i.\"cycleId\" WHERE c.\"status\" = 'CANCELLED' AND i.\"status\" <> 'CANCELLED' LIMIT 1) AS ok",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "Run backfill-exchange-item-cancelled",
+        "sql": "UPDATE \"public\".\"ExchangeItem\" AS i SET \"status\" = 'CANCELLED' FROM \"public\".\"ExchangeCycle\" AS c WHERE c.\"id\" = i.\"cycleId\" AND c.\"status\" = 'CANCELLED' AND i.\"status\" <> 'CANCELLED'",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "Verify backfill-exchange-item-cancelled resolved all violations",
+        "sql": "SELECT NOT EXISTS (SELECT 1 FROM \"public\".\"ExchangeItem\" AS i INNER JOIN \"public\".\"ExchangeCycle\" AS c ON c.\"id\" = i.\"cycleId\" WHERE c.\"status\" = 'CANCELLED' AND i.\"status\" <> 'CANCELLED' LIMIT 1) AS ok",
+        "params": []
+      }
+    ]
+  },
+  {
+    "id": "data_migration.backfill-exchange-item-status",
+    "label": "Data transform: backfill-exchange-item-status",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [
+      {
+        "description": "Check backfill-exchange-item-status has work to do",
+        "sql": "SELECT EXISTS (SELECT 1 FROM \"public\".\"ExchangeItem\" AS i INNER JOIN \"public\".\"ExchangeCycle\" AS c ON c.\"id\" = i.\"cycleId\" WHERE c.\"status\" <> 'CANCELLED' AND i.\"accepted\" = true AND i.\"status\" <> 'ACCEPTED' LIMIT 1) AS ok",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "Run backfill-exchange-item-status",
+        "sql": "UPDATE \"public\".\"ExchangeItem\" AS i SET \"status\" = 'ACCEPTED' FROM \"public\".\"ExchangeCycle\" AS c WHERE c.\"id\" = i.\"cycleId\" AND c.\"status\" <> 'CANCELLED' AND i.\"accepted\" = true AND i.\"status\" <> 'ACCEPTED'",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "Verify backfill-exchange-item-status resolved all violations",
+        "sql": "SELECT NOT EXISTS (SELECT 1 FROM \"public\".\"ExchangeItem\" AS i INNER JOIN \"public\".\"ExchangeCycle\" AS c ON c.\"id\" = i.\"cycleId\" WHERE c.\"status\" <> 'CANCELLED' AND i.\"accepted\" = true AND i.\"status\" <> 'ACCEPTED' LIMIT 1) AS ok",
+        "params": []
+      }
+    ]
+  },
+  {
+    "id": "data_migration.backfill-exchange-item-acceptedAt",
+    "label": "Data transform: backfill-exchange-item-acceptedAt",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [
+      {
+        "description": "Check backfill-exchange-item-acceptedAt has work to do",
+        "sql": "SELECT EXISTS (SELECT 1 FROM \"public\".\"ExchangeItem\" AS i INNER JOIN \"public\".\"ExchangeParticipant\" AS p ON p.\"cycleId\" = i.\"cycleId\" AND p.\"userId\" = i.\"userId\" WHERE i.\"accepted\" = true AND i.\"acceptedAt\" IS NULL AND p.\"acceptedAt\" IS NOT NULL LIMIT 1) AS ok",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "Run backfill-exchange-item-acceptedAt",
+        "sql": "UPDATE \"public\".\"ExchangeItem\" AS i SET \"acceptedAt\" = p.\"acceptedAt\" FROM \"public\".\"ExchangeParticipant\" AS p WHERE p.\"cycleId\" = i.\"cycleId\" AND p.\"userId\" = i.\"userId\" AND i.\"accepted\" = true AND i.\"acceptedAt\" IS NULL AND p.\"acceptedAt\" IS NOT NULL",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "Verify backfill-exchange-item-acceptedAt resolved all violations",
+        "sql": "SELECT NOT EXISTS (SELECT 1 FROM \"public\".\"ExchangeItem\" AS i INNER JOIN \"public\".\"ExchangeParticipant\" AS p ON p.\"cycleId\" = i.\"cycleId\" AND p.\"userId\" = i.\"userId\" WHERE i.\"accepted\" = true AND i.\"acceptedAt\" IS NULL AND p.\"acceptedAt\" IS NOT NULL LIMIT 1) AS ok",
+        "params": []
+      }
+    ]
+  },
+  {
+    "id": "column.public.ExchangeItem.statusReason",
+    "label": "Add column \"statusReason\" to \"ExchangeItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "statusReason",
+        "table": "ExchangeItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"statusReason\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeItem", "statusReason"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"statusReason\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeItem\" ADD COLUMN \"statusReason\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"statusReason\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeItem", "statusReason"]
+      }
+    ]
+  },
+  {
+    "id": "column.public.ExchangeItem.updatedAt",
+    "label": "Add column \"updatedAt\" to \"ExchangeItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "updatedAt",
+        "table": "ExchangeItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"updatedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeItem", "updatedAt"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"updatedAt\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeItem\" ADD COLUMN \"updatedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"updatedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeItem", "updatedAt"]
+      }
+    ]
+  },
+  {
+    "id": "data_migration.backfill-ExchangeItem-updatedAt",
+    "label": "Data transform: backfill-ExchangeItem-updatedAt",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [
+      {
+        "description": "Check backfill-ExchangeItem-updatedAt has work to do",
+        "sql": "SELECT EXISTS (SELECT \"cycleId\" AS \"cycleId\" FROM \"public\".\"ExchangeItem\" WHERE \"updatedAt\" IS NULL LIMIT 1) AS ok",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "Run backfill-ExchangeItem-updatedAt",
+        "sql": "UPDATE \"public\".\"ExchangeItem\" SET \"updatedAt\" = $1 WHERE \"updatedAt\" IS NULL",
+        "params": ["2026-11-23T13:24:20.655Z"]
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "Verify backfill-ExchangeItem-updatedAt resolved all violations",
+        "sql": "SELECT NOT EXISTS (SELECT \"cycleId\" AS \"cycleId\" FROM \"public\".\"ExchangeItem\" WHERE \"updatedAt\" IS NULL LIMIT 1) AS ok",
+        "params": []
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.ExchangeItem.updatedAt",
+    "label": "Set NOT NULL on \"ExchangeItem\".\"updatedAt\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "updatedAt",
+        "table": "ExchangeItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"updatedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeItem", "updatedAt"]
+      },
+      {
+        "description": "ensure no NULL values in \"updatedAt\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"ExchangeItem\" WHERE \"updatedAt\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"updatedAt\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeItem\" ALTER COLUMN \"updatedAt\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"updatedAt\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": ["public", "ExchangeItem", "updatedAt", "NO"]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.ExchangeItem.ExchangeItem_status_check_6810de43",
+    "label": "Add check constraint \"ExchangeItem_status_check_6810de43\" on \"ExchangeItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "ExchangeItem_status_check_6810de43",
+        "table": "ExchangeItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"ExchangeItem_status_check_6810de43\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeItem_status_check_6810de43", "public", "\"public\".\"ExchangeItem\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"ExchangeItem_status_check_6810de43\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeItem\" ADD CONSTRAINT \"ExchangeItem_status_check_6810de43\" CHECK (\"status\" IN ('PENDING', 'ACCEPTED', 'CANCELLED', 'INVALID'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"ExchangeItem_status_check_6810de43\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeItem_status_check_6810de43", "public", "\"public\".\"ExchangeItem\""]
+      }
+    ]
+  },
+  {
+    "id": "index.ExchangeItem.ExchangeItem_cycleId_status_idx_437fba2a",
+    "label": "Create index \"ExchangeItem_cycleId_status_idx_437fba2a\" on \"ExchangeItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ExchangeItem_cycleId_status_idx_437fba2a",
+        "table": "ExchangeItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ExchangeItem_cycleId_status_idx_437fba2a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeItem_cycleId_status_idx_437fba2a\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ExchangeItem_cycleId_status_idx_437fba2a\"",
+        "sql": "CREATE INDEX \"ExchangeItem_cycleId_status_idx_437fba2a\" ON \"public\".\"ExchangeItem\" (\"cycleId\", \"status\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ExchangeItem_cycleId_status_idx_437fba2a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeItem_cycleId_status_idx_437fba2a\""]
+      }
+    ]
+  },
+  {
+    "id": "index.ExchangeItem.ExchangeItem_userId_status_idx_e4a128ba",
+    "label": "Create index \"ExchangeItem_userId_status_idx_e4a128ba\" on \"ExchangeItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ExchangeItem_userId_status_idx_e4a128ba",
+        "table": "ExchangeItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ExchangeItem_userId_status_idx_e4a128ba\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeItem_userId_status_idx_e4a128ba\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ExchangeItem_userId_status_idx_e4a128ba\"",
+        "sql": "CREATE INDEX \"ExchangeItem_userId_status_idx_e4a128ba\" ON \"public\".\"ExchangeItem\" (\"userId\", \"status\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ExchangeItem_userId_status_idx_e4a128ba\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeItem_userId_status_idx_e4a128ba\""]
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.ExchangeItem.accepted",
+    "label": "Drop column \"accepted\" from \"ExchangeItem\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "accepted",
+        "table": "ExchangeItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"accepted\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeItem", "accepted"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"accepted\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeItem\" DROP COLUMN \"accepted\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"accepted\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeItem", "accepted"]
+      }
+    ]
+  }
+]

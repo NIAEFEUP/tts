@@ -28,8 +28,8 @@
 //                  composite (id, year) and the natural key
 //                  (courseUnitId, year, courseId) rejects duplicate inserts
 //                  within a single sync run.
-//                  Classes / periods / admin / exchange items all hang off
-//                  Occurrence, not CourseUnit.
+//                  Classes / periods / admin / offers and exchange items all
+//                  hang off Occurrence, not CourseUnit.
 //
 // ===========================================================================
 
@@ -55,16 +55,17 @@ model User {
 
   createdAt DateTime @default(now())
 
-  enrollments        Enrollment[]
-  exchangesCreated   ExchangeRequest[]   @relation("ExchangeCreator")
-  exchangesTargeted  ExchangeRequest[]   @relation("ExchangeTarget")
-  exchangeItems      ExchangeItem[]
-  enrollmentRequests EnrollmentRequest[]
-  sessions           Session[]
-  adminCourses       AdminCourse[]
-  adminOccurrences   AdminOccurrence[]
-  courseMetadata     StudentCourseMetadata[]
-  plannerStates      PlannerState[]
+  enrollments            Enrollment[]
+  exchangesCreated       ExchangeRequest[]     @relation("ExchangeCreator")
+  exchangesTargeted      ExchangeRequest[]     @relation("ExchangeTarget")
+  exchangeItems          ExchangeItem[]
+  exchangeParticipations ExchangeParticipant[]
+  enrollmentRequests     EnrollmentRequest[]
+  sessions               Session[]
+  adminCourses           AdminCourse[]
+  adminOccurrences       AdminOccurrence[]
+  courseMetadata         StudentCourseMetadata[]
+  plannerStates          PlannerState[]
 }
 
 // Opaque random token in an httpOnly cookie. Chosen over JWT so sessions are
@@ -183,10 +184,11 @@ model Occurrence {
   hash String @default("")
 
   classes      Class[]
-  admins      AdminOccurrence[]
-  periods     ExchangePeriod[]
-  enrollments EnrollmentRequestOption[]
-  items       ExchangeItem[]
+  admins       AdminOccurrence[]
+  periods      ExchangePeriod[]
+  enrollments  EnrollmentRequestOption[]
+  offers       ExchangeRequest[]
+  items        ExchangeItem[]
 
   @@id([id, year])
   @@unique([courseUnitId, year, courseId])
@@ -196,10 +198,10 @@ model Occurrence {
 model Class {
   id           Int @id @default(autoincrement()) // Sigarra has no class id
   // FK is the composite (occurrenceId, occurrenceYear) — the Occurrence PK.
-  // This is what makes the ExchangeItem composite FKs
+  // This is what makes the ExchangeItem and ExchangeRequest composite FKs
   // (fromClassId/toClassId, occurrenceId, occurrenceYear) → Class(id, occurrenceId, occurrenceYear)
   // meaningful: a referenced class is guaranteed to belong to the same
-  // occurrence as the exchange item.
+  // occurrence as the item or offer.
   occurrenceId    Int
   occurrenceYear  Int
   occurrence      Occurrence @relation(fields: [occurrenceId, occurrenceYear], references: [id, year])
@@ -212,11 +214,14 @@ model Class {
 
   slotClasses       SlotClass[]
   enrollments       Enrollment[]
-  exchangeItemsFrom ExchangeItem[] @relation("ExchangeItemFromClass")
-  exchangeItemsTo   ExchangeItem[] @relation("ExchangeItemToClass")
+  exchangeItemsFrom ExchangeItem[]   @relation("ExchangeItemFromClass")
+  exchangeItemsTo   ExchangeItem[]   @relation("ExchangeItemToClass")
+  offersFrom        ExchangeRequest[] @relation("OfferFromClass")
+  offersTo          ExchangeRequest[] @relation("OfferToClass")
 
   @@unique([name, occurrenceId, occurrenceYear])
-  // FK target for ExchangeItem.fromClass/toClass composite FKs.
+  // FK target for the ExchangeItem and ExchangeRequest fromClass/toClass
+  // composite FKs.
   @@unique([id, occurrenceId, occurrenceYear])
 }
 
@@ -313,6 +318,11 @@ model Enrollment {
 // visible through one endpoint and invisible through the other, depending on
 // the flag it was created with.
 model ExchangePeriod {
+  // Surrogate id: the admin UI edits and deletes a period by id
+  // (PUT|DELETE /v1/occurrences/:id/periods/:periodId), so a period must be
+  // addressable on its own.
+  id String @id @default(uuid())
+
   occurrenceId    Int
   occurrenceYear  Int
   occurrence      Occurrence @relation(fields: [occurrenceId, occurrenceYear], references: [id, year], onDelete: Cascade)
@@ -320,8 +330,8 @@ model ExchangePeriod {
   endsAt       DateTime
   createdAt    DateTime   @default(now())
 
-  // Natural key — an occurrence is open exactly once per window.
-  @@id([occurrenceId, occurrenceYear, startsAt, endsAt])
+  // Natural key — an occurrence is still open exactly once per window.
+  @@unique([occurrenceId, occurrenceYear, startsAt, endsAt])
 }
 
 model AdminCourse {
@@ -354,17 +364,55 @@ enum ExchangeType {
   URGENT // one student asks, admin approves
 }
 
-// Student-side lifecycle. Admin decisions live in adminState — legacy kept
-// `accepted`/`canceled` booleans and an `admin_state` string side by side,
-// which allowed nonsense states like rejected-but-not-cancelled.
+// Student-side lifecycle of an enrollment request. Offers have their own
+// ExchangeOfferStatus; the two flows no longer share an enum.
 //
-// PENDING -> ACCEPTED  all participants accepted, or the offer was claimed,
-//                    or (URGENT) the admin approved
-// PENDING -> CANCELLED creator withdrew, or a conflicting exchange killed it
+// PENDING -> ACCEPTED  the admin approved
+// PENDING -> CANCELLED the student withdrew
 enum ExchangeStatus {
   PENDING
   ACCEPTED
   CANCELLED
+}
+
+// Student-side lifecycle of an offer. An offer is exactly one proposed move; it
+// becomes MATCHED when it is claimed or assigned, and only then does a cycle
+// exist. EXPIRED is for offers that run past their exchange window.
+enum ExchangeOfferStatus {
+  OPEN
+  MATCHED
+  CANCELLED
+  EXPIRED
+}
+
+// Lifecycle of the approved swap. The cycle is the thing participants accept;
+// an unclaimed offer is not a cycle and has no cycle status. The status is
+// derived from its items' statuses — each accept lands on the item.
+enum ExchangeCycleStatus {
+  PENDING
+  ACCEPTED
+  CANCELLED
+}
+
+// Lifecycle of one participant's move inside a cycle. The cycle's status is
+// derived from its items (every item ACCEPTED -> cycle ACCEPTED, any item
+// CANCELLED or INVALID -> cycle CANCELLED) instead of being decided
+// independently. Transition rules land with #992; INVALID is reserved for moves
+// voided by revalidation (#869) or an admin (#874).
+enum ExchangeItemStatus {
+  PENDING
+  ACCEPTED
+  CANCELLED
+  INVALID
+}
+
+// Where the swap came from: the two students (DIRECT), a claimed marketplace
+// offer, an admin-assigned urgent request, or the deferred auto-matcher.
+enum ExchangeCycleOrigin {
+  DIRECT
+  MARKETPLACE
+  URGENT
+  AUTO_MATCH
 }
 
 // The four real legacy values, previously free text:
@@ -387,7 +435,9 @@ enum UserRole {
 }
 
 // Replaces DirectExchange + MarketplaceExchange + ExchangeUrgentRequests.
-// `type` replaces the legacy getExchangeType() type sniffing.
+// The request is an offer: exactly one proposed move, with no cycle of its own
+// until it is claimed or assigned. `type` replaces the legacy
+// getExchangeType() type sniffing.
 model ExchangeRequest {
   id        String   @id @default(uuid())
   creatorId String
@@ -398,28 +448,33 @@ model ExchangeRequest {
   targetUser   User?    @relation("ExchangeTarget", fields: [targetUserId], references: [id])
 
   type   ExchangeType
-  status ExchangeStatus @default(PENDING)
+  status ExchangeOfferStatus @default(OPEN)
 
   // Justification for URGENT requests (max 2048 in legacy).
   message String?
 
-  adminState AdminValidationState @default(UNTREATED)
-
-  // Backs GET /exchange/verify/{token} (email confirmation links) and the
-  // duplicate-request check on creation.
-  hash String?
-
-  // Drives GET /exchange/direct/validate/{id} -> { valid, lastValidated }.
-  lastValidated DateTime?
+  // The proposed move. It lives on the offer, not on a cycle: an unclaimed
+  // offer has no cycle, and claiming it creates one. Multi-course bundles
+  // (#976) add an ExchangeOfferItem child instead of turning this into a
+  // one-participant cycle.
+  occurrenceId    Int
+  occurrenceYear  Int
+  occurrence      Occurrence @relation(fields: [occurrenceId, occurrenceYear], references: [id, year])
+  fromClassId     Int
+  toClassId       Int
+  // Composite FKs, exactly as ExchangeItem: (fromClassId/toClassId,
+  // occurrenceId, occurrenceYear) references Class(id, occurrenceId,
+  // occurrenceYear), so the class pair belongs to the offer's occurrence
+  // without app-level checks.
+  fromClass Class @relation("OfferFromClass", fields: [fromClassId, occurrenceId, occurrenceYear], references: [id, occurrenceId, occurrenceYear])
+  toClass   Class @relation("OfferToClass",   fields: [toClassId,   occurrenceId, occurrenceYear], references: [id, occurrenceId, occurrenceYear])
 
   createdAt DateTime @default(now())
   updatedAt temporal.updatedAt()
 
-  items ExchangeItem[]
+  cycles ExchangeCycleSource[]
 
   @@index([type, status])
-  @@index([adminState, createdAt])
-  @@index([hash])
   @@index([creatorId, status])
   @@index([targetUserId])
 }
@@ -432,14 +487,14 @@ model ExchangeRequest {
 // student — because each side has its own from/to and its own accept flag.
 // A single row without userId cannot express a 2-way exchange at all.
 model ExchangeItem {
-  requestId String
-  request   ExchangeRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  cycleId String
+  cycle   ExchangeCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
 
   // Whose move this is. Legacy duplicated participant_name/course_unit_acronym
   // as strings here; both are now joins.
-  // Restrict, not Cascade: silently removing one side's row would flip
-  // "accepted = every item accepted" to true with a side missing. User
-  // deletion must explicitly cancel affected requests instead.
+  // Restrict, not Cascade: silently removing one side's row would leave the
+  // cycle's derived status claiming completion with a side missing. User
+  // deletion must explicitly cancel affected cycles instead.
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
 
@@ -455,18 +510,78 @@ model ExchangeItem {
   fromClass Class @relation("ExchangeItemFromClass", fields: [fromClassId, occurrenceId, occurrenceYear], references: [id, occurrenceId, occurrenceYear])
   toClass   Class @relation("ExchangeItemToClass",   fields: [toClassId,   occurrenceId, occurrenceYear], references: [id, occurrenceId, occurrenceYear])
 
-  // Per-participant accept. A direct exchange is accepted when every row is
-  // accepted — derived, not stored, which is what legacy's
-  // DirectExchangePendingMotive() reverse-engineered at read time.
-  accepted Boolean @default(false)
+  // Per-participant lifecycle. acceptedAt is the authoritative accept
+  // timestamp (set when status -> ACCEPTED); statusReason carries why a move was
+  // cancelled or invalidated. Cycle status is recomputed from these statuses in
+  // the same transaction — never set independently.
+  status       ExchangeItemStatus @default(PENDING)
+  acceptedAt   DateTime?
+  statusReason String?
+  updatedAt    temporal.updatedAt()
 
-  // Natural key — one row per participant's move per occurrence per request.
-  @@id([requestId, userId, occurrenceId, occurrenceYear])
-  @@index([userId, accepted])
+  // Natural key — one row per participant's move per occurrence per cycle.
+  @@id([cycleId, userId, occurrenceId, occurrenceYear])
+  @@index([userId, status])
+  @@index([cycleId, status])
   // Postgres back the (occurrenceId, occurrenceYear) and
   // (fromClassId/toClassId, ...) composite FKs with an index lookup
   // automatically; explicit indexes here would trip Postgres' 63-byte
   // identifier cap with these column lists.
+}
+
+// The approved swap: at least two participants, each contributing their move.
+// Created when an offer is claimed or assigned, or by the two students of a
+// direct exchange; an unclaimed offer never gets one. Cycle-level fields that
+// used to live on the request: `adminState` (admin decision), `hash` (email
+// verification) and `lastValidatedAt` (revalidation).
+model ExchangeCycle {
+  id              String               @id @default(uuid())
+  status          ExchangeCycleStatus  @default(PENDING)
+  adminState      AdminValidationState @default(UNTREATED)
+  origin          ExchangeCycleOrigin
+  hash            String?
+  lastValidatedAt DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       temporal.updatedAt()
+
+  participants ExchangeParticipant[]
+  items        ExchangeItem[]
+  sources      ExchangeCycleSource[]
+
+  @@index([status, createdAt])
+  @@index([adminState, createdAt])
+  @@index([hash])
+}
+
+// One row per student in the swap. The moves themselves live on ExchangeItem,
+// so a participant with no item is an incomplete cycle, not a one-sided one.
+model ExchangeParticipant {
+  cycleId    String
+  cycle      ExchangeCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  userId     String
+  // Restrict, not Cascade: dropping a participant silently would turn a
+  // two-sided swap into a one-sided one. User deletion must cancel the cycle.
+  user       User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  // Duplicates the accept moment recorded on ExchangeItem. The authoritative
+  // timestamp is ExchangeItem.acceptedAt — this one must mirror it, never
+  // diverge from it; #992 decides whether it is still needed.
+  acceptedAt DateTime?
+
+  @@id([cycleId, userId])
+  @@index([userId])
+}
+
+// The offer(s) that produced this cycle. A marketplace claim, an admin-assigned
+// urgent request and a direct exchange each bring one source; keeping it a
+// relation leaves room for a cycle citing more than one offer (bundles, #976).
+model ExchangeCycleSource {
+  cycleId   String
+  cycle     ExchangeCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  requestId String
+  request   ExchangeRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+
+  @@id([cycleId, requestId])
+  @@index([requestId])
 }
 
 // ===========================================================================
@@ -478,9 +593,8 @@ model EnrollmentRequest {
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  // Deliberate reuse of ExchangeStatus: the lifecycle is the same three
-  // states (legacy had only `accepted` + admin_state; CANCELLED is reserved
-  // for a creator-withdraw flow the rewrite may add).
+  // Student-side lifecycle: PENDING -> ACCEPTED when approved, PENDING ->
+  // CANCELLED when the student withdraws. Admin decisions live in adminState.
   status    ExchangeStatus @default(PENDING)
   adminState AdminValidationState @default(UNTREATED)
   createdAt DateTime @default(now())

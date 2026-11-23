@@ -300,11 +300,20 @@ describe('occurrence routes', () => {
 
     expect(status).toBe(200)
     expect(contentType).toMatch(/^application\/json/)
-    // 587179/2025 repeats the September window of 587177/2025: it appears once.
+    // 587179/2025 repeats the September window of 587177/2025: it appears once,
+    // carrying the smallest id of the rows that share the window.
     // The 2024 period of the same id and the other course's period are out.
     expect(body).toEqual([
-      { startsAt: '2025-09-01T00:00:00.000Z', endsAt: '2025-09-15T00:00:00.000Z' },
-      { startsAt: '2026-02-01T00:00:00.000Z', endsAt: '2026-02-15T00:00:00.000Z' },
+      {
+        id: 'period-587177-2025-09',
+        startsAt: '2025-09-01T00:00:00.000Z',
+        endsAt: '2025-09-15T00:00:00.000Z',
+      },
+      {
+        id: 'period-587177-2025-02',
+        startsAt: '2026-02-01T00:00:00.000Z',
+        endsAt: '2026-02-15T00:00:00.000Z',
+      },
     ])
   })
 
@@ -312,7 +321,9 @@ describe('occurrence routes', () => {
     const { status, body } = await get('/v1/courses/22990/periods')
 
     expect(status).toBe(200)
-    expect(body).toEqual([{ startsAt: '2024-10-01T00:00:00.000Z', endsAt: '2024-10-15T00:00:00.000Z' }])
+    expect(body).toEqual([
+      { id: 'period-587178-2024-10', startsAt: '2024-10-01T00:00:00.000Z', endsAt: '2024-10-15T00:00:00.000Z' },
+    ])
   })
 
   it('a course with no periods answers an empty list, not an error', async () => {

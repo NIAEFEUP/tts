@@ -16,6 +16,7 @@ import { studentRoutes } from './students/students.routes'
 import { meRoutes } from './users/me.routes'
 import { classRoutes } from './class.routes'
 import { exchangeRoutes } from './users/exchanges.routes'
+import { adminScopeRoutes } from './admin/admin.routes'
 
 export const createApiRoutes = (deps: AuthRoutesDeps) => {
   return new Elysia()
@@ -34,4 +35,5 @@ export const createApiRoutes = (deps: AuthRoutesDeps) => {
     .use(studentRoutes({ sessions: deps.sessions }))
     .use(classRoutes({ sessions: deps.sessions }))
     .use(exchangeRoutes(deps.sessions))
+    .use(adminScopeRoutes({ sessions: deps.sessions }))
 }

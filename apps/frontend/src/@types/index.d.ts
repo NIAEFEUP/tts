@@ -55,7 +55,7 @@ export type SlotInfo = {
   start_time: number
   duration: number
   location: string
-  professors_link: string
+  professors_link?: string
   professors: Array<ProfessorInfo>
 }
 

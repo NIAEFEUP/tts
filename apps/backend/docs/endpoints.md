@@ -60,7 +60,7 @@ Every failing response is `{ error, code }`: `error` is written for the caller, 
 
 - **`Faculty` ↔ `Course`** is many-to-many via `FacultyCourse`.
 - **`CourseUnit`** is abstract/year-agnostic (e.g. _“BD”_). It does **not** own classes, periods, or enrollments.
-- **`Occurrence`** is the concrete per-course, per-year instance (e.g. _“BD in LEIC, 2025/26”_). It owns `Class`, `ExchangePeriod`, `ExchangeItem`, `EnrollmentRequestOption`, `AdminOccurrence`.
+- **`Occurrence`** is the concrete per-course, per-year instance (e.g. _“BD in LEIC, 2025/26”_). It owns `Class`, `ExchangePeriod`, exchange offers and items, `EnrollmentRequestOption`, `AdminOccurrence`.
 - `Occurrence` PK is `(id, year)` because Sigarra reuses the same occurrence id across academic years.
 - **`PlannerState`** stores the user’s planner choices and timetable drafts per academic year.
 
@@ -244,9 +244,12 @@ Legacy mapping:
 
 The exchange windows of the course, derived from all its occurrences. Windows are distinct by `(startsAt, endsAt)`, since several occurrences usually share the same window, and are ordered by `startsAt`. An unknown course id answers `404 course-not-found`; a course with no periods answers an empty list. A non-numeric `id` answers `422 validation-error`.
 
+Each window carries the `id` of its representative period — the smallest id among the occurrences that share it — so the answer is stable regardless of row order. Use `GET /occurrences/:id/periods` when a specific occurrence's period is needed.
+
 ```json
 [
   {
+    "id": "6f1c1b4e-4f3e-4c1a-9f5e-5f0f5a6b7c8d",
     "startsAt": "2025-09-01T00:00:00.000Z",
     "endsAt": "2025-09-15T00:00:00.000Z"
   }
@@ -349,6 +352,7 @@ The exchange periods of the occurrence `(id, year)`, ordered by `startsAt`. An u
 ```json
 [
   {
+    "id": "6f1c1b4e-4f3e-4c1a-9f5e-5f0f5a6b7c8d",
     "occurrenceId": 587177,
     "occurrenceYear": 2025,
     "startsAt": "2025-09-01T00:00:00.000Z",
@@ -356,6 +360,8 @@ The exchange periods of the occurrence `(id, year)`, ordered by `startsAt`. An u
   }
 ]
 ```
+
+`id` is the period's surrogate key; the admin edit/delete routes address a period by it.
 
 `startsAt` and `endsAt` are ISO 8601 strings in UTC.
 
@@ -585,15 +591,64 @@ item; this returns the item itself.
 ### `GET /users/me/exchanges` — query params
 
 - `role` — `sent` | `received` | `all` (default `all`)
-- `status` — `PENDING` | `ACCEPTED` | `CANCELLED`
+- `status` — offer lifecycle: `OPEN` | `MATCHED` | `CANCELLED` | `EXPIRED`
 - `type` — `DIRECT` | `MARKETPLACE` | `URGENT`
 - `page` — positive page number (default `1`)
 - `limit` — number of requests per page, from `1` to `100` (default `10`)
 
-The response is `{ page: { current, has_next, has_previous }, data }`. Each
-entry in `data` contains the exchange request fields and its participant items.
-Requests are ordered newest first, and a request is included when the user is
-the creator or target according to `role`.
+`status` filters the offer, not the swap. Since #966 an `ExchangeRequest` is an
+offer (one proposed move), so `PENDING` / `ACCEPTED` no longer exist at this
+level; that lifecycle belongs to `cycle.status`.
+
+The response is `{ page: { current, has_next, has_previous }, data }`. Requests
+are ordered newest first (`createdAt`, then `id`), and a request is included when
+the user is the creator (`sent`), the target (`received`), or either (`all`).
+
+```json
+{
+  "page": { "current": 1, "has_next": false, "has_previous": false },
+  "data": [
+    {
+      "id": "3f0f2a5e-1c4b-4a4e-9a3e-0f5b6c7d8e9f",
+      "creatorId": "202301234",
+      "targetUserId": "202301235",
+      "type": "DIRECT",
+      "status": "MATCHED",
+      "message": null,
+      "occurrenceId": 587177,
+      "occurrenceYear": 2025,
+      "fromClassId": 456,
+      "toClassId": 457,
+      "createdAt": "2025-01-02T00:00:00.000Z",
+      "updatedAt": "2025-01-02T00:00:00.000Z",
+      "cycle": {
+        "id": "8c9d0e1f-2a3b-4c5d-8e9f-0a1b2c3d4e5f",
+        "status": "PENDING",
+        "adminState": "UNTREATED",
+        "origin": "DIRECT",
+        "createdAt": "2025-01-02T00:00:00.000Z",
+        "updatedAt": "2025-01-02T00:00:00.000Z",
+        "items": [
+          {
+            "userId": "202301234",
+            "occurrenceId": 587177,
+            "occurrenceYear": 2025,
+            "fromClassId": 456,
+            "toClassId": 457,
+            "status": "PENDING",
+            "acceptedAt": null
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+`cycle` is `null` for an unclaimed offer (`OPEN`), which has no swap and no
+items. Each item carries its own `status` (`PENDING` | `ACCEPTED` | `CANCELLED` |
+`INVALID`) and `acceptedAt` (ISO 8601 or `null`); the admin decision is
+`cycle.adminState`.
 
 Legacy mapping:
 
@@ -633,6 +688,14 @@ The backend stores the blob as JSON and updates `updatedAt`. The frontend compar
 ---
 
 ## 9. Exchanges
+
+> **Post-#966 model.** `ExchangeRequest` is an **offer**: exactly one proposed
+> move, with `ExchangeOfferStatus` (`OPEN | MATCHED | CANCELLED | EXPIRED`).
+> A `ExchangeCycle` is created only when the offer is claimed or assigned
+> (`PENDING | ACCEPTED | CANCELLED`); it owns the participants, their moves
+> (`ExchangeItem`), the offers that produced it (`ExchangeCycleSource`) and the
+> admin decision (`adminState`). The routes below are still the planned shapes
+> and are finalised by #865–#874.
 
 Unified resource for direct, marketplace, and urgent exchanges. `type` is a discriminator on `ExchangeRequest`.
 
@@ -882,6 +945,54 @@ Read-only endpoints for the admin panel to discover what the current user manage
 | ------ | -------------------- | ----- | ---------------------------- |
 | `GET`  | `/admin/courses`     | admin | Courses I can administer     |
 | `GET`  | `/admin/occurrences` | admin | Occurrences I can administer |
+
+Scope comes only from the `AdminCourse` and `AdminOccurrence` tables. Being admin
+of a course does not give admin rights over its occurrences. A user with no scope
+gets an empty array.
+
+`SUPERUSER` passes the admin check but gets no special access here. It only sees
+the rows in the scope tables, so with no rows it gets `[]`.
+
+### `GET /admin/courses` — response
+
+Ordered by `acronym`.
+
+```json
+[
+  {
+    "id": 22841,
+    "acronym": "L.EIC",
+    "name": "Licenciatura em Engenharia Informática e Computação",
+    "courseType": "B",
+    "year": 2026,
+    "url": "https://sigarra.up.pt/feup/pt/cur_geral.cur_view?pv_ano_lectivo=2026&pv_curso_id=22841",
+    "faculties": ["feup"]
+  }
+]
+```
+
+### `GET /admin/occurrences` — response
+
+Ordered by `year` (newest first), then `id`. Each item has the course unit
+`acronym`, `name` and `courseUnitYear`. An occurrence is the `(id, year)` pair,
+because Sigarra reuses the id across years.
+
+```json
+[
+  {
+    "id": 586990,
+    "courseUnitId": 31,
+    "courseId": 22841,
+    "year": 2026,
+    "ects": 6,
+    "url": "https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586990",
+    "hash": "",
+    "acronym": "BD",
+    "name": "Bases de Dados",
+    "courseUnitYear": 2
+  }
+]
+```
 
 Legacy mapping:
 

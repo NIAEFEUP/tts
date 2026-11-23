@@ -2,6 +2,7 @@ import { node } from '@elysiajs/node'
 import { Elysia } from 'elysia'
 import { cors } from '@elysiajs/cors'
 import { pathToFileURL } from 'node:url'
+import { ENV } from 'varlock/env'
 import { errorHandler } from '@/interface/middleware/error-handler'
 import { loadAuthConfig } from '@/core/config/auth'
 import { openapiPlugin } from '@/interface/plugins/openapi'
@@ -57,7 +58,7 @@ export function createApp(dependencies: Partial<AppDependencies> = {}) {
     .use(cors({ origin: config.allowedOrigins, credentials: true }))
     .use(errorHandler)
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (ENV.NODE_ENV !== 'production') {
     app.use(openapiPlugin)
   }
 
@@ -84,7 +85,7 @@ const isMain =
     : import.meta.url === pathToFileURL(process.argv[1] ?? '').href
 
 if (isMain) {
-  const port = Number(process.env.PORT) || 3000
+  const port = ENV.PORT
   const app = createApp().listen(port)
   console.log(`Server running at http://localhost:${app.server?.port ?? port}`)
 }
