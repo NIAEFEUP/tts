@@ -10,13 +10,6 @@ import {
   registerCatalogAuthGuard,
 } from '../support/catalog-test-utils'
 
-// The fake repositories, fixtures, and `get` helper live in
-// `catalog-test-utils`, shared with the other catalog route tests.
-//
-// The two endpoints below are one feature — "view course occurrences" — so
-// they live in one suite even though they are served by different prefixes
-// (`/v1/courses/:id/occurrences` and `/v1/occurrences/:id`).
-
 const { app, get } = createCatalogApp()
 
 describe('occurrence routes', () => {
@@ -233,6 +226,20 @@ describe('occurrence routes', () => {
     ])
   })
 
+  it('requires year when listing occurrence slots', async () => {
+    const { status, body } = await get('/v1/occurrences/587177/slots')
+
+    expect(status).toBe(422)
+    expect(body).toEqual(VALIDATION_ERROR_BODY)
+  })
+
+  it('the same occurrence id with a different year answers 404 on slots', async () => {
+    const { status, body } = await get('/v1/occurrences/587177/slots?year=2020')
+
+    expect(status).toBe(404)
+    expect(body).toEqual({ error: 'Occurrence 587177 not found', code: 'occurrence-not-found' })
+  })
+
   // --- GET /v1/occurrences/:id/periods ---
 
   it('an occurrence lists its exchange periods ordered by startsAt', async () => {
@@ -253,13 +260,6 @@ describe('occurrence routes', () => {
         endsAt: '2026-02-15T00:00:00.000Z',
       },
     ])
-  })
-
-  it('requires year when listing an occurrence schedule', async () => {
-    const { status, body } = await get('/v1/occurrences/587177/slots')
-
-    expect(status).toBe(422)
-    expect(body).toEqual(VALIDATION_ERROR_BODY)
   })
 
   it('only the periods of the requested (id, year) are returned', async () => {
@@ -306,13 +306,6 @@ describe('occurrence routes', () => {
 
     expect(status).toBe(422)
     expect(body).toEqual(VALIDATION_ERROR_BODY)
-  })
-
-  it('returns 404 for an occurrence with no match in the requested year', async () => {
-    const { status, body } = await get('/v1/occurrences/587177/slots?year=2020')
-
-    expect(status).toBe(404)
-    expect(body).toEqual({ error: 'Occurrence 587177 not found', code: 'occurrence-not-found' })
   })
 
   it('a non-numeric occurrence id on periods is rejected by the params schema', async () => {

@@ -4,10 +4,7 @@ import type { ClassProfessor } from '@/domain/ports/class.repository'
 import type { ScheduleSlotDetails, SlotClassReference, SlotRepository } from '@/domain/ports/slot.repository'
 import type { Db } from '@/infrastructure/database/prisma'
 
-type ClassRow = SlotClassReference & {
-  occurrenceId: number
-  occurrenceYear: number
-}
+type ClassRow = SlotClassReference
 
 async function loadSlotDetails(db: Db, classRows: ClassRow[]): Promise<ScheduleSlotDetails[]> {
   if (classRows.length === 0) return []
@@ -83,7 +80,7 @@ export function createSlotRepository({ db }: { db: Db }): SlotRepository {
       const classRows = await db.orm.public.Class.where((classRow) =>
         and(classRow.occurrenceId.eq(occurrenceId), classRow.occurrenceYear.eq(occurrenceYear)),
       )
-        .select('id', 'name', 'occurrenceId', 'occurrenceYear')
+        .select('id', 'name')
         .orderBy((classRow) => classRow.id.asc())
         .all()
 

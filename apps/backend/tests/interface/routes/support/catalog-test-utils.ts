@@ -393,7 +393,7 @@ export function createFakeSlotRepository({ classes = CLASSES }: CatalogFixtures 
       startMinute: first.slot.startMinute,
       durationMin: first.slot.durationMin,
       location: first.slot.location,
-      classes: memberships.map(({ classReference }) => classReference),
+      classes: memberships.map(({ classReference }) => classReference).sort((a, b) => a.id - b.id),
       professors: first.slot.professors,
     }
   }
