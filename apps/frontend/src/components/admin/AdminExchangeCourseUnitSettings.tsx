@@ -33,9 +33,8 @@ export const AdminExchangeCourseUnitSettings = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    if (occurrences.length > 0 && !selectedOccurrence) {
-      setSelectedOccurrence(occurrences[0])
-    }
+    const isSelected = (o) => o.id === selectedOccurrence?.id && o.year === selectedOccurrence.year
+    if (!occurrences.some(isSelected)) setSelectedOccurrence(occurrences[0] ?? null)
   }, [occurrences])
 
   useEffect(() => {
@@ -101,7 +100,8 @@ export const AdminExchangeCourseUnitSettings = () => {
     if (!selectedCourseUnit) return
     try {
       setIsLoading(true)
-      await exchangeRequestService.deleteCourseUnitExchangePeriod(selectedCourseUnit, periodId)
+      const response = await exchangeRequestService.deleteCourseUnitExchangePeriod(selectedCourseUnit, periodId)
+      if (!response.ok) setErrorMessage('Erro ao remover período.')
       mutate()
     } catch (error) {
       console.error('Failed to delete exchange period:', error)

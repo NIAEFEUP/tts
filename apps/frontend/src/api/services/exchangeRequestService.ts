@@ -189,6 +189,8 @@ const addCourseUnitExchangePeriod = async (startDate: Date, endDate: Date, selec
   })
 }
 
+// shortcut: edit/delete send v1 UUID period ids to legacy <int:period_id> routes, which 404 on them;
+// move all four to PUT/DELETE /v1/{courses,occurrences}/:id/periods/:periodId once #954 adds them.
 const editCourseExchangePeriod = async (startDate: Date, endDate: Date, selectedCourse: number, periodId: string) => {
   const payload = {
     startDate: startDate.toISOString(),
