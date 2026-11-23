@@ -189,7 +189,7 @@ const addCourseUnitExchangePeriod = async (startDate: Date, endDate: Date, selec
   })
 }
 
-const editCourseExchangePeriod = async (startDate: Date, endDate: Date, selectedCourse: number, periodId: number) => {
+const editCourseExchangePeriod = async (startDate: Date, endDate: Date, selectedCourse: number, periodId: string) => {
   const payload = {
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
@@ -210,7 +210,7 @@ const editCourseUnitExchangePeriod = async (
   startDate: Date,
   endDate: Date,
   selectedCourseUnit: number,
-  periodId: number,
+  periodId: string,
 ) => {
   const payload = {
     startDate: startDate.toISOString(),
@@ -226,7 +226,7 @@ const editCourseUnitExchangePeriod = async (
   })
 }
 
-const deleteCourseExchangePeriod = async (selectedCourse: number, periodId: number) => {
+const deleteCourseExchangePeriod = async (selectedCourse: number, periodId: string) => {
   return fetch(`${api.BACKEND_URL}/exchange/admin/course/${selectedCourse}/period/${periodId}/`, {
     method: 'DELETE',
     credentials: 'include',
@@ -236,7 +236,7 @@ const deleteCourseExchangePeriod = async (selectedCourse: number, periodId: numb
   })
 }
 
-const deleteCourseUnitExchangePeriod = async (selectedCourseUnit: number, periodId: number) => {
+const deleteCourseUnitExchangePeriod = async (selectedCourseUnit: number, periodId: string) => {
   return fetch(`${api.BACKEND_URL}/exchange/admin/course_unit/${selectedCourseUnit}/period/${periodId}/`, {
     method: 'DELETE',
     credentials: 'include',

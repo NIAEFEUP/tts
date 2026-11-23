@@ -2,36 +2,34 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/new/button'
-import useAdminExchangeCoursePeriods from '../../hooks/admin/useAdminExchangeCoursePeriods'
+import useAdminScopedCourses from '../../hooks/admin/useAdminScopedCourses'
+import useCoursePeriods from '../../hooks/admin/useCoursePeriods'
 import exchangeRequestService from '../../api/services/exchangeRequestService'
 import { PlusIcon } from 'lucide-react'
 import { AdminExchangePeriodDeleteConfirmation } from './AdminExchangePeriodDeleteConfirmation'
 import { ExchangePeriodForm } from './AdminExchangePeriodForm'
-import { ExchangePeriodTable, ExchangePeriod } from './AdminExchangePeriodTable'
+import { ExchangePeriodTable } from './AdminExchangePeriodTable'
 import { useEffect, useState } from 'react'
-import { cn } from '../../lib/utils'
 
 export const AdminExchangeCourseSettings = () => {
-  const { exchangeCoursePeriods, mutate } = useAdminExchangeCoursePeriods()
-  const [selectedGroup, setSelectedGroup] = useState<number>(0)
+  const { data: courses = [] } = useAdminScopedCourses()
   const [selectedCourse, setSelectedCourse] = useState<number | null>(null)
+  const { data: periods = [], mutate } = useCoursePeriods(selectedCourse)
   const [addingPeriod, setAddingPeriod] = useState<boolean>(false)
   const [startDate, setStartDate] = useState<Date>()
   const [endDate, setEndDate] = useState<Date>()
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  const [editingPeriodId, setEditingPeriodId] = useState<number | null>(null)
+  const [editingPeriodId, setEditingPeriodId] = useState<string | null>(null)
   const [editingStartDate, setEditingStartDate] = useState<Date | undefined>(undefined)
   const [editingEndDate, setEditingEndDate] = useState<Date | undefined>(undefined)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false)
-  const [periodToDelete, setPeriodToDelete] = useState<number | null>(null)
+  const [periodToDelete, setPeriodToDelete] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
-  const courses = exchangeCoursePeriods?.courses || []
 
   useEffect(() => {
     if (courses.length > 0 && !selectedCourse) {
-      setSelectedCourse(courses[0].courseId)
+      setSelectedCourse(courses[0].id)
     }
   }, [courses])
 
@@ -94,7 +92,7 @@ export const AdminExchangeCourseSettings = () => {
     }
   }
 
-  const handleDeletePeriod = async (periodId: number) => {
+  const handleDeletePeriod = async (periodId: string) => {
     if (!selectedCourse) return
     try {
       setIsLoading(true)
@@ -115,13 +113,7 @@ export const AdminExchangeCourseSettings = () => {
     setDeleteDialogOpen(false)
   }
 
-  const getCurrentCoursePeriods = (): ExchangePeriod[] => {
-    if (!exchangeCoursePeriods?.courses || !selectedCourse) return []
-    const course = exchangeCoursePeriods.courses.find((c) => c.courseId === selectedCourse)
-    return course?.exchangePeriods || []
-  }
-
-  const onEditChange = (periodId: number, newStartDate: Date, newEndDate: Date) => {
+  const onEditChange = (periodId: string, newStartDate: Date, newEndDate: Date) => {
     if (editingPeriodId === null) {
       setEditingPeriodId(periodId)
     }
@@ -136,7 +128,7 @@ export const AdminExchangeCourseSettings = () => {
     setErrorMessage(null)
   }
 
-  const onDelete = (periodId: number) => {
+  const onDelete = (periodId: string) => {
     setPeriodToDelete(periodId)
     setDeleteDialogOpen(true)
   }
@@ -186,7 +178,7 @@ export const AdminExchangeCourseSettings = () => {
               />
             )}
             <ExchangePeriodTable
-              periods={getCurrentCoursePeriods()}
+              periods={periods}
               editingPeriodId={editingPeriodId}
               editingStartDate={editingStartDate}
               editingEndDate={editingEndDate}
@@ -204,17 +196,14 @@ export const AdminExchangeCourseSettings = () => {
             <CardTitle className="text-lg">Cursos responsáveis</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            {courses.map((course, idx) => (
+            {courses.map((course) => (
               <Button
-                key={course.courseId}
-                variant={selectedGroup === idx ? 'primary' : 'ghost'}
-                className={cn('w-full justify-start', selectedGroup === idx)}
-                onClick={() => {
-                  setSelectedGroup(idx)
-                  setSelectedCourse(course.courseId)
-                }}
+                key={course.id}
+                variant={selectedCourse === course.id ? 'primary' : 'ghost'}
+                className="w-full justify-start"
+                onClick={() => setSelectedCourse(course.id)}
               >
-                {course.courseName}
+                {course.name}
               </Button>
             ))}
           </CardContent>
