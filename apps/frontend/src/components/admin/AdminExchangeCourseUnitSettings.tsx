@@ -2,9 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/new/button'
-import { useEffect, useState } from 'react'
+import { Spinner } from '../ui/new/spinner'
+import { useEffect, useMemo, useState } from 'react'
 import { PlusIcon } from 'lucide-react'
 import useAdminExchangeCourseUnitPeriods from '../../hooks/admin/useAdminExchangeCourseUnitPeriods'
+import useAdminOccurrences from '../../hooks/admin/useAdminOccurrences'
 import exchangeRequestService from '../../api/services/exchangeRequestService'
 import { AdminExchangePeriodDeleteConfirmation } from './AdminExchangePeriodDeleteConfirmation'
 import { ExchangePeriodForm } from './AdminExchangePeriodForm'
@@ -30,13 +32,51 @@ export const AdminExchangeCourseUnitSettings = () => {
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const courseUnits = courseUnitPeriods?.courseUnits || []
+  // The admin scope is per occurrence, while exchange periods are still stored
+  // per course unit (until #873). Collapse the in-scope occurrences into the
+  // course units they represent so the picker only offers what the admin manages.
+  const { occurrences, loading: occurrencesLoading, error: occurrencesError } = useAdminOccurrences()
+
+  const courseUnits = useMemo(() => {
+    const units = new Map<number, { id: number; acronym: string; name: string }>()
+
+    for (const occurrence of occurrences) {
+      if (!units.has(occurrence.courseUnitId)) {
+        units.set(occurrence.courseUnitId, {
+          id: occurrence.courseUnitId,
+          acronym: occurrence.acronym,
+          name: occurrence.name,
+        })
+      }
+    }
+
+    return [...units.values()].sort((a, b) => a.acronym.localeCompare(b.acronym))
+  }, [occurrences])
 
   useEffect(() => {
-    if (courseUnits.length > 0 && !selectedCourseUnit) {
+    // An in-flight or failed request is not an empty scope: keep the current
+    // selection until a successful response tells us what is actually in scope.
+    if (occurrencesLoading || occurrencesError) return
+
+    if (courseUnits.length === 0) {
+      setSelectedGroup(0)
+      setSelectedCourseUnit(null)
+      setAddingPeriod(false)
+      setStartDate(undefined)
+      setEndDate(undefined)
+      setEditingPeriodId(null)
+      setEditingStartDate(undefined)
+      setEditingEndDate(undefined)
+      setPeriodToDelete(null)
+      setDeleteDialogOpen(false)
+      return
+    }
+
+    if (selectedCourseUnit === null || !courseUnits.some((unit) => unit.id === selectedCourseUnit)) {
+      setSelectedGroup(0)
       setSelectedCourseUnit(courseUnits[0].id)
     }
-  }, [courseUnits])
+  }, [courseUnits, occurrencesError, occurrencesLoading, selectedCourseUnit])
 
   useEffect(() => {
     if (!addingPeriod && editingPeriodId === null) {
@@ -119,8 +159,11 @@ export const AdminExchangeCourseUnitSettings = () => {
   }
 
   const getCurrentPeriods = (): ExchangePeriod[] => {
-    if (!courseUnits || !selectedCourseUnit) return []
-    const unit = courseUnits.find((u) => u.id === selectedCourseUnit)
+    // Only surface periods for a unit that is still in the current scope.
+    if (!selectedCourseUnit || !courseUnits.some((unit) => unit.id === selectedCourseUnit)) return []
+    if (!courseUnitPeriods?.courseUnits) return []
+
+    const unit = courseUnitPeriods.courseUnits.find((u) => u.id === selectedCourseUnit)
     return unit?.exchangePeriods || []
   }
 
@@ -162,6 +205,7 @@ export const AdminExchangeCourseUnitSettings = () => {
                   })
                   setEditingPeriodId(null)
                 }}
+                disabled={selectedCourseUnit === null}
                 size="md"
                 square
                 className="hover:bg-accent/90"
@@ -204,6 +248,15 @@ export const AdminExchangeCourseUnitSettings = () => {
             <CardTitle className="text-lg">Cadeiras responsáveis</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
+            {occurrencesLoading && (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Spinner size="sm" /> A carregar cadeiras…
+              </p>
+            )}
+            {occurrencesError && <p className="text-sm text-red-600">Erro ao carregar as cadeiras.</p>}
+            {!occurrencesLoading && !occurrencesError && courseUnits.length === 0 && (
+              <p className="text-sm text-muted-foreground">Nenhuma cadeira disponível.</p>
+            )}
             {courseUnits.map((courseUnit, idx) => (
               <Button
                 key={courseUnit.id}

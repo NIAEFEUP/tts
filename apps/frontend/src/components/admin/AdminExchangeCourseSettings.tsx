@@ -3,12 +3,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/new/button'
 import useAdminExchangeCoursePeriods from '../../hooks/admin/useAdminExchangeCoursePeriods'
+import useAdminCourses from '../../hooks/admin/useAdminCourses'
 import exchangeRequestService from '../../api/services/exchangeRequestService'
 import { PlusIcon } from 'lucide-react'
 import { AdminExchangePeriodDeleteConfirmation } from './AdminExchangePeriodDeleteConfirmation'
 import { ExchangePeriodForm } from './AdminExchangePeriodForm'
 import { ExchangePeriodTable, ExchangePeriod } from './AdminExchangePeriodTable'
 import { useEffect, useState } from 'react'
+import { Spinner } from '../ui/new/spinner'
 import { cn } from '../../lib/utils'
 
 export const AdminExchangeCourseSettings = () => {
@@ -27,13 +29,34 @@ export const AdminExchangeCourseSettings = () => {
   const [periodToDelete, setPeriodToDelete] = useState<number | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const courses = exchangeCoursePeriods?.courses || []
+  // The picker comes from the admin scope, so a course the admin manages is
+  // offered even before it has any exchange period configured.
+  const { courses, loading: coursesLoading, error: coursesError } = useAdminCourses()
 
   useEffect(() => {
-    if (courses.length > 0 && !selectedCourse) {
-      setSelectedCourse(courses[0].courseId)
+    // An in-flight or failed request is not an empty scope: keep the current
+    // selection until a successful response tells us what is actually in scope.
+    if (coursesLoading || coursesError) return
+
+    if (courses.length === 0) {
+      setSelectedGroup(0)
+      setSelectedCourse(null)
+      setAddingPeriod(false)
+      setStartDate(undefined)
+      setEndDate(undefined)
+      setEditingPeriodId(null)
+      setEditingStartDate(undefined)
+      setEditingEndDate(undefined)
+      setPeriodToDelete(null)
+      setDeleteDialogOpen(false)
+      return
     }
-  }, [courses])
+
+    if (selectedCourse === null || !courses.some((course) => course.id === selectedCourse)) {
+      setSelectedGroup(0)
+      setSelectedCourse(courses[0].id)
+    }
+  }, [courses, coursesError, coursesLoading, selectedCourse])
 
   useEffect(() => {
     if (!addingPeriod && editingPeriodId === null) {
@@ -116,7 +139,10 @@ export const AdminExchangeCourseSettings = () => {
   }
 
   const getCurrentCoursePeriods = (): ExchangePeriod[] => {
-    if (!exchangeCoursePeriods?.courses || !selectedCourse) return []
+    // Only surface periods for a course that is still in the current scope.
+    if (!selectedCourse || !courses.some((course) => course.id === selectedCourse)) return []
+    if (!exchangeCoursePeriods?.courses) return []
+
     const course = exchangeCoursePeriods.courses.find((c) => c.courseId === selectedCourse)
     return course?.exchangePeriods || []
   }
@@ -160,6 +186,7 @@ export const AdminExchangeCourseSettings = () => {
                   })
                   setEditingPeriodId(null)
                 }}
+                disabled={selectedCourse === null}
                 size="md"
                 square
                 className="hover:bg-accent/90"
@@ -204,17 +231,26 @@ export const AdminExchangeCourseSettings = () => {
             <CardTitle className="text-lg">Cursos responsáveis</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
+            {coursesLoading && (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Spinner size="sm" /> A carregar cursos…
+              </p>
+            )}
+            {coursesError && <p className="text-sm text-red-600">Erro ao carregar os cursos.</p>}
+            {!coursesLoading && !coursesError && courses.length === 0 && (
+              <p className="text-sm text-muted-foreground">Nenhum curso disponível.</p>
+            )}
             {courses.map((course, idx) => (
               <Button
-                key={course.courseId}
+                key={course.id}
                 variant={selectedGroup === idx ? 'primary' : 'ghost'}
                 className={cn('w-full justify-start', selectedGroup === idx)}
                 onClick={() => {
                   setSelectedGroup(idx)
-                  setSelectedCourse(course.courseId)
+                  setSelectedCourse(course.id)
                 }}
               >
-                {course.courseName}
+                {course.name}
               </Button>
             ))}
           </CardContent>
