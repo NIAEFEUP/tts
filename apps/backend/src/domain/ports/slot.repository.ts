@@ -8,3 +8,8 @@ export type SlotClassReference = {
 export type ScheduleSlotDetails = ClassSlot & {
   classes: SlotClassReference[]
 }
+
+export type SlotRepository = {
+  findByOccurrence(occurrenceId: number, occurrenceYear: number): Promise<ScheduleSlotDetails[]>
+  findById(id: number): Promise<ScheduleSlotDetails | null>
+}
