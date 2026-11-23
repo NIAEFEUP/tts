@@ -13,9 +13,12 @@ const { sql: db, contract } = postgres<End>({ contractJson: endContract })
 // accepted -> ACCEPTED backfill, and the typed dataTransform builder is built
 // against the end contract, where `accepted` no longer exists — so a rawSql
 // op carries it between the status addColumn and the accepted dropColumn.
-// Rows left at the column default PENDING are already correct; updatedAt is
-// NOT NULL with no default, so it lands nullable, is backfilled, then gains
-// NOT NULL.
+// A second rawSql op copies the accept timestamp from ExchangeParticipant
+// (keyed by cycleId + userId) onto the accepted items, so ACCEPTED rows keep
+// their "accepted at" instead of starting at NULL; participants without a
+// timestamp stay NULL. Rows left at the column default PENDING are already
+// correct; updatedAt is NOT NULL with no default, so it lands nullable, is
+// backfilled, then gains NOT NULL.
 export default class M extends Migration<Start, End> {
   override readonly startContractJson = startContract
   override readonly endContractJson = endContract
@@ -66,6 +69,33 @@ export default class M extends Migration<Start, End> {
           {
             description: 'Verify backfill-exchange-item-status resolved all violations',
             sql: 'SELECT NOT EXISTS (SELECT 1 FROM "public"."ExchangeItem" WHERE "accepted" = true AND "status" <> \'ACCEPTED\' LIMIT 1) AS ok',
+            params: [],
+          },
+        ],
+      }),
+      rawSql({
+        id: 'data_migration.backfill-exchange-item-acceptedAt',
+        label: 'Data transform: backfill-exchange-item-acceptedAt',
+        operationClass: 'data',
+        target: { id: 'postgres' },
+        precheck: [
+          {
+            description: 'Check backfill-exchange-item-acceptedAt has work to do',
+            sql: 'SELECT EXISTS (SELECT 1 FROM "public"."ExchangeItem" AS i INNER JOIN "public"."ExchangeParticipant" AS p ON p."cycleId" = i."cycleId" AND p."userId" = i."userId" WHERE i."accepted" = true AND i."acceptedAt" IS NULL AND p."acceptedAt" IS NOT NULL LIMIT 1) AS ok',
+            params: [],
+          },
+        ],
+        execute: [
+          {
+            description: 'Run backfill-exchange-item-acceptedAt',
+            sql: 'UPDATE "public"."ExchangeItem" AS i SET "acceptedAt" = p."acceptedAt" FROM "public"."ExchangeParticipant" AS p WHERE p."cycleId" = i."cycleId" AND p."userId" = i."userId" AND i."accepted" = true AND i."acceptedAt" IS NULL AND p."acceptedAt" IS NOT NULL',
+            params: [],
+          },
+        ],
+        postcheck: [
+          {
+            description: 'Verify backfill-exchange-item-acceptedAt resolved all violations',
+            sql: 'SELECT NOT EXISTS (SELECT 1 FROM "public"."ExchangeItem" AS i INNER JOIN "public"."ExchangeParticipant" AS p ON p."cycleId" = i."cycleId" AND p."userId" = i."userId" WHERE i."accepted" = true AND i."acceptedAt" IS NULL AND p."acceptedAt" IS NOT NULL LIMIT 1) AS ok',
             params: [],
           },
         ],

@@ -132,6 +132,35 @@
     ]
   },
   {
+    "id": "data_migration.backfill-exchange-item-acceptedAt",
+    "label": "Data transform: backfill-exchange-item-acceptedAt",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [
+      {
+        "description": "Check backfill-exchange-item-acceptedAt has work to do",
+        "sql": "SELECT EXISTS (SELECT 1 FROM \"public\".\"ExchangeItem\" AS i INNER JOIN \"public\".\"ExchangeParticipant\" AS p ON p.\"cycleId\" = i.\"cycleId\" AND p.\"userId\" = i.\"userId\" WHERE i.\"accepted\" = true AND i.\"acceptedAt\" IS NULL AND p.\"acceptedAt\" IS NOT NULL LIMIT 1) AS ok",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "Run backfill-exchange-item-acceptedAt",
+        "sql": "UPDATE \"public\".\"ExchangeItem\" AS i SET \"acceptedAt\" = p.\"acceptedAt\" FROM \"public\".\"ExchangeParticipant\" AS p WHERE p.\"cycleId\" = i.\"cycleId\" AND p.\"userId\" = i.\"userId\" AND i.\"accepted\" = true AND i.\"acceptedAt\" IS NULL AND p.\"acceptedAt\" IS NOT NULL",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "Verify backfill-exchange-item-acceptedAt resolved all violations",
+        "sql": "SELECT NOT EXISTS (SELECT 1 FROM \"public\".\"ExchangeItem\" AS i INNER JOIN \"public\".\"ExchangeParticipant\" AS p ON p.\"cycleId\" = i.\"cycleId\" AND p.\"userId\" = i.\"userId\" WHERE i.\"accepted\" = true AND i.\"acceptedAt\" IS NULL AND p.\"acceptedAt\" IS NOT NULL LIMIT 1) AS ok",
+        "params": []
+      }
+    ]
+  },
+  {
     "id": "column.public.ExchangeItem.statusReason",
     "label": "Add column \"statusReason\" to \"ExchangeItem\"",
     "operationClass": "additive",
@@ -217,7 +246,7 @@
       {
         "description": "Run backfill-ExchangeItem-updatedAt",
         "sql": "UPDATE \"public\".\"ExchangeItem\" SET \"updatedAt\" = $1 WHERE \"updatedAt\" IS NULL",
-        "params": ["2026-11-23T12:01:23.095904Z"]
+        "params": ["2026-11-23T12:36:00.086822Z"]
       }
     ],
     "postcheck": [
