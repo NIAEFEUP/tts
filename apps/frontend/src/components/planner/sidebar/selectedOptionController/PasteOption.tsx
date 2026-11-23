@@ -15,7 +15,7 @@ import { Menu } from '../../../ui/new/menu'
 
 const PasteOption = () => {
   const { multipleOptions, setMultipleOptions, selectedOption } = useContext(MultipleOptionsContext)
-  const { pickedCourses, setPickedCourses, checkboxedCourses, setCheckboxedCourses } = useContext(CourseContext)
+  const { pickedCourses, setPickedCourses, setCheckboxedCourses } = useContext(CourseContext)
 
   const [isClipboardSupported, setIsClipboardSupported] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -91,9 +91,11 @@ const PasteOption = () => {
         return
       }
 
-      setPickedCourses(pickedCourses.concat(courses.filter((course) => !pickedCourses.some((c) => c.id === course.id))))
-      setCheckboxedCourses(
-        checkboxedCourses.concat(courses.filter((course) => !checkboxedCourses.some((c) => c.id === course.id))),
+      setPickedCourses((current) =>
+        current.concat(courses.filter((course) => !current.some((c) => c.id === course.id))),
+      )
+      setCheckboxedCourses((current) =>
+        current.concat(courses.filter((course) => !current.some((c) => c.id === course.id))),
       )
 
       const newMultipleOptions = [...multipleOptions]
