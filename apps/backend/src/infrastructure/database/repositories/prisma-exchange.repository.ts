@@ -1,7 +1,31 @@
 import { or } from '@prisma/orm-postgres/orm-client'
 
 import type { ExchangeRepository, ExchangeRequestFilters } from '@/domain/ports/exchange.repository'
+import type { ExchangeRequest, ExchangeRequestItem } from '@/domain/ports/exchange.repository'
 import type { Db } from '@/infrastructure/database/prisma'
+
+type InstantLike = { epochMilliseconds: number }
+
+type ExchangeRequestRow = {
+  id: string
+  creatorId: string
+  targetUserId: string | null
+  type: ExchangeRequest['type']
+  status: ExchangeRequest['status']
+  message: string | null
+  adminState: ExchangeRequest['adminState']
+  createdAt: InstantLike
+  updatedAt: InstantLike
+  items: ExchangeRequestItem[]
+}
+
+export function mapExchangeRequest(row: ExchangeRequestRow): ExchangeRequest {
+  return {
+    ...row,
+    createdAt: new Date(row.createdAt.epochMilliseconds),
+    updatedAt: new Date(row.updatedAt.epochMilliseconds),
+  }
+}
 
 export function createExchangeRepository({ db }: { db: Db }): ExchangeRepository {
   return {
@@ -16,7 +40,7 @@ export function createExchangeRepository({ db }: { db: Db }): ExchangeRepository
       if (filters.type) query = query.where({ type: filters.type })
 
       query = query
-        .orderBy((request) => request.createdAt.desc())
+        .orderBy([(request) => request.createdAt.desc(), (request) => request.id.desc()])
         .limit(filters.limit + 1)
         .offset((filters.page - 1) * filters.limit)
 
@@ -27,7 +51,7 @@ export function createExchangeRepository({ db }: { db: Db }): ExchangeRepository
         .all()
 
       const hasNext = rows.length > filters.limit
-      const data = rows.slice(0, filters.limit)
+      const data = rows.slice(0, filters.limit).map(mapExchangeRequest)
 
       return {
         current: filters.page,

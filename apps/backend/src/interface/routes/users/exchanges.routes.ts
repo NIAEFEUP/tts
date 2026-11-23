@@ -4,6 +4,7 @@ import type { ExchangeRepository } from '@/domain/ports/exchange.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { apiError } from '@/interface/middleware/error-handler'
+import { httpError } from '@/interface/errors/errors'
 
 const exchangeItemSchema = t.Object({
   userId: t.String(),
@@ -55,7 +56,9 @@ export const exchangeRoutes = (sessions: SessionRepository) =>
     .get(
       '/exchanges',
       async ({ user, query, repositories }) => {
-        const result = await repositories.exchangeRepository.findForUser(user!.id, {
+        if (!user) throw httpError.unauthorized()
+
+        const result = await repositories.exchangeRepository.findForUser(user.id, {
           role: query.role ?? 'all',
           status: query.status,
           type: query.type,

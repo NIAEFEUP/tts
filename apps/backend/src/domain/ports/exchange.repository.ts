@@ -39,6 +39,6 @@ export type ExchangeRequestPage = {
   data: ExchangeRequest[]
 }
 
-export interface ExchangeRepository {
+export type ExchangeRepository = {
   findForUser(userId: string, filters: ExchangeRequestFilters): Promise<ExchangeRequestPage>
 }

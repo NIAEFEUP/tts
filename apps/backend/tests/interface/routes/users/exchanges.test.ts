@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 
 import type { ExchangeRequestPage } from '@/domain/ports/exchange.repository'
+import { mapExchangeRequest } from '@/infrastructure/database/repositories/prisma-exchange.repository'
 
 import { TEST_USER } from '../support/auth-test-utils'
 import { UNAUTHORIZED_BODY } from '../support/catalog-test-utils'
@@ -27,6 +28,20 @@ const page: ExchangeRequestPage = {
 }
 
 describe('exchange routes', () => {
+  it('maps Prisma timestamp values to Date objects', () => {
+    const createdAt = Date.parse('2025-01-02T00:00:00.000Z')
+    const updatedAt = Date.parse('2025-01-03T00:00:00.000Z')
+
+    const mapped = mapExchangeRequest({
+      ...page.data[0]!,
+      createdAt: { epochMilliseconds: createdAt },
+      updatedAt: { epochMilliseconds: updatedAt },
+    })
+
+    expect(mapped.createdAt).toEqual(new Date(createdAt))
+    expect(mapped.updatedAt).toEqual(new Date(updatedAt))
+  })
+
   it('lists the authenticated user exchanges with all filters and pagination', async () => {
     let receivedUserId = ''
     let receivedFilters: unknown
