@@ -10,6 +10,7 @@ import type { EligibleOccurrenceRepository } from '@/domain/ports/eligible-occur
 import type { StudentCourseMetadataRepository } from '@/domain/ports/student-course-metadata.repository'
 import type { ClassRepository } from '@/domain/ports/class.repository'
 import type { ExchangePeriodsRepository } from '@/domain/ports/exchange-period.repository'
+import type { AdminRepository } from '@/domain/ports/admin.repository'
 import type { EnrollmentRequestRepository } from '@/domain/ports/enrollment-request.repository'
 
 import { createExchangePeriodsRepository } from './prisma-exchange-periods.repository'
@@ -23,6 +24,7 @@ import { createEnrollmentRepository } from './prisma-enrollment.repository'
 import { createEligibleOccurrenceRepository } from './prisma-eligible-occurrence.repository'
 import { createStudentCourseMetadataRepository } from './prisma-student-course-metadata.repository'
 import { createClassRepository } from './prisma-class.repository'
+import { createAdminRepository } from './prisma-admin.repository'
 import { createEnrollmentRequestRepository } from './prisma-enrollment-request.repository'
 
 export type Repositories = {
@@ -37,6 +39,7 @@ export type Repositories = {
   studentCourseMetadataRepository: StudentCourseMetadataRepository
   classRepository: ClassRepository
   exchangePeriodsRepository: ExchangePeriodsRepository
+  adminRepository: AdminRepository
   enrollmentRequestRepository: EnrollmentRequestRepository
 }
 
@@ -53,6 +56,7 @@ export function createRepositories(db: Db): Repositories {
     studentCourseMetadataRepository: createStudentCourseMetadataRepository({ db }),
     classRepository: createClassRepository({ db }),
     exchangePeriodsRepository: createExchangePeriodsRepository({ db }),
+    adminRepository: createAdminRepository({ db }),
     enrollmentRequestRepository: createEnrollmentRequestRepository({ db }),
   }
 }
