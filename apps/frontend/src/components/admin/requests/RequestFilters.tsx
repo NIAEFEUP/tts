@@ -5,7 +5,7 @@ import RequestFiltersContext, {
   adminRequestStateToText,
   adminRequestStateToBadgeVariant,
 } from '../../../contexts/admin/RequestFiltersContext'
-import useAdminExchangeCourses from '../../../hooks/admin/useAdminExchangeCourses'
+import useAdminCourses from '../../../hooks/admin/useAdminCourses'
 import { Popover } from '../../ui/new/popover'
 import { Command, CommandGroup, CommandItem } from '../../ui/command'
 import { Check, ChevronDown } from 'lucide-react'
@@ -26,7 +26,7 @@ export const RequestFilters = () => {
   // From main branch: Pagination context
   const { itemsPerPage, setItemsPerPage, setCurrPage } = useContext(AdminPaginationContext)
 
-  const { courses } = useAdminExchangeCourses()
+  const { courses } = useAdminCourses()
 
   const [courseOpen, setCourseOpen] = useState(false)
   const [yearOpen, setYearOpen] = useState(false)
