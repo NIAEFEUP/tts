@@ -30,6 +30,7 @@ type ExchangeType = 'DIRECT' | 'MARKETPLACE' | 'URGENT'
 type ExchangeOfferStatus = 'OPEN' | 'MATCHED' | 'CANCELLED' | 'EXPIRED'
 type ExchangeCycleStatus = 'PENDING' | 'ACCEPTED' | 'CANCELLED'
 type ExchangeCycleOrigin = 'DIRECT' | 'MARKETPLACE' | 'URGENT' | 'AUTO_MATCH'
+type ExchangeItemStatus = 'PENDING' | 'ACCEPTED' | 'CANCELLED' | 'INVALID'
 type EnrollmentRequestStatus = 'PENDING' | 'ACCEPTED' | 'CANCELLED'
 type AdminValidationState = 'UNTREATED' | 'TREATED' | 'REJECTED' | 'AWAITING_INFORMATION'
 
@@ -198,7 +199,8 @@ type ExchangeItemInsert = {
   occurrenceYear: number
   fromClassId: number
   toClassId: number
-  accepted?: boolean
+  status?: ExchangeItemStatus
+  acceptedAt?: Temporal.Instant
 }
 
 type CycleParticipantInsert = {
@@ -389,7 +391,11 @@ async function seedDemo(tx: Tx): Promise<DemoSummary> {
         occurrenceYear: o.year,
         fromClassId: p.fromClassId,
         toClassId: p.toClassId,
-        accepted: p.accepted,
+        // Same rule as the migration backfill: accepted -> ACCEPTED, else
+        // PENDING. ACCEPTED demo rows carry a timestamp, mirroring the
+        // participant's acceptedAt above.
+        status: p.accepted ? 'ACCEPTED' : 'PENDING',
+        acceptedAt: p.accepted ? EXCHANGE_OPENS : undefined,
       })
     }
 

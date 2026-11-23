@@ -386,11 +386,24 @@ enum ExchangeOfferStatus {
 }
 
 // Lifecycle of the approved swap. The cycle is the thing participants accept;
-// an unclaimed offer is not a cycle and has no cycle status.
+// an unclaimed offer is not a cycle and has no cycle status. The status is
+// derived from its items' statuses — each accept lands on the item.
 enum ExchangeCycleStatus {
   PENDING
   ACCEPTED
   CANCELLED
+}
+
+// Lifecycle of one participant's move inside a cycle. The cycle's status is
+// derived from its items (every item ACCEPTED -> cycle ACCEPTED, any item
+// CANCELLED -> cycle CANCELLED) instead of being decided independently.
+// Transition rules land with #992; INVALID is reserved for moves voided by
+// revalidation (#869) or an admin (#874).
+enum ExchangeItemStatus {
+  PENDING
+  ACCEPTED
+  CANCELLED
+  INVALID
 }
 
 // Where the swap came from: the two students (DIRECT), a claimed marketplace
@@ -479,8 +492,8 @@ model ExchangeItem {
 
   // Whose move this is. Legacy duplicated participant_name/course_unit_acronym
   // as strings here; both are now joins.
-  // Restrict, not Cascade: silently removing one side's row would flip
-  // "accepted = every item accepted" to true with a side missing. User
+  // Restrict, not Cascade: silently removing one side's row would leave the
+  // cycle's derived status claiming completion with a side missing. User
   // deletion must explicitly cancel affected cycles instead.
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
@@ -497,14 +510,19 @@ model ExchangeItem {
   fromClass Class @relation("ExchangeItemFromClass", fields: [fromClassId, occurrenceId, occurrenceYear], references: [id, occurrenceId, occurrenceYear])
   toClass   Class @relation("ExchangeItemToClass",   fields: [toClassId,   occurrenceId, occurrenceYear], references: [id, occurrenceId, occurrenceYear])
 
-  // Per-participant accept. A direct exchange is accepted when every row is
-  // accepted — derived, not stored, which is what legacy's
-  // DirectExchangePendingMotive() reverse-engineered at read time.
-  accepted Boolean @default(false)
+  // Per-participant lifecycle. acceptedAt records when the participant
+  // confirmed (status -> ACCEPTED); statusReason carries why a move left
+  // PENDING (CANCELLED/INVALID). Cycle status is derived from these statuses,
+  // never stored alongside them — two sources of truth could disagree.
+  status       ExchangeItemStatus @default(PENDING)
+  acceptedAt   DateTime?
+  statusReason String?
+  updatedAt    temporal.updatedAt()
 
   // Natural key — one row per participant's move per occurrence per cycle.
   @@id([cycleId, userId, occurrenceId, occurrenceYear])
-  @@index([userId, accepted])
+  @@index([userId, status])
+  @@index([cycleId, status])
   // Postgres back the (occurrenceId, occurrenceYear) and
   // (fromClassId/toClassId, ...) composite FKs with an index lookup
   // automatically; explicit indexes here would trip Postgres' 63-byte
