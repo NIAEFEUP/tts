@@ -1,4 +1,4 @@
-import { Major } from '../@types'
+import { Major, CourseInfo } from '../@types'
 import { dev_config, getSemester, getAcademicYear } from '../utils'
 import Cookies from 'js-cookie'
 import { ENV } from 'varlock/env'

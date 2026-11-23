@@ -4,7 +4,7 @@ import { getAcademicYear } from '../../utils'
 
 type OccurrenceWithClasses = NonNullable<
   Awaited<ReturnType<ReturnType<typeof client.v1.occurrences>['classes']['get']>>['data']
-> & { courseUnitYear?: number }
+>
 
 const toCourseInfo = (occurrence: OccurrenceWithClasses): CourseInfo => ({
   id: occurrence.id,
