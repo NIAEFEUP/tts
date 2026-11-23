@@ -14,6 +14,7 @@ import { eligibleOccurrencesRoutes } from './users/eligible-occurrences.routes'
 import { studentRoutes } from './students/students.routes'
 import { meRoutes } from './users/me.routes'
 import { classRoutes } from './class.routes'
+import { adminScopeRoutes } from './admin/admin.routes'
 
 export const createApiRoutes = (deps: AuthRoutesDeps) => {
   return new Elysia()
@@ -30,4 +31,5 @@ export const createApiRoutes = (deps: AuthRoutesDeps) => {
     .use(scheduleRoutes({ sessions: deps.sessions }))
     .use(studentRoutes({ sessions: deps.sessions }))
     .use(classRoutes({ sessions: deps.sessions }))
+    .use(adminScopeRoutes({ sessions: deps.sessions }))
 }
