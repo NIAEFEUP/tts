@@ -425,18 +425,18 @@ Legacy mapping:
 
 ## 7. Users / students
 
-| Method | Path                                         | Auth                | Purpose                                         |
-| ------ | -------------------------------------------- | ------------------- | ----------------------------------------------- |
-| `GET`  | `/users/me`                                  | `?`                 | Current user (same as `/auth/me`)               |
-| `GET`  | `/users/me/schedule`                         | `?`                 | My current schedule                             |
-| `PUT`  | `/users/me/schedule/refresh`                 | `?`                 | Resync my schedule and enrollments from Sigarra |
-| `GET`  | `/users/me/enrollments`                      | `?`                 | My class enrollments                            |
-| `GET`  | `/users/me/exchanges`                        | `?`                 | My exchange requests                            |
-| `GET`  | `/users/me/eligible-occurrences`             | `?`                 | Occurrences I am eligible to take / exchange    |
-| `GET`  | `/students/:nmec`                            | `?`                 | Public student profile (name only)              |
-| `GET`  | `/students/:nmec/schedule`                   | admin / participant | Another student’s schedule                      |
-| `GET`  | `/students/:nmec/photo`                      | `?`                 | Redirect to the student photo                   |
-| `GET`  | `/students/:nmec/courses/:courseId/metadata` | admin               | `fest_id` metadata for a student in a course    |
+| Method | Path                                         | Auth                | Purpose                                                        |
+| ------ | -------------------------------------------- | ------------------- | -------------------------------------------------------------- |
+| `GET`  | `/users/me`                                  | `?`                 | Current user (same as `/auth/me`)                              |
+| `GET`  | `/users/me/schedule`                         | `?`                 | My current schedule                                            |
+| `PUT`  | `/users/me/schedule/refresh`                 | `?`                 | Resync my schedule and enrollments from Sigarra                |
+| `GET`  | `/users/me/enrollments`                      | `?`                 | My class enrollments                                           |
+| `GET`  | `/users/me/exchanges`                        | `?`                 | My exchange requests (role, status, type, page, limit filters) |
+| `GET`  | `/users/me/eligible-occurrences`             | `?`                 | Occurrences I am eligible to take / exchange                   |
+| `GET`  | `/students/:nmec`                            | `?`                 | Public student profile (name only)                             |
+| `GET`  | `/students/:nmec/schedule`                   | admin / participant | Another student’s schedule                                     |
+| `GET`  | `/students/:nmec/photo`                      | `?`                 | Redirect to the student photo                                  |
+| `GET`  | `/students/:nmec/courses/:courseId/metadata` | admin               | `fest_id` metadata for a student in a course                   |
 
 ### `GET /users/me` — response
 
@@ -591,8 +591,64 @@ item; this returns the item itself.
 ### `GET /users/me/exchanges` — query params
 
 - `role` — `sent` | `received` | `all` (default `all`)
-- `status` — `PENDING` | `ACCEPTED` | `CANCELLED`
+- `status` — offer lifecycle: `OPEN` | `MATCHED` | `CANCELLED` | `EXPIRED`
 - `type` — `DIRECT` | `MARKETPLACE` | `URGENT`
+- `page` — positive page number (default `1`)
+- `limit` — number of requests per page, from `1` to `100` (default `10`)
+
+`status` filters the offer, not the swap. Since #966 an `ExchangeRequest` is an
+offer (one proposed move), so `PENDING` / `ACCEPTED` no longer exist at this
+level; that lifecycle belongs to `cycle.status`.
+
+The response is `{ page: { current, has_next, has_previous }, data }`. Requests
+are ordered newest first (`createdAt`, then `id`), and a request is included when
+the user is the creator (`sent`), the target (`received`), or either (`all`).
+
+```json
+{
+  "page": { "current": 1, "has_next": false, "has_previous": false },
+  "data": [
+    {
+      "id": "3f0f2a5e-1c4b-4a4e-9a3e-0f5b6c7d8e9f",
+      "creatorId": "202301234",
+      "targetUserId": "202301235",
+      "type": "DIRECT",
+      "status": "MATCHED",
+      "message": null,
+      "occurrenceId": 587177,
+      "occurrenceYear": 2025,
+      "fromClassId": 456,
+      "toClassId": 457,
+      "createdAt": "2025-01-02T00:00:00.000Z",
+      "updatedAt": "2025-01-02T00:00:00.000Z",
+      "cycle": {
+        "id": "8c9d0e1f-2a3b-4c5d-8e9f-0a1b2c3d4e5f",
+        "status": "PENDING",
+        "adminState": "UNTREATED",
+        "origin": "DIRECT",
+        "createdAt": "2025-01-02T00:00:00.000Z",
+        "updatedAt": "2025-01-02T00:00:00.000Z",
+        "items": [
+          {
+            "userId": "202301234",
+            "occurrenceId": 587177,
+            "occurrenceYear": 2025,
+            "fromClassId": 456,
+            "toClassId": 457,
+            "status": "PENDING",
+            "acceptedAt": null
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+`cycle` is `null` for an unclaimed offer (`OPEN`), which has no swap and no
+items. Each item carries its own `status` (`PENDING` | `ACCEPTED` | `CANCELLED` |
+`INVALID`) and `acceptedAt` (ISO 8601 or `null`); the admin decision is
+`cycle.adminState`.
 
 Legacy mapping:
 

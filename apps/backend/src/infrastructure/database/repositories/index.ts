@@ -9,6 +9,7 @@ import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
 import type { EligibleOccurrenceRepository } from '@/domain/ports/eligible-occurrence.repository'
 import type { StudentCourseMetadataRepository } from '@/domain/ports/student-course-metadata.repository'
 import type { ClassRepository } from '@/domain/ports/class.repository'
+import type { ExchangeRepository } from '@/domain/ports/exchange.repository'
 import type { ExchangePeriodsRepository } from '@/domain/ports/exchange-period.repository'
 import type { AdminRepository } from '@/domain/ports/admin.repository'
 import type { EnrollmentRequestRepository } from '@/domain/ports/enrollment-request.repository'
@@ -24,6 +25,7 @@ import { createEnrollmentRepository } from './prisma-enrollment.repository'
 import { createEligibleOccurrenceRepository } from './prisma-eligible-occurrence.repository'
 import { createStudentCourseMetadataRepository } from './prisma-student-course-metadata.repository'
 import { createClassRepository } from './prisma-class.repository'
+import { createExchangeRepository } from './prisma-exchange.repository'
 import { createAdminRepository } from './prisma-admin.repository'
 import { createEnrollmentRequestRepository } from './prisma-enrollment-request.repository'
 
@@ -38,6 +40,7 @@ export type Repositories = {
   eligibleOccurrenceRepository: EligibleOccurrenceRepository
   studentCourseMetadataRepository: StudentCourseMetadataRepository
   classRepository: ClassRepository
+  exchangeRepository: ExchangeRepository
   exchangePeriodsRepository: ExchangePeriodsRepository
   adminRepository: AdminRepository
   enrollmentRequestRepository: EnrollmentRequestRepository
@@ -55,6 +58,7 @@ export function createRepositories(db: Db): Repositories {
     eligibleOccurrenceRepository: createEligibleOccurrenceRepository({ db }),
     studentCourseMetadataRepository: createStudentCourseMetadataRepository({ db }),
     classRepository: createClassRepository({ db }),
+    exchangeRepository: createExchangeRepository({ db }),
     exchangePeriodsRepository: createExchangePeriodsRepository({ db }),
     adminRepository: createAdminRepository({ db }),
     enrollmentRequestRepository: createEnrollmentRequestRepository({ db }),
