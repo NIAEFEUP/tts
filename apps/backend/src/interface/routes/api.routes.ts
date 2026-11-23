@@ -2,6 +2,7 @@ import { Elysia } from 'elysia'
 
 import { healthRoutes } from './health.routes'
 import { scheduleRoutes } from './users/schedule.routes'
+import { scheduleRefreshRoutes } from './users/schedule-refresh.routes'
 import { facultyRoutes } from './faculties.routes'
 import { courseRoutes } from './courses.routes'
 import { courseUnitRoutes } from './course-units.routes'
@@ -17,8 +18,9 @@ import { meRoutes } from './users/me.routes'
 import { classRoutes } from './class.routes'
 import { exchangeRoutes } from './users/exchanges.routes'
 import { adminScopeRoutes } from './admin/admin.routes'
+import type { ScheduleSync } from '@/domain/ports/schedule-sync'
 
-export const createApiRoutes = (deps: AuthRoutesDeps) => {
+export const createApiRoutes = (deps: AuthRoutesDeps & { scheduleSync: ScheduleSync }) => {
   return new Elysia()
     .use(healthRoutes)
     .use(facultyRoutes({ sessions: deps.sessions }))
@@ -32,6 +34,7 @@ export const createApiRoutes = (deps: AuthRoutesDeps) => {
     .use(eligibleOccurrencesRoutes(deps.sessions))
     .use(enrollmentRequestRoutes({ sessions: deps.sessions }))
     .use(scheduleRoutes({ sessions: deps.sessions }))
+    .use(scheduleRefreshRoutes({ sessions: deps.sessions, sync: deps.scheduleSync }))
     .use(studentRoutes({ sessions: deps.sessions }))
     .use(classRoutes({ sessions: deps.sessions }))
     .use(exchangeRoutes(deps.sessions))

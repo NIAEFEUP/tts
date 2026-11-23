@@ -11,6 +11,7 @@ import { createRepositories } from '@/infrastructure/database/repositories'
 import { db } from '@/infrastructure/database/prisma'
 import { createSigarraOidcProvider } from '@/infrastructure/external/sigarra-oidc.provider'
 import { createSigarraDirectAuth } from '@/infrastructure/external/sigarra-direct-auth'
+import { createSigarraScheduleSync, createDevScheduleSync } from '@/infrastructure/external/sigarra-schedule-sync'
 import type { Repositories } from '@/infrastructure/database/repositories'
 import type { AuthConfig } from '@/core/config/auth'
 
@@ -24,6 +25,7 @@ export type AppDependencies = {
   auth: Partial<{
     config: AuthConfig
   }>
+  scheduleSync?: import('@/domain/ports/schedule-sync').ScheduleSync
 }
 
 export function createApp(dependencies: Partial<AppDependencies> = {}) {
@@ -45,6 +47,8 @@ export function createApp(dependencies: Partial<AppDependencies> = {}) {
     scopes: config.scopes,
   })
   const sigarraDirect = createSigarraDirectAuth()
+  const scheduleSync =
+    dependencies.scheduleSync ?? (ENV.NODE_ENV === 'production' ? createSigarraScheduleSync() : createDevScheduleSync())
 
   const app = new Elysia({ adapter: 'Bun' in globalThis ? undefined : node() })
     // Composition root: the interface layer gets its dependencies from the
@@ -70,6 +74,7 @@ export function createApp(dependencies: Partial<AppDependencies> = {}) {
         sessions: repositories.sessionRepository,
         sigarraDirect,
         config,
+        scheduleSync,
       }),
     )
     .get('/', () => ({ message: 'Hello from tts-be!' }))

@@ -1,4 +1,6 @@
-// Read-side contract for the authenticated student's current class assignments.
+import type { ScheduleEnrollment } from './schedule-sync'
+
+// Read/write contract for the authenticated student's current class assignments.
 export type StudentEnrollment = {
   occurrence: {
     id: number
@@ -45,4 +47,6 @@ export type EnrollmentRepository = {
    * occurrence the student already holds.
    */
   isEnrolledInOccurrence(userId: string, occurrenceId: number, occurrenceYear: number): Promise<boolean>
+  /** Replaces all enrollment rows for userId with the supplied authoritative list. */
+  replaceForUser?(userId: string, enrollments: ScheduleEnrollment[]): Promise<void>
 }
