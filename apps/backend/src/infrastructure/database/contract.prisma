@@ -396,9 +396,9 @@ enum ExchangeCycleStatus {
 
 // Lifecycle of one participant's move inside a cycle. The cycle's status is
 // derived from its items (every item ACCEPTED -> cycle ACCEPTED, any item
-// CANCELLED -> cycle CANCELLED) instead of being decided independently.
-// Transition rules land with #992; INVALID is reserved for moves voided by
-// revalidation (#869) or an admin (#874).
+// CANCELLED or INVALID -> cycle CANCELLED) instead of being decided
+// independently. Transition rules land with #992; INVALID is reserved for moves
+// voided by revalidation (#869) or an admin (#874).
 enum ExchangeItemStatus {
   PENDING
   ACCEPTED
@@ -511,9 +511,9 @@ model ExchangeItem {
   toClass   Class @relation("ExchangeItemToClass",   fields: [toClassId,   occurrenceId, occurrenceYear], references: [id, occurrenceId, occurrenceYear])
 
   // Per-participant lifecycle. acceptedAt records when the participant
-  // confirmed (status -> ACCEPTED); statusReason carries why a move left
-  // PENDING (CANCELLED/INVALID). Cycle status is derived from these statuses,
-  // never stored alongside them — two sources of truth could disagree.
+  // confirmed (status -> ACCEPTED); statusReason carries why a move was
+  // cancelled or invalidated. Cycle status is recomputed from these statuses in
+  // the same transaction — never set independently.
   status       ExchangeItemStatus @default(PENDING)
   acceptedAt   DateTime?
   statusReason String?
