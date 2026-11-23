@@ -10,6 +10,7 @@ import { AdminExchangePeriodDeleteConfirmation } from './AdminExchangePeriodDele
 import { ExchangePeriodForm } from './AdminExchangePeriodForm'
 import { ExchangePeriodTable, ExchangePeriod } from './AdminExchangePeriodTable'
 import { useEffect, useState } from 'react'
+import { Spinner } from '../ui/new/spinner'
 import { cn } from '../../lib/utils'
 
 export const AdminExchangeCourseSettings = () => {
@@ -30,16 +31,32 @@ export const AdminExchangeCourseSettings = () => {
 
   // The picker comes from the admin scope, so a course the admin manages is
   // offered even before it has any exchange period configured.
-  const { courses } = useAdminCourses()
+  const { courses, loading: coursesLoading, error: coursesError } = useAdminCourses()
 
   useEffect(() => {
-    if (courses.length === 0) return
+    // An in-flight or failed request is not an empty scope: keep the current
+    // selection until a successful response tells us what is actually in scope.
+    if (coursesLoading || coursesError) return
+
+    if (courses.length === 0) {
+      setSelectedGroup(0)
+      setSelectedCourse(null)
+      setAddingPeriod(false)
+      setStartDate(undefined)
+      setEndDate(undefined)
+      setEditingPeriodId(null)
+      setEditingStartDate(undefined)
+      setEditingEndDate(undefined)
+      setPeriodToDelete(null)
+      setDeleteDialogOpen(false)
+      return
+    }
 
     if (selectedCourse === null || !courses.some((course) => course.id === selectedCourse)) {
       setSelectedGroup(0)
       setSelectedCourse(courses[0].id)
     }
-  }, [courses, selectedCourse])
+  }, [courses, coursesError, coursesLoading, selectedCourse])
 
   useEffect(() => {
     if (!addingPeriod && editingPeriodId === null) {
@@ -122,7 +139,10 @@ export const AdminExchangeCourseSettings = () => {
   }
 
   const getCurrentCoursePeriods = (): ExchangePeriod[] => {
-    if (!exchangeCoursePeriods?.courses || !selectedCourse) return []
+    // Only surface periods for a course that is still in the current scope.
+    if (!selectedCourse || !courses.some((course) => course.id === selectedCourse)) return []
+    if (!exchangeCoursePeriods?.courses) return []
+
     const course = exchangeCoursePeriods.courses.find((c) => c.courseId === selectedCourse)
     return course?.exchangePeriods || []
   }
@@ -166,6 +186,7 @@ export const AdminExchangeCourseSettings = () => {
                   })
                   setEditingPeriodId(null)
                 }}
+                disabled={selectedCourse === null}
                 size="md"
                 square
                 className="hover:bg-accent/90"
@@ -210,7 +231,15 @@ export const AdminExchangeCourseSettings = () => {
             <CardTitle className="text-lg">Cursos responsáveis</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            {courses.length === 0 && <p className="text-sm text-muted-foreground">Nenhum curso disponível.</p>}
+            {coursesLoading && (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Spinner size="sm" /> A carregar cursos…
+              </p>
+            )}
+            {coursesError && <p className="text-sm text-red-600">Erro ao carregar os cursos.</p>}
+            {!coursesLoading && !coursesError && courses.length === 0 && (
+              <p className="text-sm text-muted-foreground">Nenhum curso disponível.</p>
+            )}
             {courses.map((course, idx) => (
               <Button
                 key={course.id}

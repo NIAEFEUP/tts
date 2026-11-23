@@ -26,7 +26,7 @@ export const RequestFilters = () => {
   // From main branch: Pagination context
   const { itemsPerPage, setItemsPerPage, setCurrPage } = useContext(AdminPaginationContext)
 
-  const { courses } = useAdminCourses()
+  const { courses, loading: coursesLoading, error: coursesError } = useAdminCourses()
 
   const [courseOpen, setCourseOpen] = useState(false)
   const [yearOpen, setYearOpen] = useState(false)
@@ -43,7 +43,9 @@ export const RequestFilters = () => {
         <Popover.Content className="w-40 p-0">
           <Command>
             <CommandGroup>
-              {(!courses || courses.length === 0) && <CommandItem disabled>Nenhum</CommandItem>}
+              {coursesLoading && <CommandItem disabled>A carregar…</CommandItem>}
+              {coursesError && <CommandItem disabled>Erro ao carregar</CommandItem>}
+              {!coursesLoading && !coursesError && courses.length === 0 && <CommandItem disabled>Nenhum</CommandItem>}
               {courses?.map((course) => (
                 <CommandItem
                   key={`course-${course.id}`}
