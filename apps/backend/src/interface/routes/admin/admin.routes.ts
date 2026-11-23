@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia'
 
-import { HttpError } from '@/interface/errors/errors'
+import { httpError } from '@/interface/errors/errors'
 
 import type { AdminRepository } from '@/domain/ports/admin.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
@@ -42,8 +42,8 @@ export const adminScopeRoutes = ({ sessions }: AdminRoutesDeps) =>
     .get(
       '/courses',
       async ({ repositories, user }) => {
-        if (!user) throw new HttpError('unauthorized', 'Authentication required', 401)
-        if (!isAdmin(user)) throw new HttpError('forbidden', 'Admin access required', 403)
+        if (!user) throw httpError.unauthorized()
+        if (!isAdmin(user)) throw httpError.forbidden()
 
         return repositories.adminRepository.findCoursesByAdmin(user.id)
       },
@@ -58,8 +58,8 @@ export const adminScopeRoutes = ({ sessions }: AdminRoutesDeps) =>
     .get(
       '/occurrences',
       async ({ repositories, user }) => {
-        if (!user) throw new HttpError('unauthorized', 'Authentication required', 401)
-        if (!isAdmin(user)) throw new HttpError('forbidden', 'Admin access required', 403)
+        if (!user) throw httpError.unauthorized()
+        if (!isAdmin(user)) throw httpError.forbidden()
 
         return repositories.adminRepository.findOccurrencesByAdmin(user.id)
       },

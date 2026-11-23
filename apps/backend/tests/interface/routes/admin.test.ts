@@ -3,13 +3,13 @@ import { describe, expect, it } from 'bun:test'
 import type { AdminRepository } from '@/domain/ports/admin.repository'
 
 import { ADMIN } from './support/auth-test-utils'
-import { COURSES, OCCURRENCES, UNAUTHORIZED_BODY } from './support/catalog-test-utils'
+import { COURSES, OCCURRENCES, registerAdminGuard, registerCatalogAuthGuard } from './support/catalog-test-utils'
 import { createAdminApp } from './support/admin-test-utils'
 
 const COURSES_PATH = '/v1/admin/courses'
 const OCCURRENCES_PATH = '/v1/admin/occurrences'
 
-const FORBIDDEN_BODY = { error: 'Admin access required', code: 'forbidden' }
+// Course unit data every occurrence in the fixtures carries (unit 42).
 const BD_UNIT = { acronym: 'BD', name: 'Bases de Dados', courseUnitYear: 2 }
 
 // A repository that fails if it is reached: the 401 and 403 must stop before it.
@@ -63,24 +63,10 @@ describe('GET /v1/admin/courses', () => {
     expect(body).toEqual([])
   })
 
-  it('returns 401 without a valid session', async () => {
-    const { get } = createAdminApp({ adminRepository: unreachable })
-
-    for (const cookie of [null, 'session=invalid-session']) {
-      const { status, body } = await get(COURSES_PATH, { cookie })
-
-      expect(status).toBe(401)
-      expect(body).toEqual(UNAUTHORIZED_BODY)
-    }
-  })
-
-  it('returns 403 for a plain USER', async () => {
-    const { get } = createAdminApp({ role: 'USER', adminRepository: unreachable })
-    const { status, body } = await get(COURSES_PATH)
-
-    expect(status).toBe(403)
-    expect(body).toEqual(FORBIDDEN_BODY)
-  })
+  // The guards stop the request before the repository: `unreachable` throws if it is called.
+  const { app } = createAdminApp({ role: 'USER', adminRepository: unreachable })
+  registerCatalogAuthGuard(app, [COURSES_PATH])
+  registerAdminGuard(app, [COURSES_PATH])
 })
 
 describe('GET /v1/admin/occurrences', () => {
@@ -137,22 +123,7 @@ describe('GET /v1/admin/occurrences', () => {
     expect(body).toEqual([])
   })
 
-  it('returns 401 without a valid session', async () => {
-    const { get } = createAdminApp({ adminRepository: unreachable })
-
-    for (const cookie of [null, 'session=invalid-session']) {
-      const { status, body } = await get(OCCURRENCES_PATH, { cookie })
-
-      expect(status).toBe(401)
-      expect(body).toEqual(UNAUTHORIZED_BODY)
-    }
-  })
-
-  it('returns 403 for a plain USER', async () => {
-    const { get } = createAdminApp({ role: 'USER', adminRepository: unreachable })
-    const { status, body } = await get(OCCURRENCES_PATH)
-
-    expect(status).toBe(403)
-    expect(body).toEqual(FORBIDDEN_BODY)
-  })
+  const { app } = createAdminApp({ role: 'USER', adminRepository: unreachable })
+  registerCatalogAuthGuard(app, [OCCURRENCES_PATH])
+  registerAdminGuard(app, [OCCURRENCES_PATH])
 })
