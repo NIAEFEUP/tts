@@ -30,6 +30,7 @@ type ExchangeType = 'DIRECT' | 'MARKETPLACE' | 'URGENT'
 type ExchangeOfferStatus = 'OPEN' | 'MATCHED' | 'CANCELLED' | 'EXPIRED'
 type ExchangeCycleStatus = 'PENDING' | 'ACCEPTED' | 'CANCELLED'
 type ExchangeCycleOrigin = 'DIRECT' | 'MARKETPLACE' | 'URGENT' | 'AUTO_MATCH'
+type ExchangeItemStatus = 'PENDING' | 'ACCEPTED' | 'CANCELLED' | 'INVALID'
 type EnrollmentRequestStatus = 'PENDING' | 'ACCEPTED' | 'CANCELLED'
 type AdminValidationState = 'UNTREATED' | 'TREATED' | 'REJECTED' | 'AWAITING_INFORMATION'
 
@@ -198,7 +199,9 @@ type ExchangeItemInsert = {
   occurrenceYear: number
   fromClassId: number
   toClassId: number
-  accepted?: boolean
+  status?: ExchangeItemStatus
+  acceptedAt?: Temporal.Instant
+  statusReason?: string
 }
 
 type CycleParticipantInsert = {
@@ -363,9 +366,10 @@ async function seedDemo(tx: Tx): Promise<DemoSummary> {
       adminState?: AdminValidationState
     } = {},
   ) => {
+    const cycleStatus = opts.status ?? 'PENDING'
     const cycle = await tx.orm.public.ExchangeCycle.create({
       origin,
-      status: opts.status,
+      status: cycleStatus,
       adminState: opts.adminState,
     })
     exchangeCycles += 1
@@ -382,6 +386,11 @@ async function seedDemo(tx: Tx): Promise<DemoSummary> {
     await tx.orm.public.ExchangeCycleSource.create({ cycleId: cycle.id, requestId })
 
     for (const p of participants) {
+      // Items mirror their cycle: cancelling a cycle invalidates every move, so
+      // its items are CANCELLED with a reason; otherwise accepted participants
+      // get ACCEPTED (with the same timestamp as the participant row) and the
+      // rest stay PENDING. This matches the rule #992 derives cycle status from.
+      const cancelled = cycleStatus === 'CANCELLED'
       exchangeItemRows.push({
         cycleId: cycle.id,
         userId: p.nmec,
@@ -389,7 +398,9 @@ async function seedDemo(tx: Tx): Promise<DemoSummary> {
         occurrenceYear: o.year,
         fromClassId: p.fromClassId,
         toClassId: p.toClassId,
-        accepted: p.accepted,
+        status: cancelled ? 'CANCELLED' : p.accepted ? 'ACCEPTED' : 'PENDING',
+        statusReason: cancelled ? 'Cycle cancelled' : undefined,
+        acceptedAt: p.accepted ? EXCHANGE_OPENS : undefined,
       })
     }
 
