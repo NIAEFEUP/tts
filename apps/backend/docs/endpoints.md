@@ -759,6 +759,53 @@ Read-only endpoints for the admin panel to discover what the current user manage
 | `GET`  | `/admin/courses`     | admin | Courses I can administer     |
 | `GET`  | `/admin/occurrences` | admin | Occurrences I can administer |
 
+Scope comes only from the `AdminCourse` and `AdminOccurrence` tables. Being admin
+of a course does not give admin rights over its occurrences. A user with no scope
+gets an empty array.
+
+`SUPERUSER` passes the admin check but gets no special access here. It only sees
+the rows in the scope tables, so with no rows it gets `[]`.
+
+### `GET /admin/courses` — response
+
+Ordered by `acronym`.
+
+```json
+[
+  {
+    "id": 22841,
+    "acronym": "L.EIC",
+    "name": "Licenciatura em Engenharia Informática e Computação",
+    "courseType": "B",
+    "year": 2026,
+    "url": "https://sigarra.up.pt/feup/pt/cur_geral.cur_view?pv_ano_lectivo=2026&pv_curso_id=22841",
+    "faculties": ["feup"]
+  }
+]
+```
+
+### `GET /admin/occurrences` — response
+
+Ordered by `year` (newest first), then `id`. Each item has the course unit
+`acronym` and `name`. An occurrence is the `(id, year)` pair, because Sigarra
+reuses the id across years.
+
+```json
+[
+  {
+    "id": 586990,
+    "courseUnitId": 31,
+    "courseId": 22841,
+    "year": 2026,
+    "ects": 6,
+    "url": "https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586990",
+    "hash": "",
+    "acronym": "BD",
+    "name": "Bases de Dados"
+  }
+]
+```
+
 Legacy mapping:
 
 - `GET /exchange/admin/courses/` → `GET /admin/courses`
