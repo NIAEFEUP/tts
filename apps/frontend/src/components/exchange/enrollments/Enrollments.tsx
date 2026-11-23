@@ -1,26 +1,19 @@
-import { useState, useContext, useEffect, Dispatch, SetStateAction } from 'react'
+import { useState, useContext, Dispatch, SetStateAction, FormEvent } from 'react'
 // import { Desert } from "../../svgs/";
 import { ExchangeCoursePicker } from '../../planner/sidebar/sessionController/ExchangeCoursePicker'
 import { CourseInfo } from '../../../@types'
 import CourseContext from '../../../contexts/CourseContext'
 import { Button } from '../../ui/new/button'
-import courseUnitEnrollmentService from '../../../api/services/courseUnitEnrollmentService'
+import enrollmentService from '../../../api/services/enrollmentService'
 import { ExchangeSidebarStatus } from '../../../pages/Exchange'
 import { toast } from '../../ui/new/toaster'
 import useStudentCourseUnits from '../../../hooks/useStudentCourseUnits'
 import { AlreadyEnrolledCourseUnitCard } from './AlreadyEnrolledCourseUnitCard'
 import { EnrollingCourseUnitCard } from './EnrollingCourseUnitCard'
+import { toEnrollmentRequestOptions } from './enrollmentOptions'
+import { CourseUnitsError } from '../CourseUnitsError'
 import { LockClosedIcon } from '@heroicons/react/24/outline'
 import { Skeleton } from '../../ui/skeleton'
-
-export enum CourseUnitEnrollmentType {
-  DISENROLLING = 1,
-  ENROLLING = 2,
-}
-
-export type EnrollmentOption = {
-  type: CourseUnitEnrollmentType
-}
 
 type Props = {
   setExchangeSidebarStatus: Dispatch<SetStateAction<ExchangeSidebarStatus>>
@@ -30,24 +23,66 @@ export const Enrollments = ({ setExchangeSidebarStatus }: Props) => {
   const parentCourseContext = useContext(CourseContext)
 
   const [enrollCourses, setEnrollCourses] = useState<CourseInfo[]>([])
-  const [enrollmentChoices, setEnrollmentChoices] = useState<Map<number, EnrollmentOption>>(new Map())
-  const [disenrollmentChoices, setDisenrollmentChoices] = useState<Map<number, EnrollmentOption>>(new Map())
+  const [dropChoices, setDropChoices] = useState<Set<number>>(new Set())
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [coursesInfo, setCoursesInfo] = useState<CourseInfo[]>([])
 
-  const { enrolledCourseUnits: alreadyEnrolledCourseUnits, loading: loadingEnrolled } = useStudentCourseUnits()
+  const {
+    enrolledCourseUnits: alreadyEnrolledCourseUnits,
+    loading: loadingEnrolled,
+    error: courseUnitsError,
+  } = useStudentCourseUnits()
 
-  useEffect(() => {
-    if (!enrollCourses) return
+  const toggleDropChoice = (courseUnitId: number) => {
+    setDropChoices((current) => {
+      const next = new Set(current)
+      if (next.has(courseUnitId)) next.delete(courseUnitId)
+      else next.add(courseUnitId)
 
-    const newEnrollmentChoices = new Map()
-    enrollCourses.forEach((course) => {
-      newEnrollmentChoices.set(course.id, {
-        type: CourseUnitEnrollmentType.ENROLLING,
-      })
+      return next
     })
-    setEnrollmentChoices(newEnrollmentChoices)
-  }, [enrollCourses])
+  }
+
+  const selectedDrops = (alreadyEnrolledCourseUnits ?? []).filter(({ id }) => dropChoices.has(id))
+  const hasSelection = enrollCourses.length > 0 || selectedDrops.length > 0
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    // Guards against submitting an enrollment request with no course units selected,
+    // which would create a ghost request with an empty options list.
+    if (!hasSelection) {
+      toast({
+        variant: 'negative',
+        title: 'Nenhuma unidade curricular selecionada',
+        description: 'Seleciona pelo menos uma unidade curricular antes de submeter o pedido.',
+      })
+      return
+    }
+
+    if (isSubmitting) return
+
+    setIsSubmitting(true)
+    try {
+      await enrollmentService.createRequest(toEnrollmentRequestOptions({ enrollCourses, dropCourses: selectedDrops }))
+
+      setExchangeSidebarStatus(ExchangeSidebarStatus.SHOWING_REQUESTS)
+      toast({
+        title: 'Pedido submetido',
+        description: 'Pedido de inscrição submetida com sucesso',
+      })
+      setEnrollCourses([])
+      setDropChoices(new Set())
+    } catch (error) {
+      toast({
+        variant: 'negative',
+        title: 'Erro',
+        description: error instanceof Error ? error.message : 'Erro ao submeter o pedido',
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <CourseContext.Provider
@@ -79,16 +114,16 @@ export const Enrollments = ({ setExchangeSidebarStatus }: Props) => {
               <EnrollingCourseUnitCard
                 key={'enrolling-' + course.id}
                 courseUnit={course}
-                enrollmentChoices={enrollmentChoices}
-                setEnrollmentChoices={setEnrollmentChoices}
-                setEnrollCourses={setEnrollCourses}
                 enrollCourses={enrollCourses}
+                setEnrollCourses={setEnrollCourses}
               />
             ))}
           </div>
 
           <div className="flex flex-col gap-y-2">
-            {loadingEnrolled ? (
+            {courseUnitsError ? (
+              <CourseUnitsError />
+            ) : loadingEnrolled ? (
               <div className="flex flex-col gap-y-2">
                 <Skeleton className="h-12 w-full rounded-xl" />
                 <Skeleton className="h-12 w-full rounded-xl" />
@@ -103,62 +138,18 @@ export const Enrollments = ({ setExchangeSidebarStatus }: Props) => {
                 <AlreadyEnrolledCourseUnitCard
                   key={'already-enrolled-' + courseUnit.id}
                   courseUnit={courseUnit}
-                  enrollmentChoices={disenrollmentChoices}
-                  setEnrollmentChoices={setDisenrollmentChoices}
+                  selected={dropChoices.has(courseUnit.id)}
+                  onToggle={() => toggleDropChoice(courseUnit.id)}
                 />
               ))
             )}
           </div>
 
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault()
-
-              const courses = new Map([...enrollmentChoices, ...disenrollmentChoices])
-
-              // Guards against submitting an enrollment request with no course units selected,
-              // which would create a ghost request with an empty options list.
-              if (courses.size === 0) {
-                toast({
-                  variant: 'negative',
-                  title: 'Nenhuma unidade curricular selecionada',
-                  description: 'Seleciona pelo menos uma unidade curricular antes de submeter o pedido.',
-                })
-                return
-              }
-
-              if (isSubmitting) return
-
-              setIsSubmitting(true)
-              try {
-                const res = await courseUnitEnrollmentService.submitEnrollmentRequest(courses)
-
-                if (res.ok) {
-                  setExchangeSidebarStatus(ExchangeSidebarStatus.SHOWING_REQUESTS)
-                  toast({
-                    title: 'Pedido submetido',
-                    description: 'Pedido de inscrição submetida com sucesso',
-                  })
-                  setEnrollCourses([])
-                  setEnrollmentChoices(new Map())
-                  setDisenrollmentChoices(new Map())
-                } else {
-                  const json = await res.json()
-                  toast({
-                    variant: 'negative',
-                    title: 'Erro',
-                    description: json.error,
-                  })
-                }
-              } finally {
-                setIsSubmitting(false)
-              }
-            }}
-          >
+          <form onSubmit={handleSubmit}>
             <Button
               type="submit"
               size="md"
-              disabled={enrollmentChoices.size === 0 && disenrollmentChoices.size === 0}
+              disabled={!hasSelection}
               isLoading={isSubmitting}
               className="w-full bg-primary hover:bg-primary/90 text-white"
             >

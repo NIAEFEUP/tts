@@ -24,6 +24,23 @@ export function createEnrollmentRepository({ db }: { db: Db }): EnrollmentReposi
       return rows.length > 0
     },
 
+    // Enrollment rows point at classes; the class carries the occurrence
+    // `(id, year)` pair. Two steps keep the key semantics explicit and avoid
+    // comparing a reused Sigarra id across academic years.
+    async isEnrolledInOccurrence(userId, occurrenceId, occurrenceYear) {
+      const enrollments = await db.orm.public.Enrollment.where({ userId }).select('classId').all()
+      if (enrollments.length === 0) return false
+
+      const enrollment = await db.orm.public.Class.where((classRow) =>
+        classRow.id.in(enrollments.map((row) => row.classId)),
+      )
+        .where((classRow) => classRow.occurrenceId.eq(occurrenceId))
+        .where((classRow) => classRow.occurrenceYear.eq(occurrenceYear))
+        .first()
+
+      return enrollment !== null
+    },
+
     async findByUserId(userId) {
       const enrollments = await db.orm.public.Enrollment.where({ userId })
         .orderBy((enrollment) => enrollment.classId.asc())
@@ -111,6 +128,7 @@ export function createEnrollmentRepository({ db }: { db: Db }): EnrollmentReposi
           occurrence: {
             id: occurrence.id,
             year: occurrence.year,
+            url: occurrence.url,
             courseUnit: {
               id: courseUnit.id,
               acronym: courseUnit.acronym,

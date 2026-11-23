@@ -28,7 +28,7 @@ const TimeTableSelectorPage = () => {
 
 const Content = () => {
   const { sidebarPosition } = useSidebarContext()
-  const { signedIn, user } = useContext(SessionContext)
+  const { signedIn } = useContext(SessionContext)
   const [showExchangeAlert, setShowExchangeAlert] = useState<boolean>(true)
   const isDesktop = useMediaQuery('(min-width: 1024px)')
 
@@ -90,7 +90,7 @@ const Content = () => {
   return (
     <div className="h-full w-full">
       <div className="grid w-full grid-cols-12 gap-x-4 gap-y-4 px-4 py-4">
-        {user?.eligible_exchange && showExchangeAlert && (
+        {showExchangeAlert && (
           <div className="col-span-12 mb-2">
             <Alert type={AlertType.info} className="relative p-4">
               <AlertDescription className="pr-8">

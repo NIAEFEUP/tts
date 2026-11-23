@@ -10,7 +10,8 @@ import { isAdmin } from '@/core/auth/user'
 import { ErrorCode } from '@/interface/errors/errors'
 import { createAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { apiError } from '@/interface/middleware/error-handler'
-import { anonymous, legacySessionInfo, userProfile } from './auth.schemas'
+import { anonymous } from '../session/session.schemas'
+import { legacySessionInfo, userProfile } from './auth.schemas'
 
 export type AuthCompatDeps = {
   users: UserRepository

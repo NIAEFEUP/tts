@@ -10,7 +10,10 @@ import { authRoutes } from './auth/auth.routes'
 import type { AuthRoutesDeps } from './auth/auth.routes'
 import { authCompatRoutes } from './auth/auth-compat.routes'
 import { enrollmentRoutes } from './users/enrollments.routes'
+import { eligibleOccurrencesRoutes } from './users/eligible-occurrences.routes'
+import { enrollmentRequestRoutes } from './enrollment-requests/enrollment-requests.routes'
 import { studentRoutes } from './students/students.routes'
+import { meRoutes } from './users/me.routes'
 import { classRoutes } from './class.routes'
 import { exchangeRoutes } from './users/exchanges.routes'
 
@@ -23,7 +26,10 @@ export const createApiRoutes = (deps: AuthRoutesDeps) => {
     .use(occurrenceRoutes({ sessions: deps.sessions }))
     .use(authRoutes(deps))
     .use(authCompatRoutes(deps))
+    .use(meRoutes({ sessions: deps.sessions }))
     .use(enrollmentRoutes(deps.sessions))
+    .use(eligibleOccurrencesRoutes(deps.sessions))
+    .use(enrollmentRequestRoutes({ sessions: deps.sessions }))
     .use(scheduleRoutes({ sessions: deps.sessions }))
     .use(studentRoutes({ sessions: deps.sessions }))
     .use(classRoutes({ sessions: deps.sessions }))

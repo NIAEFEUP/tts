@@ -1,14 +1,7 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript"],
-  "ignorePatterns": [
-    ".agents/skills/**",
-    ".claude/skills/**",
-    ".cursor/skills/**",
-    ".devin/skills/**",
-    ".pi/skills/**",
-    "packages/sigarra/src/generated"
-  ],
+  "ignorePatterns": [".agents/skills/**", "packages/sigarra/src/generated"],
   "categories": {
     "correctness": "error"
   },

@@ -5,10 +5,6 @@
   "singleQuote": true,
   "ignorePatterns": [
     ".agents/skills/**",
-    ".claude/skills/**",
-    ".cursor/skills/**",
-    ".devin/skills/**",
-    ".pi/skills/**",
     "apps/backend/legacy/**",
     "apps/frontend/src/env.d.ts",
     "packages/sigarra/src/generated"

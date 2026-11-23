@@ -12,7 +12,9 @@ import { ViewRequests } from '../components/exchange/requests/view/ViewRequests'
 import { FaceFrownIcon, ShieldExclamationIcon } from '@heroicons/react/24/outline'
 import { Schedule } from '../components/planner'
 import { Enrollments } from '../components/exchange/enrollments/Enrollments'
+import { CourseUnitsError } from '../components/exchange/CourseUnitsError'
 import { Tabs } from '../components/ui/new/tabs'
+import { Skeleton } from '../components/ui/skeleton'
 import { AlertCircle } from 'lucide-react'
 
 import { Alert, AlertDescription } from '../components/ui/alert'
@@ -43,13 +45,15 @@ const ExchangePage = () => {
   const [loads, setLoads] = useState<number>(-1)
   const [creatingRequest] = useState<boolean>(false)
   const [sidebarStatus, setSidebarStatus] = useState<ExchangeSidebarStatus>(ExchangeSidebarStatus.SHOWING_REQUESTS)
-  const { schedule, loading: loadingSchedule, sigarraSynced } = useSchedule()
+  const { schedule, loading: loadingSchedule } = useSchedule()
   const [originalExchangeSchedule, setOriginalExchangeSchedule] = useState<Array<ClassDescriptor>>([])
   const [exchangeSchedule, setExchangeSchedule] = useState<Array<ClassDescriptor>>([])
 
-  const { signedIn, user, forceScheduleRevalidation, isSessionLoading } = useContext(SessionContext)
+  const { signedIn, forceScheduleRevalidation } = useContext(SessionContext)
 
-  const { enrolledCourseUnits, forceCourseUnitsRevalidation } = useStudentCourseUnits()
+  const { enrolledCourseUnits, error: eligibleCourseUnitsError, loading: loadingCourseUnits } = useStudentCourseUnits()
+
+  const hasEligibleCourseUnits = (enrolledCourseUnits?.length ?? 0) > 0
 
   const { refreshedSchedule, forceRefreshStudentSchedule, isRefreshingStudentSchedule } = useStudentRefreshSchedule()
 
@@ -64,16 +68,13 @@ const ExchangePage = () => {
   }, [schedule])
 
   useEffect(() => {
-    if (user?.eligible_exchange) forceCourseUnitsRevalidation()
-  }, [user])
-
-  useEffect(() => {
     if (creatingRequest) setSidebarStatus(ExchangeSidebarStatus.CREATING_REQUEST)
     else setSidebarStatus(ExchangeSidebarStatus.SHOWING_REQUESTS)
   }, [creatingRequest])
 
   useEffect(() => {
-    if (refreshedSchedule) setExchangeSchedule(refreshedSchedule.schedule)
+    // shortcut: the legacy PUT /student/schedule 404s on the v1 backend; drop this when the refresh moves to v1.
+    if (refreshedSchedule?.schedule) setExchangeSchedule(refreshedSchedule.schedule)
   }, [refreshedSchedule])
 
   useEffect(() => {
@@ -131,7 +132,7 @@ const ExchangePage = () => {
         {/* Schedule Preview */}
         <div className="lg:min-h-adjusted order-1 col-span-12 min-h-min rounded-sm bg-lightest px-3 py-3 dark:bg-dark lg:col-span-9 2xl:px-5 2xl:py-5  ">
           <div className="h-full w-full">
-            {!sigarraSynced && !loadingSchedule && (
+            {refreshedSchedule?.noChanges === false && !loadingSchedule && (
               <>
                 <Alert variant="destructive" className="my-2 mb-4">
                   <AlertCircle className="h-4 w-4" />
@@ -164,7 +165,16 @@ const ExchangePage = () => {
             </Tabs.Items>
             <Tabs.Panels className="grow">
               <Tabs.Panel>
-                {!isSessionLoading && user?.eligible_exchange ? (
+                {eligibleCourseUnitsError ? (
+                  <div className="pt-4">
+                    <CourseUnitsError />
+                  </div>
+                ) : loadingCourseUnits ? (
+                  <div className="flex flex-col gap-y-2 pt-4">
+                    <Skeleton className="h-12 w-full rounded-xl" />
+                    <Skeleton className="h-12 w-full rounded-xl" />
+                  </div>
+                ) : hasEligibleCourseUnits ? (
                   <ExchangeSidebarStatusView
                     sidebarStatus={sidebarStatus}
                     setExchangeSidebarStatus={setSidebarStatus}

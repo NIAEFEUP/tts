@@ -1,0 +1,104 @@
+[
+  {
+    "id": "column.public.CourseUnit.courseUnitYear",
+    "label": "Add column \"courseUnitYear\" to \"CourseUnit\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "courseUnitYear",
+        "table": "CourseUnit"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"courseUnitYear\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "CourseUnit", "courseUnitYear"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"courseUnitYear\"",
+        "sql": "ALTER TABLE \"public\".\"CourseUnit\" ADD COLUMN \"courseUnitYear\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"courseUnitYear\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "CourseUnit", "courseUnitYear"]
+      }
+    ]
+  },
+  {
+    "id": "data_migration.backfill-CourseUnit-courseUnitYear",
+    "label": "Data transform: backfill-CourseUnit-courseUnitYear",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [
+      {
+        "description": "Check backfill-CourseUnit-courseUnitYear has work to do",
+        "sql": "SELECT EXISTS (SELECT \"id\" AS \"id\" FROM \"public\".\"CourseUnit\" WHERE \"courseUnitYear\" IS NULL LIMIT 1) AS ok",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "Run backfill-CourseUnit-courseUnitYear",
+        "sql": "UPDATE \"public\".\"CourseUnit\" SET \"courseUnitYear\" = $1 WHERE \"courseUnitYear\" IS NULL",
+        "params": [1]
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "Verify backfill-CourseUnit-courseUnitYear resolved all violations",
+        "sql": "SELECT NOT EXISTS (SELECT \"id\" AS \"id\" FROM \"public\".\"CourseUnit\" WHERE \"courseUnitYear\" IS NULL LIMIT 1) AS ok",
+        "params": []
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.CourseUnit.courseUnitYear",
+    "label": "Set NOT NULL on \"CourseUnit\".\"courseUnitYear\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "courseUnitYear",
+        "table": "CourseUnit"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"courseUnitYear\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "CourseUnit", "courseUnitYear"]
+      },
+      {
+        "description": "ensure no NULL values in \"courseUnitYear\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"CourseUnit\" WHERE \"courseUnitYear\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"courseUnitYear\"",
+        "sql": "ALTER TABLE \"public\".\"CourseUnit\" ALTER COLUMN \"courseUnitYear\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"courseUnitYear\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": ["public", "CourseUnit", "courseUnitYear", "NO"]
+      }
+    ]
+  }
+]

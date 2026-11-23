@@ -84,6 +84,19 @@ when `NODE_ENV=production`). With no body it uses the configured
 `SIGARRA_USERNAME` / `SIGARRA_PASSWORD`; a `{ username, password }` body overrides
 them. It validates against Sigarra and sets the same session cookie as OIDC.
 
+### `GET /auth/me` and `GET /users/me`
+
+Both endpoints require a valid session and return the same profile payload.
+`/users/me` is an exact alias of `/auth/me`. With no session, or an invalid or
+expired one, they answer `401 unauthorized`:
+
+```json
+{ "error": "Authentication required", "code": "unauthorized" }
+```
+
+They never return `{ "signed": false }`. `POST /auth/logout` stays public and
+continues to return that marker.
+
 ### Compatibility-only auth routes
 
 Kept for older clients; the current frontend uses the canonical routes above, so
@@ -106,7 +119,7 @@ URLs from `BACKEND_URL` with an empty path prefix.
 3. Sigarra redirects to `GET /v1/auth/callback?code=...&state=...`.
 4. Backend exchanges the code for tokens, fetches user info (NMEC, name, email), creates or updates the `User` row, creates a `Session`, sets an HTTP-only cookie, and redirects to `return_to`.
 
-### `GET /auth/me` — response
+### `GET /auth/me` / `GET /users/me` — response
 
 ```json
 {
@@ -186,20 +199,61 @@ The abstract course units the course offers, ordered by acronym. An unknown cour
     "courseId": 22841,
     "acronym": "BD",
     "name": "Bases de Dados",
-    "semester": 1
+    "semester": 1,
+    "courseUnitYear": 2
   }
 ]
 ```
+
+`courseUnitYear` is the curricular year in the course plan (1..6) — the picker groups its year tabs by it. It is not the academic year: that lives on the occurrence as `year`. If the scraper's metadata lists the same unit under several plan years (electives), catalog extraction keeps the **earliest** year for that unit; the column is a single value, not a list.
 
 ### `GET /courses/:id/occurrences` — query params
 
 - `year` — academic year
 - `semester` — `1` or `2`
 
+### `GET /courses/:id/occurrences` — response
+
+Every occurrence of the course, enriched with its course unit's `acronym`, `name`, and `courseUnitYear`, newest academic year first. An unknown course id answers `404 course-not-found`; a course with no matching occurrences answers an empty list.
+
+```json
+[
+  {
+    "id": 587177,
+    "courseUnitId": 42,
+    "courseId": 22841,
+    "year": 2025,
+    "ects": 6,
+    "url": "https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587177",
+    "hash": "abc...",
+    "acronym": "BD",
+    "name": "Bases de Dados",
+    "courseUnitYear": 2
+  }
+]
+```
+
+`id` is the Sigarra occurrence id and is only unique per academic year — the row's real key is `(id, year)`. `year` is the academic year; `courseUnitYear` is the unit's position in the course plan.
+
 Legacy mapping:
 
 - `GET /course/<int:year>` → `GET /courses?year=`
 - `GET /course_units/<int:course_id>/<int:year>/<int:semester>/` → `GET /courses/:id/occurrences?year=&semester=`
+
+### `GET /courses/:id/periods` — response
+
+The exchange windows of the course, derived from all its occurrences. Windows are distinct by `(startsAt, endsAt)`, since several occurrences usually share the same window, and are ordered by `startsAt`. An unknown course id answers `404 course-not-found`; a course with no periods answers an empty list. A non-numeric `id` answers `422 validation-error`.
+
+```json
+[
+  {
+    "startsAt": "2025-09-01T00:00:00.000Z",
+    "endsAt": "2025-09-15T00:00:00.000Z"
+  }
+]
+```
+
+`startsAt` and `endsAt` are ISO 8601 strings in UTC.
 
 ### `POST /courses/:id/periods` — body
 
@@ -231,7 +285,8 @@ Backend resolves all occurrences for the course, validates no overlap, and creat
   "courseId": 22841,
   "acronym": "BD",
   "name": "Bases de Dados",
-  "semester": 1
+  "semester": 1,
+  "courseUnitYear": 2
 }
 ```
 
@@ -263,18 +318,18 @@ Every concrete occurrence of the unit, across the courses and academic years it 
 
 Occurrence is the concrete instance that carries classes, schedule, periods, and admin scope.
 
-| Method   | Path                                 | Auth  | Purpose                                    |
-| -------- | ------------------------------------ | ----- | ------------------------------------------ |
-| `GET`    | `/occurrences`                       | `?`   | List occurrences                           |
-| `GET`    | `/occurrences/:id`                   | `?`   | Single occurrence                          |
-| `GET`    | `/occurrences/:id/classes`           | `?`   | Classes for this occurrence                |
-| `GET`    | `/occurrences/:id/slots`             | `?`   | Schedule slots for this occurrence         |
-| `GET`    | `/occurrences/:id/periods`           | `?`   | Exchange periods for this occurrence       |
-| `POST`   | `/occurrences/:id/periods`           | admin | Create exchange period for this occurrence |
-| `PUT`    | `/occurrences/:id/periods/:periodId` | admin | Update period                              |
-| `DELETE` | `/occurrences/:id/periods/:periodId` | admin | Delete period                              |
-| `GET`    | `/occurrences/:id/exchange-metadata` | `?`   | Metadata for the exchange request card     |
-| `GET`    | `/occurrences/hashes`                | `?`   | Hashes for a list of occurrence IDs        |
+| Method   | Path                                 | Auth  | Purpose                                                |
+| -------- | ------------------------------------ | ----- | ------------------------------------------------------ |
+| `GET`    | `/occurrences`                       | `?`   | List occurrences                                       |
+| `GET`    | `/occurrences/:id`                   | `?`   | Single occurrence                                      |
+| `GET`    | `/occurrences/:id/classes`           | `?`   | Classes for this occurrence                            |
+| `GET`    | `/occurrences/:id/slots`             | `?`   | Schedule slots for this occurrence                     |
+| `GET`    | `/occurrences/:id/periods`           | `?`   | Exchange periods for this occurrence (`year` required) |
+| `POST`   | `/occurrences/:id/periods`           | admin | Create exchange period for this occurrence             |
+| `PUT`    | `/occurrences/:id/periods/:periodId` | admin | Update period                                          |
+| `DELETE` | `/occurrences/:id/periods/:periodId` | admin | Delete period                                          |
+| `GET`    | `/occurrences/:id/exchange-metadata` | `?`   | Metadata for the exchange request card                 |
+| `GET`    | `/occurrences/hashes`                | `?`   | Hashes for a list of occurrence IDs                    |
 
 ### `GET /occurrences` — query params
 
@@ -282,6 +337,27 @@ Occurrence is the concrete instance that carries classes, schedule, periods, and
 - `year` — academic year
 - `semester` — `1` or `2`
 - `courseUnit` — course unit id
+
+### `GET /occurrences/:id/periods` — query params
+
+- `year` — academic year, **required**. The occurrence's key is `(id, year)`, so the same id can have different periods in different years.
+
+### `GET /occurrences/:id/periods` — response
+
+The exchange periods of the occurrence `(id, year)`, ordered by `startsAt`. An unknown `(id, year)` answers `404 occurrence-not-found`; an occurrence with no periods answers an empty list. A non-numeric `id`, or a missing or non-numeric `year`, answers `422 validation-error`.
+
+```json
+[
+  {
+    "occurrenceId": 587177,
+    "occurrenceYear": 2025,
+    "startsAt": "2025-09-01T00:00:00.000Z",
+    "endsAt": "2025-09-15T00:00:00.000Z"
+  }
+]
+```
+
+`startsAt` and `endsAt` are ISO 8601 strings in UTC.
 
 ### `GET /occurrences/:id/classes` — response shape
 
@@ -294,6 +370,7 @@ Matches the frontend’s `CourseInfo` with embedded `ClassInfo`. The `id` here i
   "courseId": 22841,
   "year": 2025,
   "semester": 1,
+  "courseUnitYear": 2,
   "acronym": "BD",
   "name": "Bases de Dados",
   "ects": 6,
@@ -355,10 +432,15 @@ Legacy mapping:
 | `GET`  | `/students/:nmec/photo`                      | `?`                 | Redirect to the student photo                                  |
 | `GET`  | `/students/:nmec/courses/:courseId/metadata` | admin               | `fest_id` metadata for a student in a course                   |
 
+### `GET /users/me` — response
+
+Exact alias of `GET /auth/me`: same payload and same `401 unauthorized`
+semantics (see the Auth section above).
+
 ### `GET /users/me/enrollments` — response
 
 Returns an array containing one item per class enrollment. Each item includes
-the occurrence year and course-unit details (including semester), plus the
+the occurrence year, its Sigarra page (`url`) and course-unit details (including semester), plus the
 class, schedule slots, and each slot's professors. A missing or invalid session
 returns `401 unauthorized`.
 
@@ -368,6 +450,7 @@ returns `401 unauthorized`.
     "occurrence": {
       "id": 12345,
       "year": 2025,
+      "url": "https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=12345",
       "courseUnit": {
         "id": 42,
         "acronym": "BD",
@@ -398,8 +481,8 @@ returns `401 unauthorized`.
 ### `GET /users/me/schedule` — response
 
 Returns the authenticated student's class schedule, derived from their
-enrollments: one item per enrolled class, with the occurrence year, the
-course-unit details and the class's schedule slots (each with its professors).
+enrollments: one item per enrolled class, with the occurrence year, its Sigarra
+page (`url`), the course-unit details and the class's schedule slots (each with its professors).
 A missing or invalid session returns `401 unauthorized`.
 
 Ordering: items follow the order of the student's enrollments (by class id).
@@ -415,6 +498,7 @@ the client can render them without sorting. `dayOfWeek` is `0` for Sunday;
     "occurrence": {
       "id": 12345,
       "year": 2025,
+      "url": "https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=12345",
       "courseUnit": {
         "id": 42,
         "acronym": "BD",
@@ -433,6 +517,29 @@ the client can render them without sorting. `dayOfWeek` is `0` for Sunday;
         "professors": [{ "id": 123, "acronym": "AS", "name": "Ana Silva" }]
       }
     ]
+  }
+]
+```
+
+### `GET /users/me/eligible-occurrences` — response
+
+Returns the student’s enrolled occurrences whose exchange period is open. The list is ordered by
+academic year (newest first), then occurrence id. A missing or invalid session
+returns `401 unauthorized`.
+
+```json
+[
+  {
+    "id": 12345,
+    "courseUnitId": 42,
+    "courseId": 22841,
+    "year": 2025,
+    "ects": 6,
+    "url": "https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=12345",
+    "hash": "occurrence-hash",
+    "acronym": "BD",
+    "name": "Bases de Dados",
+    "courseUnitYear": 2
   }
 ]
 ```
@@ -658,10 +765,59 @@ Legacy mapping:
 | `POST`   | `/admin/enrollment-requests/:id/accept` | admin | Approve                          |
 | `POST`   | `/admin/enrollment-requests/:id/reject` | admin | Reject                           |
 
-### `GET /admin/enrollment-requests` — query params
+The four `/enrollment-requests` routes require a session (`401 unauthorized`
+otherwise) and are scoped to the session user. The admin routes are tracked
+separately (#875) and are not part of this implementation.
 
-- `page` / `page_size`
-- `activeCourse`, `activeCurricularYear`, `activeStates` — admin filters
+### Response shape
+
+List responses return an array of request objects (`[]` when the student has
+no requests). Detail and create responses return one request object. Each
+option carries the occurrence `(id, year)` pair and the course-unit fields the
+UI renders; `enrolling: true` adds the occurrence and `false` drops it.
+
+```json
+{
+  "id": "3f2c8f04-6d6a-4a7f-9e0d-0d9f0a2b1c33",
+  "status": "PENDING",
+  "adminState": "UNTREATED",
+  "createdAt": "2026-02-01T10:00:00.000Z",
+  "updatedAt": "2026-02-01T10:00:00.000Z",
+  "options": [
+    {
+      "occurrence": {
+        "id": 123,
+        "year": 2025,
+        "courseUnit": {
+          "id": 42,
+          "acronym": "BD",
+          "name": "Bases de Dados",
+          "semester": 1
+        }
+      },
+      "enrolling": true
+    },
+    {
+      "occurrence": {
+        "id": 124,
+        "year": 2025,
+        "courseUnit": {
+          "id": 43,
+          "acronym": "COMP",
+          "name": "Computação",
+          "semester": 2
+        }
+      },
+      "enrolling": false
+    }
+  ]
+}
+```
+
+### `GET /enrollment-requests`
+
+Returns only the session user's requests, newest `createdAt` first. Cancelled
+requests are included; no requests is an empty list, not a `404`.
 
 ### `POST /enrollment-requests` — body
 
@@ -674,10 +830,47 @@ Legacy mapping:
 }
 ```
 
+At least one option and at most 20 are required; an empty array or more than 20
+fails schema validation with `422 validation-error`. Creation is all-or-nothing
+and answers `201` with the created request on success. It is rejected when:
+
+| Status | Code                           | Meaning                                                                 |
+| ------ | ------------------------------ | ----------------------------------------------------------------------- |
+| `400`  | `duplicate-enrollment-option`  | The same `(occurrenceId, occurrenceYear)` appears twice in the payload. |
+| `400`  | `duplicate-enrollment-request` | A non-cancelled request already has an option for that occurrence.      |
+| `400`  | `exchange-period-closed`       | No exchange period of that occurrence is open now.                      |
+| `400`  | `already-enrolled`             | An `enrolling: true` option targets an occurrence I am enrolled in.     |
+| `404`  | `occurrence-not-found`         | The `(occurrenceId, occurrenceYear)` pair does not exist.               |
+
+The duplicate rule is per occurrence and ignores `enrolling`: an active enroll
+and an active drop option for the same occurrence cannot coexist. Options on
+`CANCELLED` requests do not count, so a withdrawn request can be submitted
+again. A `drop` option does not require an existing enrollment, matching the
+legacy behavior.
+
+### `GET /enrollment-requests/:id`
+
+Returns one request. An unknown id answers `404 enrollment-request-not-found`;
+another student's request answers `403 forbidden`.
+
+### `DELETE /enrollment-requests/:id`
+
+Withdraws a `PENDING` request by setting `status` to `CANCELLED`; it does not
+delete the row. A successful withdrawal answers `204` with no body. An unknown
+id answers `404 enrollment-request-not-found`, another student's request
+answers `403 forbidden`, and a request that is already `ACCEPTED` or
+`CANCELLED` answers `409 enrollment-request-not-pending`.
+
+### `GET /admin/enrollment-requests` — not implemented yet (#875)
+
+The admin list, accept and reject routes are tracked separately in #875 and are
+not registered by this change. Their planned filters are `page` / `page_size`,
+`activeCourse`, `activeCurricularYear` and `activeStates`.
+
 Legacy mapping:
 
-- `POST /course_unit/enrollment/` → `POST /enrollment-requests`
-- `GET /course_unit/enrollment/?page=&page_size=` → `GET /admin/enrollment-requests?page=&page_size=`
+- `POST /course_unit/enrollment/` → `POST /enrollment-requests` (implemented)
+- `GET /course_unit/enrollment/?page=&page_size=` → `GET /admin/enrollment-requests?page=&page_size=` (planned, #875)
 
 ---
 

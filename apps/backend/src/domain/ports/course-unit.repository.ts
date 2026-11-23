@@ -14,6 +14,14 @@
 export type CourseUnitSemester = 1 | 2
 
 /**
+ * The curricular years a Sigarra course plan can have (1..6). The catalog never
+ * exposes a value outside this range — narrowing the loosely-typed database
+ * column here keeps that invariant visible to every layer that consumes a
+ * `CourseUnit`.
+ */
+export type CourseUnitYear = 1 | 2 | 3 | 4 | 5 | 6
+
+/**
  * An abstract course unit. It owns no classes, periods, or enrollments — only
  * `Occurrence` rows do. `courseId` is the course that offers the unit; the
  * unit's occurrences may additionally span other courses and years.
@@ -24,6 +32,12 @@ export type CourseUnit = {
   acronym: string
   name: string
   semester: CourseUnitSemester
+  /**
+   * Curricular year of the unit in its course plan (1..6) — "BD is a 2nd-year
+   * unit". A plan-level position, distinct from `Occurrence.year`, the academic
+   * year the unit is taught in.
+   */
+  courseUnitYear: CourseUnitYear
 }
 
 /**

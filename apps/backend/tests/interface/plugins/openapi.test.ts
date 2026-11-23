@@ -31,6 +31,7 @@ const DOCUMENTED: Array<[string, string, string, string]> = [
   ['/v1/auth/login', 'get', 'auth', 'Begin login'],
   ['/v1/auth/callback', 'get', 'auth', 'Complete login'],
   ['/v1/auth/me', 'get', 'auth', 'Current user'],
+  ['/v1/users/me', 'get', 'users', 'Current user'],
   ['/v1/auth/dev-login', 'post', 'auth', 'Dev login'],
   ['/v1/auth/logout', 'post', 'auth', 'Log out'],
   ['/oidc-auth/authenticate/', 'get', 'auth-compat', 'Legacy login link'],
@@ -57,6 +58,15 @@ describe('OpenAPI documentation', () => {
     expect(spec.components.schemas.ApiError).toBeDefined()
     const unauthorized = spec.paths['/v1/auth/dev-login'].post.responses['401']
     expect(unauthorized.content?.['application/json']?.schema?.$ref).toBe('#/components/schemas/ApiError')
+  })
+
+  it('documents a 401 ApiError for both current-user endpoints', async () => {
+    const spec = await readSpec()
+
+    for (const path of ['/v1/auth/me', '/v1/users/me']) {
+      const unauthorized = spec.paths[path]?.get.responses['401']
+      expect(unauthorized?.content?.['application/json']?.schema?.$ref).toBe('#/components/schemas/ApiError')
+    }
   })
 
   it('describes 3xx redirects without a body', async () => {
