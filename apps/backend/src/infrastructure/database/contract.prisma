@@ -510,8 +510,8 @@ model ExchangeItem {
   fromClass Class @relation("ExchangeItemFromClass", fields: [fromClassId, occurrenceId, occurrenceYear], references: [id, occurrenceId, occurrenceYear])
   toClass   Class @relation("ExchangeItemToClass",   fields: [toClassId,   occurrenceId, occurrenceYear], references: [id, occurrenceId, occurrenceYear])
 
-  // Per-participant lifecycle. acceptedAt records when the participant
-  // confirmed (status -> ACCEPTED); statusReason carries why a move was
+  // Per-participant lifecycle. acceptedAt is the authoritative accept
+  // timestamp (set when status -> ACCEPTED); statusReason carries why a move was
   // cancelled or invalidated. Cycle status is recomputed from these statuses in
   // the same transaction — never set independently.
   status       ExchangeItemStatus @default(PENDING)
@@ -562,6 +562,9 @@ model ExchangeParticipant {
   // Restrict, not Cascade: dropping a participant silently would turn a
   // two-sided swap into a one-sided one. User deletion must cancel the cycle.
   user       User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  // Duplicates the accept moment recorded on ExchangeItem. The authoritative
+  // timestamp is ExchangeItem.acceptedAt — this one must mirror it, never
+  // diverge from it; #992 decides whether it is still needed.
   acceptedAt DateTime?
 
   @@id([cycleId, userId])
