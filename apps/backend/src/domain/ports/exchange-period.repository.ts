@@ -3,6 +3,8 @@
 
 /** A date range during which an exchange occurrence is open. */
 export type ExchangePeriod = {
+  /** Surrogate key: the admin UI edits and deletes a period by id. */
+  id: string
   occurrenceId: number
   occurrenceYear: number
   startsAt: Date
@@ -11,7 +13,7 @@ export type ExchangePeriod = {
 
 /** A window during which a course is open for exchanges,
  * shared by its occurrences. */
-export type CourseExchangePeriod = Pick<ExchangePeriod, 'startsAt' | 'endsAt'>
+export type CourseExchangePeriod = Pick<ExchangePeriod, 'id' | 'startsAt' | 'endsAt'>
 
 /* The repository contract.*/
 export type ExchangePeriodsRepository = {

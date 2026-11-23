@@ -1,19 +1,21 @@
 import { describe, expect, it } from 'bun:test'
 
-import { ADMIN, createFakeSessions } from '../support/auth-test-utils'
+import { ADMIN } from '../support/auth-test-utils'
 import {
   CLASSES,
   CLASS_STUDENTS,
   VALIDATION_ERROR_BODY,
   createCatalogApp,
+  registerAdminGuard,
   registerCatalogAuthGuard,
 } from '../support/catalog-test-utils'
 
 const { app, get } = createCatalogApp()
-const adminApp = createCatalogApp({ sessionRepository: createFakeSessions(ADMIN) })
+const adminApp = createCatalogApp({ user: ADMIN })
 
 describe('class routes', () => {
   registerCatalogAuthGuard(app, ['/v1/classes/501', '/v1/classes/501/students'])
+  registerAdminGuard(app, ['/v1/classes/501/students'])
 
   it('returns class details with slots and professors', async () => {
     const { status, contentType, body } = await get('/v1/classes/501')
@@ -41,13 +43,6 @@ describe('class routes', () => {
 
     expect(status).toBe(422)
     expect(body).toEqual(VALIDATION_ERROR_BODY)
-  })
-
-  it('denies class enrollment lists to non-admin users', async () => {
-    const { status, body } = await get('/v1/classes/501/students')
-
-    expect(status).toBe(403)
-    expect(body).toEqual({ error: 'Not allowed', code: 'forbidden' })
   })
 
   it('allows admins to list enrolled students', async () => {

@@ -1,0 +1,180 @@
+[
+  {
+    "id": "column.public.ExchangePeriod.id",
+    "label": "Add column \"id\" to \"ExchangePeriod\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "id",
+        "table": "ExchangePeriod"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"id\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangePeriod", "id"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"id\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangePeriod\" ADD COLUMN \"id\" text DEFAULT (gen_random_uuid()::text) NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangePeriod", "id"]
+      }
+    ]
+  },
+  {
+    "id": "dropDefault.ExchangePeriod.id",
+    "label": "Drop default on \"ExchangePeriod\".\"id\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "id",
+        "table": "ExchangePeriod"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangePeriod", "id"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop default on \"id\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangePeriod\" ALTER COLUMN \"id\" DROP DEFAULT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"id\" has no default",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"column_default\" IS NULL)) AS \"result\"",
+        "params": ["public", "ExchangePeriod", "id"]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.ExchangePeriod.ExchangePeriod_pkey",
+    "label": "Drop constraint \"ExchangePeriod_pkey\" on \"ExchangePeriod\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "primaryKey",
+        "name": "ExchangePeriod_pkey",
+        "table": "ExchangePeriod"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"ExchangePeriod_pkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangePeriod_pkey", "public", "\"public\".\"ExchangePeriod\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"ExchangePeriod_pkey\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangePeriod\" DROP CONSTRAINT \"ExchangePeriod_pkey\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"ExchangePeriod_pkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangePeriod_pkey", "public", "\"public\".\"ExchangePeriod\""]
+      }
+    ]
+  },
+  {
+    "id": "primaryKey.ExchangePeriod.ExchangePeriod_pkey",
+    "label": "Add primary key on \"ExchangePeriod\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "primaryKey",
+        "name": "ExchangePeriod_pkey",
+        "table": "ExchangePeriod"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure primary key \"ExchangePeriod_pkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangePeriod_pkey", "public", "\"public\".\"ExchangePeriod\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add primary key \"ExchangePeriod_pkey\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangePeriod\" ADD CONSTRAINT \"ExchangePeriod_pkey\" PRIMARY KEY (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify primary key \"ExchangePeriod_pkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangePeriod_pkey", "public", "\"public\".\"ExchangePeriod\""]
+      }
+    ]
+  },
+  {
+    "id": "unique.ExchangePeriod.ExchangePeriod_occurrenceId_occurrenceYear_startsAt_endsAt_key",
+    "label": "Add unique constraint on \"ExchangePeriod\" (occurrenceId, occurrenceYear, startsAt, endsAt)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "ExchangePeriod_occurrenceId_occurrenceYear_startsAt_endsAt_key",
+        "table": "ExchangePeriod"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"ExchangePeriod_occurrenceId_occurrenceYear_startsAt_endsAt_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ExchangePeriod_occurrenceId_occurrenceYear_startsAt_endsAt_key",
+          "public",
+          "\"public\".\"ExchangePeriod\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"ExchangePeriod_occurrenceId_occurrenceYear_startsAt_endsAt_key\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangePeriod\" ADD CONSTRAINT \"ExchangePeriod_occurrenceId_occurrenceYear_startsAt_endsAt_key\" UNIQUE (\"occurrenceId\", \"occurrenceYear\", \"startsAt\", \"endsAt\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"ExchangePeriod_occurrenceId_occurrenceYear_startsAt_endsAt_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ExchangePeriod_occurrenceId_occurrenceYear_startsAt_endsAt_key",
+          "public",
+          "\"public\".\"ExchangePeriod\""
+        ]
+      }
+    ]
+  }
+]

@@ -32,6 +32,7 @@ export function enrollmentIn(occurrenceId: number, year: number, classId: number
     occurrence: {
       id: occurrenceId,
       year,
+      url: `https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=${occurrenceId}`,
       courseUnit: { id: occurrenceId, acronym: `UC${occurrenceId}`, name: `Unit ${occurrenceId}`, semester: 1 },
     },
     class: { id: classId, name: `1LEIC0${classId}`, vacancies: null, slots: [] },
@@ -54,6 +55,8 @@ export function createFakeEnrollments(byUser: Record<string, StudentEnrollment[]
       const a = new Set(keys(userIdA))
       return keys(userIdB).some((key) => a.has(key))
     },
+    isEnrolledInOccurrence: async (userId, occurrenceId, occurrenceYear) =>
+      keys(userId).includes(`${occurrenceId}:${occurrenceYear}`),
   }
 
   return { repository, sharesOccurrenceCalls }
@@ -98,7 +101,7 @@ export function createStudentsApp({
 }
 
 /** Error bodies of the `/v1/students` routes, so tests assert shapes, not literals. */
-export const FORBIDDEN_BODY = { error: 'Not allowed', code: 'forbidden' }
+export { FORBIDDEN_BODY } from './http-test-utils'
 export const studentNotFoundBody = (nmec: string) => ({
   error: `Student ${nmec} not found`,
   code: 'student-not-found',

@@ -47,55 +47,13 @@ const getCourseUnits = async (major: Major) => {
 }
 
 const getCoursesByMajorId = async (id: number) => {
-  return await apiRequest(`/course_units/${id}/${getAcademicYear()}/${SEMESTER}/`)
-}
+  const year = getAcademicYear()
+  const courseUnits = await apiRequest(`/course_units/${id}/${year}/${SEMESTER}/`)
+  if (!Array.isArray(courseUnits)) return []
 
-/**
- * Retrieves all schedule options for a given course unit
- * @param course course of which to retrieve schedule
- * @returns array of schedule options
- */
-const getCourseClass = async (course: CourseInfo) => {
-  if (course === null) return []
-  return await apiRequest(`/class/${course.id}/`)
-}
-
-const createCourseClass = async (course: CourseInfo) => {
-  if (course.classes) return course
-
-  course.classes = await getCourseClass(course)
-  course.classes = course.classes?.map((c) => {
-    return {
-      ...c,
-      filteredTeachers: c.slots.flatMap((s) => s.professors.flatMap((p) => p.id)),
-    }
-  })
-  return course
-}
-
-const getCoursesClasses = async (courses: CourseInfo[]): Promise<CourseInfo[]> => {
-  const newCourses = [...courses]
-
-  return Promise.all(newCourses.map((course) => createCourseClass(course)))
-    .then(() => {
-      return newCourses
-    })
-    .catch((e) => {
-      console.error(e)
-      return []
-    })
-}
-
-/**
- * Retrieves full class information with classes
- * @param id class id
- * @returns CourseInfo
- */
-const getCourseUnit = async (id: number) => {
-  if (id === null) return []
-  const class_info = await apiRequest(`course_unit/${id}/`)
-  class_info['classes'] = await getCourseClass(class_info)
-  return class_info
+  // The legacy endpoint has no per-row academic year; it was fetched for the
+  // current one, so tag each unit for the enrollment payload.
+  return courseUnits.map((courseUnit: CourseInfo) => ({ ...courseUnit, occurrenceYear: year }))
 }
 
 /**
@@ -135,9 +93,6 @@ const csrfTokenName = (): string => {
 const api = {
   getCourseUnits,
   getCoursesByMajorId,
-  getCourseClass,
-  getCoursesClasses,
-  getCourseUnit,
   getInfo,
   getCourseUnitHashes,
   getCSRFToken,

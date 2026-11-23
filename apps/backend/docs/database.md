@@ -34,6 +34,9 @@ bun run db:update              # 3. apply directly to your local DB (no history 
 > ⚠️ Never use `db:update` against a shared or production database. It leaves no migration history
 > and cannot be replayed.
 
+> ⚠️ If the change adds a `NOT NULL` column that needs a backfill, use the formal path: `db:update`
+> applies the column (with Prisma's temporary default) but skips the migration's data transform.
+
 ### Formal path — shared environments and production
 
 ```bash
@@ -87,6 +90,28 @@ rows and leaves a `placeholder(...)` in `migration.ts`.
    ```bash
    bun run migrate
    ```
+
+### Backfills whose source is outside Postgres
+
+A migration can only copy data Postgres already holds. When the real value exists only in the
+scraper dump (or another external source), the migration seeds a placeholder and a separate
+catalog command replaces it in place:
+
+```bash
+bun run catalog:sync-years   # rewrite CourseUnit.courseUnitYear from the fixture
+```
+
+`catalog:sync-years` updates only `CourseUnit.courseUnitYear`, matched by
+`(courseId, acronym, semester)`, and leaves every dependent row (users, planner state, exchanges,
+classes) untouched. It works against any `DATABASE_URL` — unlike `db:seed` / `db:seed:demo`, which
+truncate every table and refuse non-loopback hosts, so neither can repair a shared database.
+
+`20261115T1830_add_course_unit_year` is the first migration that needs it: the migration backfills
+existing units to year `1`, and a database brought forward with `db:update` instead keeps the
+column's temporary default of `0`. In both cases the placeholder is not the real curricular year,
+so **always run `bun run catalog:sync-years` after applying this migration** to copy the real years
+from the fixture. The same command also repairs any `0` rows left by an earlier `db:update` without
+a reset.
 
 ## Migration mental model
 

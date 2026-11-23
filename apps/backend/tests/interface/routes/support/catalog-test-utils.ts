@@ -1,15 +1,22 @@
 import { expect, it } from 'bun:test'
 
+import type { AuthUser } from '@/core/auth/user'
 import type { Course, CourseRepository } from '@/domain/ports/course.repository'
 import type { ClassRepository, EnrolledStudent, ClassWithSlots } from '@/domain/ports/class.repository'
 import type { CourseUnit, CourseUnitRepository } from '@/domain/ports/course-unit.repository'
 import type { Faculty, FacultyRepository } from '@/domain/ports/faculty.repository'
 import type { Occurrence, OccurrenceWithUnit, OccurrenceRepository } from '@/domain/ports/occurrence.repository'
-import type { ExchangePeriod, ExchangePeriodsRepository } from '@/domain/ports/exchange-period.repository'
+import type {
+  CourseExchangePeriod,
+  ExchangePeriod,
+  ExchangePeriodsRepository,
+} from '@/domain/ports/exchange-period.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import { createApp } from '@/main'
 import type { App } from '@/main'
-import { TEST_SESSION_TOKEN, createFakeSessions } from './auth-test-utils'
+import { createFakeSessions } from './auth-test-utils'
+import { FORBIDDEN_BODY, UNAUTHORIZED_BODY, createRequester, request } from './http-test-utils'
+import type { HttpMethod } from './http-test-utils'
 
 // Shared infrastructure for the catalog route tests (`courses`, `faculties`,
 // and `course-units`).
@@ -23,6 +30,9 @@ import { TEST_SESSION_TOKEN, createFakeSessions } from './auth-test-utils'
 //
 // Adding a catalog route group means adding its fixtures + fake repository here
 // and defaulting it in `createCatalogApp`, so its test file stays assertions-only.
+//
+// Requests themselves go through `http-test-utils`, which owns the method, the
+// JSON body, the cookie, and the response parsing for every route test.
 
 export const COURSES: Course[] = [
   {
@@ -129,9 +139,9 @@ export const CLASS_STUDENTS: Record<number, EnrolledStudent[]> = {
  * Course 22201 deliberately offers no units, and unit 44 has no occurrence.
  */
 export const COURSE_UNITS: CourseUnit[] = [
-  { id: 42, courseId: 22841, acronym: 'BD', name: 'Bases de Dados', semester: 1 },
-  { id: 43, courseId: 22841, acronym: 'COMP', name: 'Computação', semester: 2 },
-  { id: 44, courseId: 22990, acronym: 'BD', name: 'Bases de Dados', semester: 1 },
+  { id: 42, courseId: 22841, acronym: 'BD', name: 'Bases de Dados', semester: 1, courseUnitYear: 2 },
+  { id: 43, courseId: 22841, acronym: 'COMP', name: 'Computação', semester: 2, courseUnitYear: 1 },
+  { id: 44, courseId: 22990, acronym: 'BD', name: 'Bases de Dados', semester: 1, courseUnitYear: 3 },
 ]
 
 /** Concrete occurrences: unit 42 is taught in two courses across two years. */
@@ -168,30 +178,37 @@ export const OCCURRENCES: Occurrence[] = [
 /** Periods of occurrence 587177/2025 (out of order) plus one of the same id in 2024. 587179/2025 repeats the September window; 587178/2024 has its own. */
 export const EXCHANGE_PERIODS: ExchangePeriod[] = [
   {
+    id: 'period-587177-2025-02',
     occurrenceId: 587177,
     occurrenceYear: 2025,
     startsAt: new Date('2026-02-01T00:00:00Z'),
     endsAt: new Date('2026-02-15T00:00:00Z'),
   },
   {
+    // Lexicographically smaller than `period-587179-2025-09`, so this is the
+    // representative id the course-level endpoint returns for the shared window.
+    id: 'period-587177-2025-09',
     occurrenceId: 587177,
     occurrenceYear: 2025,
     startsAt: new Date('2025-09-01T00:00:00Z'),
     endsAt: new Date('2025-09-15T00:00:00Z'),
   },
   {
+    id: 'period-587177-2024-09',
     occurrenceId: 587177,
     occurrenceYear: 2024,
     startsAt: new Date('2024-09-01T00:00:00Z'),
     endsAt: new Date('2024-09-15T00:00:00Z'),
   },
   {
+    id: 'period-587179-2025-09',
     occurrenceId: 587179,
     occurrenceYear: 2025,
     startsAt: new Date('2025-09-01T00:00:00Z'),
     endsAt: new Date('2025-09-15T00:00:00Z'),
   },
   {
+    id: 'period-587178-2024-10',
     occurrenceId: 587178,
     occurrenceYear: 2024,
     startsAt: new Date('2024-10-01T00:00:00Z'),
@@ -200,8 +217,7 @@ export const EXCHANGE_PERIODS: ExchangePeriod[] = [
 ]
 
 /** Error bodies shared by every catalog route, so tests assert shapes, not literals. */
-export const UNAUTHORIZED_BODY = { error: 'Authentication required', code: 'unauthorized' }
-export const VALIDATION_ERROR_BODY = { error: 'Request failed validation', code: 'validation-error' }
+export { FORBIDDEN_BODY, UNAUTHORIZED_BODY, VALIDATION_ERROR_BODY } from './http-test-utils'
 
 /** The catalog data both repository fakes are built from. */
 export type CatalogFixtures = {
@@ -221,7 +237,7 @@ export function createFakeExchangePeriodsRepository({
 }: CatalogFixtures = {}): ExchangePeriodsRepository {
   return {
     async findByOccurrence(occurrenceId, occurrenceYear) {
-      // Same scope and order as the Prisma repository: the composite key
+      // Same scope and order as the Prisma repository: occurrence
       // (id, year), chronological. `filter` returns a fresh array, so
       // sorting never mutates the fixture.
       return exchangePeriods
@@ -230,24 +246,23 @@ export function createFakeExchangePeriodsRepository({
     },
     async findByCourse(courseId) {
       // Same as the Prisma repository: join on (id, year) to the course's
-      // occurrences, then distinct windows by their dates, chronological.
-      const seen = new Set<string>()
+      // occurrences, then collapse repeated windows to the smallest id.
+      const windows = new Map<string, CourseExchangePeriod>()
 
-      return exchangePeriods
-        .filter((period) =>
-          occurrences.some(
-            (o) => o.id === period.occurrenceId && o.year === period.occurrenceYear && o.courseId === courseId,
-          ),
+      for (const period of exchangePeriods) {
+        const belongsToCourse = occurrences.some(
+          (o) => o.id === period.occurrenceId && o.year === period.occurrenceYear && o.courseId === courseId,
         )
-        .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
-        .filter((period) => {
-          const key = `${period.startsAt.getTime()}:${period.endsAt.getTime()}`
-          if (seen.has(key)) return false
+        if (!belongsToCourse) continue
 
-          seen.add(key)
-          return true
-        })
-        .map((period) => ({ startsAt: period.startsAt, endsAt: period.endsAt }))
+        const key = `${period.startsAt.getTime()}:${period.endsAt.getTime()}`
+        const seen = windows.get(key)
+        if (seen === undefined || period.id < seen.id) {
+          windows.set(key, { id: period.id, startsAt: period.startsAt, endsAt: period.endsAt })
+        }
+      }
+
+      return [...windows.values()].sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
     },
   }
 }
@@ -307,11 +322,34 @@ export function createFakeCourseUnitRepository({
   }
 }
 
+/**
+ * Join an occurrence with its course unit, mirroring the enriched shape the
+ * Prisma repositories return from `findByCourse` / `findById`. Shared by the
+ * fake repository and the assertions so the two cannot drift.
+ */
+export function withCourseUnit(occurrence: Occurrence, unit: CourseUnit): OccurrenceWithUnit {
+  return {
+    ...occurrence,
+    acronym: unit.acronym,
+    name: unit.name,
+    courseUnitYear: unit.courseUnitYear,
+  }
+}
+
 /** In-memory `OccurrenceRepository` over `occurrences` (defaults to `OCCURRENCES`). */
 export function createFakeOccurrenceRepository({
   occurrences = OCCURRENCES,
   courseUnits = COURSE_UNITS,
 }: CatalogFixtures = {}): OccurrenceRepository {
+  // Join a course unit onto an occurrence, mirroring the enriched shape the
+  // Prisma implementation returns from `findByCourse` / `findById`.
+  const withUnit = (occurrence: Occurrence): OccurrenceWithUnit => {
+    const unit = courseUnits.find((u) => u.id === occurrence.courseUnitId)
+    if (!unit) throw new Error(`No CourseUnit for occurrence ${occurrence.id}`)
+
+    return withCourseUnit(occurrence, unit)
+  }
+
   return {
     async findByCourseUnit(courseUnitId) {
       // Newest year first, then by id — the order the Prisma repository uses.
@@ -335,6 +373,7 @@ export function createFakeOccurrenceRepository({
           return true
         })
         .sort((a, b) => b.year - a.year || a.id - b.id)
+        .map(withUnit)
     },
 
     async findById(id, year): Promise<OccurrenceWithUnit | null> {
@@ -343,12 +382,7 @@ export function createFakeOccurrenceRepository({
       const occurrence = occurrences.find((o) => o.id === id && o.year === year)
       if (!occurrence) return null
 
-      // Join the course unit to attach its name and acronym, mirroring the
-      // enriched shape the Prisma implementation returns.
-      const unit = courseUnits.find((u) => u.id === occurrence.courseUnitId)
-      if (!unit) return null
-
-      return { ...occurrence, acronym: unit.acronym, name: unit.name }
+      return withUnit(occurrence)
     },
   }
 }
@@ -383,39 +417,19 @@ export type CatalogRepositories = CatalogFixtures & {
   classRepository?: ClassRepository
   sessionRepository?: SessionRepository
   exchangePeriodsRepository?: ExchangePeriodsRepository
-}
-
-export type CatalogResponse = {
-  status: number
-  contentType: string
-  body: unknown
-}
-
-export type GetOptions = { authenticated?: boolean }
-
-/** GET `request` against `app`, authenticated as `USER` unless told otherwise. */
-export async function getCatalog(app: App, request: string, options: GetOptions = {}): Promise<CatalogResponse> {
-  const response = await app.handle(
-    new Request(`http://localhost${request}`, {
-      headers: options.authenticated === false ? undefined : { cookie: `session=${TEST_SESSION_TOKEN}` },
-    }),
-  )
-
-  return {
-    status: response.status,
-    contentType: response.headers.get('content-type') ?? '',
-    body: (await response.json()) as unknown,
-  }
+  /** Signed-in user for this app. Defaults to `TEST_USER`; pass `ADMIN` for admin-only routes. */
+  user?: AuthUser
 }
 
 /**
- * Builds the app with the in-memory catalog and an always-signed-in session.
- * `courses`/`faculties`/`courseUnits`/`occurrences` feed the repository fakes,
- * so a custom course list and its faculty join stay consistent; any repository
- * can be overridden outright when a test needs different behaviour, or omitted
- * to use the fakes above.
+ * Builds the app with the in-memory catalog and a signed-in session (as
+ * `TEST_USER`, or as `user` when given). `courses`/`faculties`/`courseUnits`/
+ * `occurrences` feed the repository fakes, so a custom course list and its
+ * faculty join stay consistent; any repository can be overridden outright when
+ * a test needs different behaviour, or omitted to use the fakes above.
  *
- * Returns the app (for raw `app.handle` calls) and a `get` bound to it.
+ * Returns the app (for raw `app.handle` calls) and `get`/`post`/`put`/`patch`/
+ * `del` bound to it — a write test never has to build a `Request`.
  */
 export function createCatalogApp({
   courses,
@@ -432,6 +446,7 @@ export function createCatalogApp({
   classRepository,
   sessionRepository,
   exchangePeriodsRepository,
+  user,
 }: CatalogRepositories = {}) {
   const fixtures: CatalogFixtures = {
     courses,
@@ -449,39 +464,63 @@ export function createCatalogApp({
       facultyRepository: facultyRepository ?? createFakeFacultyRepository(fixtures),
       occurrenceRepository: occurrenceRepository ?? createFakeOccurrenceRepository(fixtures),
       classRepository: classRepository ?? createFakeClassRepository(fixtures),
-      sessionRepository: sessionRepository ?? createFakeSessions(),
+      sessionRepository: sessionRepository ?? createFakeSessions(user),
       exchangePeriodsRepository: exchangePeriodsRepository ?? createFakeExchangePeriodsRepository(fixtures),
     },
   })
 
-  return {
-    app,
-    get: (request: string, options: GetOptions = {}) => getCatalog(app, request, options),
+  return { app, ...createRequester(app) }
+}
+
+/** A route the guard helpers register, with the method and body the route expects. */
+export type GuardRequest = string | { method: HttpMethod; path: string; body?: unknown }
+
+function normaliseGuardRequest(entry: GuardRequest) {
+  return typeof entry === 'string' ? { method: 'GET' as HttpMethod, path: entry, body: undefined } : entry
+}
+
+/**
+ * Registers the auth-guard tests every route group needs. For each entry, an
+ * anonymous and a forged-session request must answer 401. Entries are either a
+ * path (a GET) or `{ method, path, body }` for a mutating route. Call once
+ * inside the file's `describe`, right after `createCatalogApp`; the titles name
+ * the route so a failure points straight at it.
+ */
+export function registerCatalogAuthGuard(app: App, requests: GuardRequest[]) {
+  for (const entry of requests) {
+    const { method, path, body } = normaliseGuardRequest(entry)
+
+    it(`${method} ${path} rejects an anonymous caller with a 401 unauthorized`, async () => {
+      const { status, body: responseBody } = await request(app, path, { method, body, authenticated: false })
+
+      expect(status).toBe(401)
+      expect(responseBody).toEqual(UNAUTHORIZED_BODY)
+    })
+
+    it(`${method} ${path} rejects an unrecognised session cookie with a 401`, async () => {
+      const { status, body: responseBody } = await request(app, path, { method, body, cookie: 'session=forged' })
+
+      expect(status).toBe(401)
+      expect(responseBody).toEqual(UNAUTHORIZED_BODY)
+    })
   }
 }
 
 /**
- * Registers the auth-guard tests every catalog route group needs. For each
- * `requests` path, an anonymous and a forged-session request must answer 401.
- * Call once inside the file's `describe`, right after `createCatalogApp`; the
- * titles name the path so a failure points straight at the broken route.
+ * Registers the admin-only variant: the app's own signed-in user must be a
+ * non-admin, so pass the app built with the default `TEST_USER` and every
+ * entry must answer 403. Pair with `createCatalogApp({ user: ADMIN })` in the
+ * test that asserts the allowed path.
  */
-export function registerCatalogAuthGuard(app: App, requests: string[]) {
-  for (const request of requests) {
-    it(`${request} rejects an anonymous caller with a 401 unauthorized`, async () => {
-      const { status, body } = await getCatalog(app, request, { authenticated: false })
+export function registerAdminGuard(app: App, requests: GuardRequest[]) {
+  for (const entry of requests) {
+    const { method, path, body } = normaliseGuardRequest(entry)
 
-      expect(status).toBe(401)
-      expect(body).toEqual(UNAUTHORIZED_BODY)
-    })
+    it(`${method} ${path} rejects a signed-in non-admin with a 403 forbidden`, async () => {
+      const { status, body: responseBody } = await request(app, path, { method, body })
 
-    it(`${request} rejects an unrecognised session cookie with a 401`, async () => {
-      const response = await app.handle(
-        new Request(`http://localhost${request}`, { headers: { cookie: 'session=forged' } }),
-      )
-
-      expect(response.status).toBe(401)
-      expect(await response.json()).toEqual(UNAUTHORIZED_BODY)
+      expect(status).toBe(403)
+      expect(responseBody).toEqual(FORBIDDEN_BODY)
     })
   }
 }

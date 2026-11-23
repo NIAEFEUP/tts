@@ -4,7 +4,7 @@ import { Buffer } from 'buffer'
 import fillOptions from './fillOptions'
 import { Tooltip } from '../../../ui/new/tooltip'
 import { ImportedCourses, CourseOption, CourseInfo } from '../../../../@types'
-import api from '../../../../api/backend'
+import occurrenceService from '../../../../api/services/occurrenceService'
 import CourseContext from '../../../../contexts/CourseContext'
 import MultipleOptionsContext from '../../../../contexts/MultipleOptionsContext'
 import { convertCourseInfoToCourseOption } from '../../../../utils'
@@ -15,7 +15,7 @@ import { Menu } from '../../../ui/new/menu'
 
 const PasteOption = () => {
   const { multipleOptions, setMultipleOptions, selectedOption } = useContext(MultipleOptionsContext)
-  const { pickedCourses, setPickedCourses } = useContext(CourseContext)
+  const { pickedCourses, setPickedCourses, setCheckboxedCourses } = useContext(CourseContext)
 
   const [isClipboardSupported, setIsClipboardSupported] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -65,25 +65,45 @@ const PasteOption = () => {
     })
 
     const uncheckedCoursesIds = Object.keys(importedCourses).filter((course_unit_id) => {
-      return !checkedCoursesIds.includes(Number(course_unit_id))
+      return (
+        !checkedCoursesIds.includes(Number(course_unit_id)) ||
+        !pickedCourses.some((course) => course.id === Number(course_unit_id))
+      )
     })
 
     if (uncheckedCoursesIds.length > 0) {
-      const courses: CourseInfo[] = (
-        await Promise.all(
-          uncheckedCoursesIds.map(async (course_unit_id) => {
-            return await api.getCourseUnit(Number(course_unit_id))
-          }),
-        )
-      ).flat()
+      let courses: CourseInfo[]
+      try {
+        courses = (
+          await Promise.all(
+            uncheckedCoursesIds.map(async (course_unit_id) => {
+              return await occurrenceService.getClasses(Number(course_unit_id))
+            }),
+          )
+        ).flat()
+      } catch (error) {
+        console.error(error)
+        toast({
+          title: 'Erro ao colar a opção',
+          description: 'Não foi possível carregar as turmas das unidades curriculares importadas.',
+          duration: 3000,
+        })
+        return
+      }
 
-      const newPickedCourses = [...pickedCourses]
-      setPickedCourses(newPickedCourses.concat(courses))
+      setPickedCourses((current) =>
+        current.concat(courses.filter((course) => !current.some((c) => c.id === course.id))),
+      )
+      setCheckboxedCourses((current) =>
+        current.concat(courses.filter((course) => !current.some((c) => c.id === course.id))),
+      )
 
       const newMultipleOptions = [...multipleOptions]
       newMultipleOptions.forEach((option) => {
         option.course_options = option.course_options.concat(
-          courses.map((course) => convertCourseInfoToCourseOption(course)),
+          courses
+            .filter((course) => !checkedCoursesIds.includes(course.id))
+            .map((course) => convertCourseInfoToCourseOption(course)),
         )
       })
 

@@ -17,6 +17,7 @@ const enrollments: StudentEnrollment[] = [
     occurrence: {
       id: 12345,
       year: 2025,
+      url: 'https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=12345',
       courseUnit: {
         id: 42,
         acronym: 'BD',
@@ -51,6 +52,7 @@ const enrollmentRepository: EnrollmentRepository = {
     return enrollments
   },
   sharesOccurrence: async () => false,
+  isEnrolledInOccurrence: async () => false,
 }
 
 const sessionRepository: SessionRepository = {
@@ -84,7 +86,11 @@ it('GET /users/me/enrollments returns the authenticated student enrollment detai
 it('GET /users/me/enrollments returns an empty list when the student has no enrollments', async () => {
   const emptyApp = createApp({
     repositories: {
-      enrollmentRepository: { findByUserId: async () => [], sharesOccurrence: async () => false },
+      enrollmentRepository: {
+        findByUserId: async () => [],
+        sharesOccurrence: async () => false,
+        isEnrolledInOccurrence: async () => false,
+      },
       sessionRepository,
     },
   })

@@ -3,6 +3,8 @@ import { and } from '@prisma/orm-postgres/orm-client'
 import type { Occurrence, OccurrenceRepository, OccurrenceWithUnit } from '@/domain/ports/occurrence.repository'
 import type { Db } from '@/infrastructure/database/prisma'
 
+import { COURSE_UNIT_COLUMNS, toOccurrenceWithUnit } from './occurrence-with-unit'
+
 /**
  * The `Occurrence` columns every occurrence read projects. One source of truth:
  * a column added or renamed in `contract.prisma` is fixed here once, and all
@@ -23,43 +25,14 @@ const OCCURRENCE_COLUMNS = [
 
 /**
  * Single occurrence by its composite primary key `(id, year)`, joined with the
- * course unit's name and acronym so the endpoint needs no second round-trip.
+ * course unit's human-readable fields so the endpoint needs no second
+ * round-trip.
  */
 const findOccurrenceWithUnit = (db: Db, id: number, year: number) =>
   db.orm.public.Occurrence.where((occurrence) => and(occurrence.id.eq(id), occurrence.year.eq(year)))
-    .include('courseUnit', (unit) => unit.select('acronym', 'name'))
+    .include('courseUnit', (unit) => unit.select(...COURSE_UNIT_COLUMNS))
     .select(...OCCURRENCE_COLUMNS)
     .first()
-
-/**
- * The row the query above returns. Derived from the ORM instead of re-declared,
- * so the mapper cannot drift from the contract.
- */
-type OccurrenceWithUnitRow = NonNullable<Awaited<ReturnType<typeof findOccurrenceWithUnit>>>
-
-/**
- * Projects an occurrence row joined with its course unit onto the port's DTO —
- * the only place the enriched single-occurrence shape is built.
- */
-function toOccurrenceWithUnit(row: OccurrenceWithUnitRow): OccurrenceWithUnit {
-  // The `courseUnit` relation is required in the contract (no `?`) and
-  // protected by `onDelete: Cascade`, so it can never be null in practice.
-  // The ORM still types included to-one relations as nullable, so a guard
-  // is needed to satisfy the compiler.
-  if (!row.courseUnit) throw new Error(`Occurrence (${row.id}, ${row.year}) has no course unit`)
-
-  return {
-    id: row.id,
-    courseUnitId: row.courseUnitId,
-    courseId: row.courseId,
-    year: row.year,
-    ects: row.ects,
-    url: row.url,
-    hash: row.hash,
-    acronym: row.courseUnit.acronym,
-    name: row.courseUnit.name,
-  }
-}
 
 /**
  * Prisma implementation of `OccurrenceRepository`.
@@ -93,9 +66,9 @@ export function createOccurrenceRepository({ db }: { db: Db }): OccurrenceReposi
     async findByCourse(courseId, filter = {}) {
       const { year, semester } = filter
 
-      let query = db.orm.public.Occurrence.where((occurrence) => occurrence.courseId.eq(courseId)).select(
-        ...OCCURRENCE_COLUMNS,
-      )
+      let query = db.orm.public.Occurrence.where((occurrence) => occurrence.courseId.eq(courseId))
+        .include('courseUnit', (unit) => unit.select(...COURSE_UNIT_COLUMNS))
+        .select(...OCCURRENCE_COLUMNS)
 
       if (year !== undefined) {
         query = query.where((occurrence) => occurrence.year.eq(year))
@@ -113,7 +86,11 @@ export function createOccurrenceRepository({ db }: { db: Db }): OccurrenceReposi
         query = query.where((occurrence) => occurrence.courseUnitId.in(courseUnits.map((unit) => unit.id)))
       }
 
-      return query.orderBy([(occurrence) => occurrence.year.desc(), (occurrence) => occurrence.id.asc()]).all()
+      const rows = await query
+        .orderBy([(occurrence) => occurrence.year.desc(), (occurrence) => occurrence.id.asc()])
+        .all()
+
+      return rows.map(toOccurrenceWithUnit)
     },
 
     // GET /v1/occurrences/:id — single occurrence by its composite primary

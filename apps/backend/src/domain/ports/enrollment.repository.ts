@@ -3,6 +3,8 @@ export type StudentEnrollment = {
   occurrence: {
     id: number
     year: number
+    /** Sigarra occurrence page. */
+    url: string
     courseUnit: {
       id: number
       acronym: string
@@ -37,4 +39,10 @@ export type EnrollmentRepository = {
    * the same `(id, year)` pair. A student with no enrollments shares nothing.
    */
   sharesOccurrence(userIdA: string, userIdB: string): Promise<boolean>
+  /**
+   * Whether the student is enrolled in any class of the `(occurrenceId,
+   * occurrenceYear)` occurrence. Used to reject an enroll request for an
+   * occurrence the student already holds.
+   */
+  isEnrolledInOccurrence(userId: string, occurrenceId: number, occurrenceYear: number): Promise<boolean>
 }

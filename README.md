@@ -340,6 +340,7 @@ bun run typecheck           # contract:emit + tsc
 bun run lint                # oxlint
 bun run contract:emit       # regenerate contract.json + contract.d.ts
 bun run catalog:extract     # regenerate the scraper fixture from database.db
+bun run catalog:sync-years  # repair CourseUnit.courseUnitYear from the fixture (non-destructive)
 bun run db:init             # create tables on an empty DB + write the marker
 bun run db:update           # quick dev-only schema sync (no migration history)
 bun run db:seed             # seed catalog only (truncates)

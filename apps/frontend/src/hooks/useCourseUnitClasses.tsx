@@ -1,33 +1,24 @@
-import { useMemo } from 'react'
-import api from '../api/backend'
+import { useContext } from 'react'
 import useSWR from 'swr'
-import { CourseInfo } from '../@types'
+import SessionContext from '../contexts/SessionContext'
+import occurrenceService from '../api/services/occurrenceService'
+import { getAcademicYear } from '../utils'
 
-export default (courseId: number, pickedCourses: Array<CourseInfo> = []) => {
-  const getClasses = async () => {
-    try {
-      const res = await fetch(`${api.BACKEND_URL}/class/${courseId}/`, {
-        credentials: 'include',
-      })
+export default (occurrenceId: number, year?: number) => {
+  const { signedIn } = useContext(SessionContext)
+  const classYear = year ?? getAcademicYear()
+  const key = signedIn && occurrenceId ? ['v1/occurrences', occurrenceId, 'classes', classYear] : null
 
-      if (!res.ok) return []
-      return await res.json()
-    } catch (e) {
-      console.error(e)
-      return []
-    }
-  }
-
-  const { data, error, mutate, isValidating } = useSWR(`classes-of-${courseId}-${pickedCourses.length}`, getClasses, {
-    dedupingInterval: 0,
-  })
-
-  const classes = useMemo(() => (data ? data : null), [data])
+  const { data, error, mutate, isValidating } = useSWR(
+    key,
+    ([, id, , requestYear]: [string, number, string, number]) => occurrenceService.getClasses(id, requestYear),
+    { shouldRetryOnError: false },
+  )
 
   return {
-    classes,
-    error,
-    loading: !data,
+    classes: data?.classes ?? null,
+    error: error ?? null,
+    loading: Boolean(key && !data && !error),
     isValidating,
     mutate,
   }
