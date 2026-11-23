@@ -71,7 +71,7 @@ export function loadAuthConfig(): AuthConfig {
     devLoginEnabled: ENV.DEV_LOGIN_ENABLED && ENV.NODE_ENV !== 'production',
     // Behind Niployments the service is exposed under `/api`; locally there is
     // no proxy, so the prefix is empty unless a deployment says otherwise.
-    publicApiPrefix: normalisePrefix(ENV.PUBLIC_API_PREFIX!),
+    publicApiPrefix: normalisePrefix(ENV.PUBLIC_API_PREFIX || (ENV.NODE_ENV === 'production' ? '/api' : '')),
     devAccount: {
       username: ENV.SIGARRA_USERNAME?.trim() ?? '',
       password: ENV.SIGARRA_PASSWORD ?? '',
