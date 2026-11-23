@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/new/button'
 import useAdminExchangeCoursePeriods from '../../hooks/admin/useAdminExchangeCoursePeriods'
+import useAdminCourses from '../../hooks/admin/useAdminCourses'
 import exchangeRequestService from '../../api/services/exchangeRequestService'
 import { PlusIcon } from 'lucide-react'
 import { AdminExchangePeriodDeleteConfirmation } from './AdminExchangePeriodDeleteConfirmation'
@@ -27,13 +28,18 @@ export const AdminExchangeCourseSettings = () => {
   const [periodToDelete, setPeriodToDelete] = useState<number | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const courses = exchangeCoursePeriods?.courses || []
+  // The picker comes from the admin scope, so a course the admin manages is
+  // offered even before it has any exchange period configured.
+  const { courses } = useAdminCourses()
 
   useEffect(() => {
-    if (courses.length > 0 && !selectedCourse) {
-      setSelectedCourse(courses[0].courseId)
+    if (courses.length === 0) return
+
+    if (selectedCourse === null || !courses.some((course) => course.id === selectedCourse)) {
+      setSelectedGroup(0)
+      setSelectedCourse(courses[0].id)
     }
-  }, [courses])
+  }, [courses, selectedCourse])
 
   useEffect(() => {
     if (!addingPeriod && editingPeriodId === null) {
@@ -204,17 +210,18 @@ export const AdminExchangeCourseSettings = () => {
             <CardTitle className="text-lg">Cursos responsáveis</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
+            {courses.length === 0 && <p className="text-sm text-muted-foreground">Nenhum curso disponível.</p>}
             {courses.map((course, idx) => (
               <Button
-                key={course.courseId}
+                key={course.id}
                 variant={selectedGroup === idx ? 'primary' : 'ghost'}
                 className={cn('w-full justify-start', selectedGroup === idx)}
                 onClick={() => {
                   setSelectedGroup(idx)
-                  setSelectedCourse(course.courseId)
+                  setSelectedCourse(course.id)
                 }}
               >
-                {course.courseName}
+                {course.name}
               </Button>
             ))}
           </CardContent>

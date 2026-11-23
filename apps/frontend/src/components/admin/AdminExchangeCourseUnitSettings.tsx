@@ -2,9 +2,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/new/button'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PlusIcon } from 'lucide-react'
 import useAdminExchangeCourseUnitPeriods from '../../hooks/admin/useAdminExchangeCourseUnitPeriods'
+import useAdminOccurrences from '../../hooks/admin/useAdminOccurrences'
 import exchangeRequestService from '../../api/services/exchangeRequestService'
 import { AdminExchangePeriodDeleteConfirmation } from './AdminExchangePeriodDeleteConfirmation'
 import { ExchangePeriodForm } from './AdminExchangePeriodForm'
@@ -30,13 +31,35 @@ export const AdminExchangeCourseUnitSettings = () => {
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const courseUnits = courseUnitPeriods?.courseUnits || []
+  // The admin scope is per occurrence, while exchange periods are still stored
+  // per course unit (until #873). Collapse the in-scope occurrences into the
+  // course units they represent so the picker only offers what the admin manages.
+  const { occurrences } = useAdminOccurrences()
+
+  const courseUnits = useMemo(() => {
+    const units = new Map<number, { id: number; acronym: string; name: string }>()
+
+    for (const occurrence of occurrences) {
+      if (!units.has(occurrence.courseUnitId)) {
+        units.set(occurrence.courseUnitId, {
+          id: occurrence.courseUnitId,
+          acronym: occurrence.acronym,
+          name: occurrence.name,
+        })
+      }
+    }
+
+    return [...units.values()].sort((a, b) => a.acronym.localeCompare(b.acronym))
+  }, [occurrences])
 
   useEffect(() => {
-    if (courseUnits.length > 0 && !selectedCourseUnit) {
+    if (courseUnits.length === 0) return
+
+    if (selectedCourseUnit === null || !courseUnits.some((unit) => unit.id === selectedCourseUnit)) {
+      setSelectedGroup(0)
       setSelectedCourseUnit(courseUnits[0].id)
     }
-  }, [courseUnits])
+  }, [courseUnits, selectedCourseUnit])
 
   useEffect(() => {
     if (!addingPeriod && editingPeriodId === null) {
@@ -119,8 +142,8 @@ export const AdminExchangeCourseUnitSettings = () => {
   }
 
   const getCurrentPeriods = (): ExchangePeriod[] => {
-    if (!courseUnits || !selectedCourseUnit) return []
-    const unit = courseUnits.find((u) => u.id === selectedCourseUnit)
+    if (!courseUnitPeriods?.courseUnits || !selectedCourseUnit) return []
+    const unit = courseUnitPeriods.courseUnits.find((u) => u.id === selectedCourseUnit)
     return unit?.exchangePeriods || []
   }
 
@@ -204,6 +227,7 @@ export const AdminExchangeCourseUnitSettings = () => {
             <CardTitle className="text-lg">Cadeiras responsáveis</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
+            {courseUnits.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma cadeira disponível.</p>}
             {courseUnits.map((courseUnit, idx) => (
               <Button
                 key={courseUnit.id}
