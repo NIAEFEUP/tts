@@ -1,0 +1,896 @@
+[
+  {
+    "id": "data_migration.clear-exchange-cycles",
+    "label": "Data transform: clear-exchange-cycles",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [
+      {
+        "description": "Check clear-exchange-cycles has work to do",
+        "sql": "SELECT EXISTS (SELECT \"id\" AS \"id\" FROM \"public\".\"ExchangeCycle\" LIMIT 1) AS ok",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "Run clear-exchange-cycles",
+        "sql": "DELETE FROM \"public\".\"ExchangeCycle\"",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "Verify clear-exchange-cycles resolved all violations",
+        "sql": "SELECT NOT EXISTS (SELECT \"id\" AS \"id\" FROM \"public\".\"ExchangeCycle\" LIMIT 1) AS ok",
+        "params": []
+      }
+    ]
+  },
+  {
+    "id": "data_migration.clear-exchange-requests",
+    "label": "Data transform: clear-exchange-requests",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [
+      {
+        "description": "Check clear-exchange-requests has work to do",
+        "sql": "SELECT EXISTS (SELECT \"id\" AS \"id\" FROM \"public\".\"ExchangeRequest\" LIMIT 1) AS ok",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "Run clear-exchange-requests",
+        "sql": "DELETE FROM \"public\".\"ExchangeRequest\"",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "Verify clear-exchange-requests resolved all violations",
+        "sql": "SELECT NOT EXISTS (SELECT \"id\" AS \"id\" FROM \"public\".\"ExchangeRequest\" LIMIT 1) AS ok",
+        "params": []
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.ExchangeRequest.ExchangeRequest_status_check_a8137f16",
+    "label": "Drop check constraint \"ExchangeRequest_status_check_a8137f16\" on \"ExchangeRequest\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "ExchangeRequest_status_check_a8137f16",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"ExchangeRequest_status_check_a8137f16\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeRequest_status_check_a8137f16", "public", "\"public\".\"ExchangeRequest\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"ExchangeRequest_status_check_a8137f16\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeRequest\" DROP CONSTRAINT \"ExchangeRequest_status_check_a8137f16\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"ExchangeRequest_status_check_a8137f16\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeRequest_status_check_a8137f16", "public", "\"public\".\"ExchangeRequest\""]
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.ExchangeRequest.ExchangeRequest_adminState_check_49a4ff70",
+    "label": "Drop check constraint \"ExchangeRequest_adminState_check_49a4ff70\" on \"ExchangeRequest\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "ExchangeRequest_adminState_check_49a4ff70",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"ExchangeRequest_adminState_check_49a4ff70\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeRequest_adminState_check_49a4ff70", "public", "\"public\".\"ExchangeRequest\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"ExchangeRequest_adminState_check_49a4ff70\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeRequest\" DROP CONSTRAINT \"ExchangeRequest_adminState_check_49a4ff70\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"ExchangeRequest_adminState_check_49a4ff70\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeRequest_adminState_check_49a4ff70", "public", "\"public\".\"ExchangeRequest\""]
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.ExchangeRequest.adminState",
+    "label": "Drop column \"adminState\" from \"ExchangeRequest\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "adminState",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"adminState\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "adminState"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"adminState\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeRequest\" DROP COLUMN \"adminState\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"adminState\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "adminState"]
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.ExchangeRequest.hash",
+    "label": "Drop column \"hash\" from \"ExchangeRequest\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "hash",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"hash\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "hash"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"hash\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeRequest\" DROP COLUMN \"hash\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"hash\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "hash"]
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.ExchangeRequest.lastValidated",
+    "label": "Drop column \"lastValidated\" from \"ExchangeRequest\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "lastValidated",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"lastValidated\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "lastValidated"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"lastValidated\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeRequest\" DROP COLUMN \"lastValidated\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"lastValidated\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "lastValidated"]
+      }
+    ]
+  },
+  {
+    "id": "column.public.ExchangeRequest.occurrenceId",
+    "label": "Add column \"occurrenceId\" to \"ExchangeRequest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "occurrenceId",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"occurrenceId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "occurrenceId"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"occurrenceId\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeRequest\" ADD COLUMN \"occurrenceId\" int4 NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"occurrenceId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "occurrenceId"]
+      }
+    ]
+  },
+  {
+    "id": "column.public.ExchangeRequest.occurrenceYear",
+    "label": "Add column \"occurrenceYear\" to \"ExchangeRequest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "occurrenceYear",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"occurrenceYear\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "occurrenceYear"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"occurrenceYear\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeRequest\" ADD COLUMN \"occurrenceYear\" int4 NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"occurrenceYear\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "occurrenceYear"]
+      }
+    ]
+  },
+  {
+    "id": "column.public.ExchangeRequest.fromClassId",
+    "label": "Add column \"fromClassId\" to \"ExchangeRequest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "fromClassId",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"fromClassId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "fromClassId"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"fromClassId\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeRequest\" ADD COLUMN \"fromClassId\" int4 NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"fromClassId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "fromClassId"]
+      }
+    ]
+  },
+  {
+    "id": "column.public.ExchangeRequest.toClassId",
+    "label": "Add column \"toClassId\" to \"ExchangeRequest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "toClassId",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"toClassId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "toClassId"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"toClassId\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeRequest\" ADD COLUMN \"toClassId\" int4 NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"toClassId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "toClassId"]
+      }
+    ]
+  },
+  {
+    "id": "dropDefault.ExchangeRequest.status",
+    "label": "Drop default on \"ExchangeRequest\".\"status\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "status",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"status\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "status"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop default on \"status\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeRequest\" ALTER COLUMN \"status\" DROP DEFAULT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"status\" has no default",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"column_default\" IS NULL)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "status"]
+      }
+    ]
+  },
+  {
+    "id": "setDefault.ExchangeRequest.status",
+    "label": "Set default on \"ExchangeRequest\".\"status\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "status",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"status\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "status"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "set default on \"status\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeRequest\" ALTER COLUMN \"status\" SET DEFAULT 'OPEN'"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"status\" has a default",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"column_default\" IS NOT NULL)) AS \"result\"",
+        "params": ["public", "ExchangeRequest", "status"]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.ExchangeRequest.ExchangeRequest_status_check_07c2ff7d",
+    "label": "Add check constraint \"ExchangeRequest_status_check_07c2ff7d\" on \"ExchangeRequest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "ExchangeRequest_status_check_07c2ff7d",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"ExchangeRequest_status_check_07c2ff7d\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeRequest_status_check_07c2ff7d", "public", "\"public\".\"ExchangeRequest\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"ExchangeRequest_status_check_07c2ff7d\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeRequest\" ADD CONSTRAINT \"ExchangeRequest_status_check_07c2ff7d\" CHECK (\"status\" IN ('OPEN', 'MATCHED', 'CANCELLED', 'EXPIRED'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"ExchangeRequest_status_check_07c2ff7d\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeRequest_status_check_07c2ff7d", "public", "\"public\".\"ExchangeRequest\""]
+      }
+    ]
+  },
+  {
+    "id": "index.ExchangeRequest.ExchangeRequest_occurrenceId_occurrenceYear_idx_0f44eca6",
+    "label": "Create index \"ExchangeRequest_occurrenceId_occurrenceYear_idx_0f44eca6\" on \"ExchangeRequest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ExchangeRequest_occurrenceId_occurrenceYear_idx_0f44eca6",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ExchangeRequest_occurrenceId_occurrenceYear_idx_0f44eca6\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeRequest_occurrenceId_occurrenceYear_idx_0f44eca6\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ExchangeRequest_occurrenceId_occurrenceYear_idx_0f44eca6\"",
+        "sql": "CREATE INDEX \"ExchangeRequest_occurrenceId_occurrenceYear_idx_0f44eca6\" ON \"public\".\"ExchangeRequest\" (\"occurrenceId\", \"occurrenceYear\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ExchangeRequest_occurrenceId_occurrenceYear_idx_0f44eca6\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeRequest_occurrenceId_occurrenceYear_idx_0f44eca6\""]
+      }
+    ]
+  },
+  {
+    "id": "index.ExchangeRequest.ExchangeRequest_fromClassId_occurrenceId_occurrenceYea_a94b3366",
+    "label": "Create index \"ExchangeRequest_fromClassId_occurrenceId_occurrenceYea_a94b3366\" on \"ExchangeRequest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ExchangeRequest_fromClassId_occurrenceId_occurrenceYea_a94b3366",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ExchangeRequest_fromClassId_occurrenceId_occurrenceYea_a94b3366\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeRequest_fromClassId_occurrenceId_occurrenceYea_a94b3366\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ExchangeRequest_fromClassId_occurrenceId_occurrenceYea_a94b3366\"",
+        "sql": "CREATE INDEX \"ExchangeRequest_fromClassId_occurrenceId_occurrenceYea_a94b3366\" ON \"public\".\"ExchangeRequest\" (\"fromClassId\", \"occurrenceId\", \"occurrenceYear\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ExchangeRequest_fromClassId_occurrenceId_occurrenceYea_a94b3366\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeRequest_fromClassId_occurrenceId_occurrenceYea_a94b3366\""]
+      }
+    ]
+  },
+  {
+    "id": "index.ExchangeRequest.ExchangeRequest_toClassId_occurrenceId_occurrenceYear__47ff9320",
+    "label": "Create index \"ExchangeRequest_toClassId_occurrenceId_occurrenceYear__47ff9320\" on \"ExchangeRequest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ExchangeRequest_toClassId_occurrenceId_occurrenceYear__47ff9320",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ExchangeRequest_toClassId_occurrenceId_occurrenceYear__47ff9320\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeRequest_toClassId_occurrenceId_occurrenceYear__47ff9320\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ExchangeRequest_toClassId_occurrenceId_occurrenceYear__47ff9320\"",
+        "sql": "CREATE INDEX \"ExchangeRequest_toClassId_occurrenceId_occurrenceYear__47ff9320\" ON \"public\".\"ExchangeRequest\" (\"toClassId\", \"occurrenceId\", \"occurrenceYear\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ExchangeRequest_toClassId_occurrenceId_occurrenceYear__47ff9320\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeRequest_toClassId_occurrenceId_occurrenceYear__47ff9320\""]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ExchangeRequest.ExchangeRequest_occurrenceId_occurrenceYear_fkey",
+    "label": "Add foreign key \"ExchangeRequest_occurrenceId_occurrenceYear_fkey\" on \"ExchangeRequest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ExchangeRequest_occurrenceId_occurrenceYear_fkey",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ExchangeRequest_occurrenceId_occurrenceYear_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeRequest_occurrenceId_occurrenceYear_fkey", "public", "\"public\".\"ExchangeRequest\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ExchangeRequest_occurrenceId_occurrenceYear_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeRequest\"\nADD CONSTRAINT \"ExchangeRequest_occurrenceId_occurrenceYear_fkey\"\nFOREIGN KEY (\"occurrenceId\", \"occurrenceYear\")\nREFERENCES \"public\".\"Occurrence\" (\"id\", \"year\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ExchangeRequest_occurrenceId_occurrenceYear_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeRequest_occurrenceId_occurrenceYear_fkey", "public", "\"public\".\"ExchangeRequest\""]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ExchangeRequest.ExchangeRequest_fromClassId_occurrenceId_occurrenceYear_fkey",
+    "label": "Add foreign key \"ExchangeRequest_fromClassId_occurrenceId_occurrenceYear_fkey\" on \"ExchangeRequest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ExchangeRequest_fromClassId_occurrenceId_occurrenceYear_fkey",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ExchangeRequest_fromClassId_occurrenceId_occurrenceYear_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ExchangeRequest_fromClassId_occurrenceId_occurrenceYear_fkey",
+          "public",
+          "\"public\".\"ExchangeRequest\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ExchangeRequest_fromClassId_occurrenceId_occurrenceYear_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeRequest\"\nADD CONSTRAINT \"ExchangeRequest_fromClassId_occurrenceId_occurrenceYear_fkey\"\nFOREIGN KEY (\"fromClassId\", \"occurrenceId\", \"occurrenceYear\")\nREFERENCES \"public\".\"Class\" (\"id\", \"occurrenceId\", \"occurrenceYear\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ExchangeRequest_fromClassId_occurrenceId_occurrenceYear_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ExchangeRequest_fromClassId_occurrenceId_occurrenceYear_fkey",
+          "public",
+          "\"public\".\"ExchangeRequest\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ExchangeRequest.ExchangeRequest_toClassId_occurrenceId_occurrenceYear_fkey",
+    "label": "Add foreign key \"ExchangeRequest_toClassId_occurrenceId_occurrenceYear_fkey\" on \"ExchangeRequest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ExchangeRequest_toClassId_occurrenceId_occurrenceYear_fkey",
+        "table": "ExchangeRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ExchangeRequest_toClassId_occurrenceId_occurrenceYear_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ExchangeRequest_toClassId_occurrenceId_occurrenceYear_fkey",
+          "public",
+          "\"public\".\"ExchangeRequest\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ExchangeRequest_toClassId_occurrenceId_occurrenceYear_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeRequest\"\nADD CONSTRAINT \"ExchangeRequest_toClassId_occurrenceId_occurrenceYear_fkey\"\nFOREIGN KEY (\"toClassId\", \"occurrenceId\", \"occurrenceYear\")\nREFERENCES \"public\".\"Class\" (\"id\", \"occurrenceId\", \"occurrenceYear\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ExchangeRequest_toClassId_occurrenceId_occurrenceYear_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ExchangeRequest_toClassId_occurrenceId_occurrenceYear_fkey",
+          "public",
+          "\"public\".\"ExchangeRequest\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.ExchangeItem.ExchangeItem_pkey",
+    "label": "Drop constraint \"ExchangeItem_pkey\" on \"ExchangeItem\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "primaryKey",
+        "name": "ExchangeItem_pkey",
+        "table": "ExchangeItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"ExchangeItem_pkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeItem_pkey", "public", "\"public\".\"ExchangeItem\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"ExchangeItem_pkey\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeItem\" DROP CONSTRAINT \"ExchangeItem_pkey\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"ExchangeItem_pkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeItem_pkey", "public", "\"public\".\"ExchangeItem\""]
+      }
+    ]
+  },
+  {
+    "id": "column.public.ExchangeItem.cycleId",
+    "label": "Add column \"cycleId\" to \"ExchangeItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "cycleId",
+        "table": "ExchangeItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"cycleId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeItem", "cycleId"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"cycleId\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeItem\" ADD COLUMN \"cycleId\" text NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"cycleId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeItem", "cycleId"]
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.ExchangeItem.requestId",
+    "label": "Drop column \"requestId\" from \"ExchangeItem\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "requestId",
+        "table": "ExchangeItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"requestId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeItem", "requestId"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"requestId\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeItem\" DROP COLUMN \"requestId\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"requestId\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "ExchangeItem", "requestId"]
+      }
+    ]
+  },
+  {
+    "id": "primaryKey.ExchangeItem.ExchangeItem_pkey",
+    "label": "Add primary key on \"ExchangeItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "primaryKey",
+        "name": "ExchangeItem_pkey",
+        "table": "ExchangeItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure primary key \"ExchangeItem_pkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeItem_pkey", "public", "\"public\".\"ExchangeItem\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add primary key \"ExchangeItem_pkey\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeItem\" ADD CONSTRAINT \"ExchangeItem_pkey\" PRIMARY KEY (\"cycleId\", \"userId\", \"occurrenceId\", \"occurrenceYear\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify primary key \"ExchangeItem_pkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeItem_pkey", "public", "\"public\".\"ExchangeItem\""]
+      }
+    ]
+  },
+  {
+    "id": "index.ExchangeItem.ExchangeItem_cycleId_idx_75f87b79",
+    "label": "Create index \"ExchangeItem_cycleId_idx_75f87b79\" on \"ExchangeItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ExchangeItem_cycleId_idx_75f87b79",
+        "table": "ExchangeItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ExchangeItem_cycleId_idx_75f87b79\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeItem_cycleId_idx_75f87b79\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ExchangeItem_cycleId_idx_75f87b79\"",
+        "sql": "CREATE INDEX \"ExchangeItem_cycleId_idx_75f87b79\" ON \"public\".\"ExchangeItem\" (\"cycleId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ExchangeItem_cycleId_idx_75f87b79\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeItem_cycleId_idx_75f87b79\""]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ExchangeItem.ExchangeItem_cycleId_fkey",
+    "label": "Add foreign key \"ExchangeItem_cycleId_fkey\" on \"ExchangeItem\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ExchangeItem_cycleId_fkey",
+        "table": "ExchangeItem"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ExchangeItem_cycleId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeItem_cycleId_fkey", "public", "\"public\".\"ExchangeItem\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ExchangeItem_cycleId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeItem\"\nADD CONSTRAINT \"ExchangeItem_cycleId_fkey\"\nFOREIGN KEY (\"cycleId\")\nREFERENCES \"public\".\"ExchangeCycle\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ExchangeItem_cycleId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeItem_cycleId_fkey", "public", "\"public\".\"ExchangeItem\""]
+      }
+    ]
+  }
+]

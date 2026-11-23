@@ -35,6 +35,7 @@ const occurrences: OccurrenceRepository = {
 const periods: ExchangePeriodsRepository = {
   findByOccurrence: async () => [
     {
+      id: 'period-1',
       occurrenceId: OCCURRENCE.id,
       occurrenceYear: OCCURRENCE.year,
       startsAt: new Date('2000-01-01T00:00:00.000Z'),

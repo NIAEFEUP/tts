@@ -56,7 +56,13 @@ and it becomes the global access tier on `User.role` (`UserRole`).
 | `exchange_admin_course_units` | `AdminOccurrence` | `exchange_admin` FK → `userId`; the row is now scoped to an _occurrence_, not an abstract course unit (composite `(occurrenceId, occurrenceYear)`).                                              |
 | `info`                        | —                 | **Dropped.** The scrape is now a manual populate step, so data-freshness signaling has no reader (the only frontend consumer, `/info/`, was dead code — commented-out cache-invalidation logic). |
 
-### Exchanges — 6 tables → 2
+### Exchanges — 6 legacy tables
+
+> **Post-#966.** The port below landed as `ExchangeRequest` + `ExchangeItem`.
+> Since then `ExchangeRequest` is an offer (one proposed move, no cycle of its
+> own), and `ExchangeItem` belongs to `ExchangeCycle` alongside
+> `ExchangeParticipant` and `ExchangeCycleSource`. This table records the
+> original legacy mapping, not the current aggregate.
 
 | Legacy table                      | New model         | Change                                                                                                                                                                                                                                                                                            |
 | --------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -14,6 +14,7 @@ export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePer
         .all()
 
       return periods.map((period) => ({
+        id: period.id,
         occurrenceId: period.occurrenceId,
         occurrenceYear: period.occurrenceYear,
         startsAt: new Date(period.startsAt.epochMilliseconds),
@@ -38,6 +39,7 @@ export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePer
 }
 
 type PeriodRow = {
+  id: string
   occurrenceId: number
   occurrenceYear: number
   startsAt: { epochMilliseconds: number }
@@ -50,8 +52,10 @@ export function selectCourseWindows(
   periods: PeriodRow[],
 ): CourseExchangePeriod[] {
   const courseOccurences = new Set(occurrences.map((occurrence) => `${occurrence.id}:${occurrence.year}`))
-  const periodsSeen = new Set<string>()
-  const courseExchangePeriod: CourseExchangePeriod[] = []
+  // The same window is stored once per occurrence, so a course would repeat it.
+  // Collapse each window to one representative period. The smallest id wins so
+  // the answer does not depend on the order Postgres returns the tied rows in.
+  const windows = new Map<string, CourseExchangePeriod>()
 
   for (const period of periods) {
     if (!courseOccurences.has(`${period.occurrenceId}:${period.occurrenceYear}`)) continue
@@ -59,12 +63,11 @@ export function selectCourseWindows(
     const startsAt = new Date(period.startsAt.epochMilliseconds)
     const endsAt = new Date(period.endsAt.epochMilliseconds)
     const key = `${startsAt.getTime()}:${endsAt.getTime()}`
+    const seen = windows.get(key)
 
-    // skip periods already seen
-    if (periodsSeen.has(key)) continue
-
-    periodsSeen.add(key)
-    courseExchangePeriod.push({ startsAt, endsAt })
+    if (seen === undefined || period.id < seen.id) {
+      windows.set(key, { id: period.id, startsAt, endsAt })
+    }
   }
-  return courseExchangePeriod
+  return [...windows.values()]
 }
