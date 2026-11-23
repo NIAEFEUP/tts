@@ -11,6 +11,7 @@ import { ErrorCode } from '@/interface/errors/errors'
 import { createAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { apiError } from '@/interface/middleware/error-handler'
 import { anonymous } from '../session/session.schemas'
+import { applyCookiePreferences } from './auth.utils'
 import { legacySessionInfo, userProfile } from './auth.schemas'
 
 export type AuthCompatDeps = {
@@ -42,10 +43,7 @@ export const authCompatRoutes = ({ users, sessions, sigarraDirect, config }: Aut
   })
 
   return (
-    new Elysia({
-      // Same attribute set as the canonical routes (see auth.routes.ts).
-      cookie: { httpOnly: true, sameSite: 'lax' as const, path: '/', secure: config.secureCookies },
-    })
+    new Elysia()
       .use(createAuthMiddleware({ resolveSession: sessions.resolve }))
       // Same per-instance named model as the canonical routes: `'ApiError'` in a
       // `response` schema is only resolvable where it is registered.
@@ -130,7 +128,7 @@ export const authCompatRoutes = ({ users, sessions, sigarraDirect, config }: Aut
           }
 
           cookie.session.value = result.token
-          cookie.session.maxAge = config.sessionTtlSeconds
+          applyCookiePreferences(cookie.session, config, config.sessionTtlSeconds)
 
           return { message: 'Login successful', user: result.user }
         },

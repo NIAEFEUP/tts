@@ -11,6 +11,7 @@ import {
   createFakeUsers,
   createTestAuthConfig,
   getCookie,
+  getSetCookie,
 } from '../support/auth-test-utils'
 import { UNAUTHORIZED_BODY } from '../support/catalog-test-utils'
 
@@ -44,6 +45,30 @@ describe('auth routes', () => {
     expect(getCookie(res, 'oidc_state')).toBeTruthy()
   })
 
+  it('marks the OIDC state cookies as HttpOnly, SameSite=Lax and Secure when configured', async () => {
+    const app = buildApp(createTestAuthConfig({ secureCookies: true }))
+    const res = await app.handle(new Request('http://localhost/v1/auth/login'))
+
+    for (const name of ['oidc_state', 'oidc_return_to']) {
+      const header = getSetCookie(res, name)
+      expect(header).toContain('HttpOnly')
+      expect(header).toContain('SameSite=Lax')
+      expect(header).toContain('Secure')
+      expect(header).toContain('Path=/')
+      expect(header).toContain('Max-Age=600')
+    }
+  })
+
+  it('omits Secure from the cookies on an insecure (dev) origin', async () => {
+    const app = buildApp(createTestAuthConfig({ secureCookies: false }))
+    const res = await app.handle(new Request('http://localhost/v1/auth/login'))
+
+    const header = getSetCookie(res, 'oidc_state')
+    expect(header).toContain('HttpOnly')
+    expect(header).toContain('SameSite=Lax')
+    expect(header).not.toContain('Secure')
+  })
+
   it('returns 503 when OIDC is not configured', async () => {
     const app = buildApp(createTestAuthConfig({ oidcConfigured: false, clientId: '', clientSecret: '' }))
     const res = await app.handle(new Request('http://localhost/v1/auth/login'))
@@ -67,6 +92,12 @@ describe('auth routes', () => {
     expect(callback.status).toBe(302)
     expect(callback.headers.get('location')).toBe('http://localhost:3100/')
     expect(getCookie(callback, 'session')).toBeTruthy()
+
+    const session = getSetCookie(callback, 'session')
+    expect(session).toContain('HttpOnly')
+    expect(session).toContain('SameSite=Lax')
+    expect(session).toContain('Path=/')
+    expect(session).toContain(`Max-Age=${createTestAuthConfig().sessionTtlSeconds}`)
   })
 
   it('rejects a callback with a mismatched state', async () => {
@@ -162,6 +193,11 @@ describe('auth routes', () => {
     expect(res.status).toBe(200)
     expect((await res.json()).signed).toBe(true)
     expect(getCookie(res, 'session')).toBeTruthy()
+
+    const session = getSetCookie(res, 'session')
+    expect(session).toContain('HttpOnly')
+    expect(session).toContain('SameSite=Lax')
+    expect(session).toContain('Path=/')
   })
 
   it('hides dev-login when disabled', async () => {
