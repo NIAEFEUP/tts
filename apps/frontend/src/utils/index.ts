@@ -325,7 +325,7 @@ const removeAllCourseOptions = (multipleOptions: MultipleOptions): MultipleOptio
 
 const courseHasClassPicked = (course: CourseInfo, option: Option): CourseOption | null => {
   const candidateOption = option.course_options.filter(
-    (courseOption) => courseOption.picked_class_id && courseOption.course_id === course.course_unit_id,
+    (courseOption) => courseOption.picked_class_id && courseOption.course_id === course.id,
   )
 
   if (!candidateOption) return null
