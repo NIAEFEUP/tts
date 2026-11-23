@@ -47,6 +47,7 @@ describe('exchange routes', () => {
     let receivedFilters: unknown
     const { get } = createUsersApp(
       { findByUserId: async () => [] },
+      { findByUserId: async () => [] },
       {
         async findForUser(userId, filters) {
           receivedUserId = userId
@@ -86,6 +87,7 @@ describe('exchange routes', () => {
     let receivedFilters: unknown
     const { get } = createUsersApp(
       { findByUserId: async () => [] },
+      { findByUserId: async () => [] },
       {
         async findForUser(_userId, filters) {
           receivedFilters = filters
@@ -101,7 +103,11 @@ describe('exchange routes', () => {
   })
 
   it('rejects anonymous callers', async () => {
-    const { get } = createUsersApp({ findByUserId: async () => [] }, { findForUser: async () => page })
+    const { get } = createUsersApp(
+      { findByUserId: async () => [] },
+      { findByUserId: async () => [] },
+      { findForUser: async () => page },
+    )
 
     const { status, body } = await get('/v1/users/me/exchanges', { cookie: null })
 

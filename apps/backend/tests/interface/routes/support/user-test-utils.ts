@@ -28,13 +28,11 @@ export function createUsersApp(
   enrollmentRepository: Pick<EnrollmentRepository, 'findByUserId'> & Partial<EnrollmentRepository> = {
     findByUserId: async () => [],
   },
-  secondRepository: EligibleOccurrenceRepository | ExchangeRepository | undefined = { findByUserId: async () => [] },
+  eligibleOccurrenceRepository: Partial<EligibleOccurrenceRepository> = { findByUserId: async () => [] },
+  exchangeRepository: Partial<ExchangeRepository> = {
+    findForUser: async () => ({ current: 1, hasNext: false, hasPrevious: false, data: [] }),
+  },
 ) {
-  const eligibleOccurrenceRepository: EligibleOccurrenceRepository =
-    secondRepository && 'findByUserId' in secondRepository ? secondRepository : { findByUserId: async () => [] }
-  const exchangeRepository: ExchangeRepository | undefined =
-    secondRepository && 'findForUser' in secondRepository ? secondRepository : undefined
-
   const app = createApp({
     repositories: {
       enrollmentRepository: {
@@ -42,8 +40,14 @@ export function createUsersApp(
         isEnrolledInOccurrence: async () => false,
         ...enrollmentRepository,
       },
-      eligibleOccurrenceRepository,
-      ...(exchangeRepository ? { exchangeRepository } : {}),
+      eligibleOccurrenceRepository: {
+        findByUserId: async () => [],
+        ...eligibleOccurrenceRepository,
+      },
+      exchangeRepository: {
+        findForUser: async () => ({ current: 1, hasNext: false, hasPrevious: false, data: [] }),
+        ...exchangeRepository,
+      },
       sessionRepository: createFakeSessions(),
     },
   })

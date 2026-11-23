@@ -28,8 +28,10 @@ const exchangeRequestSchema = t.Object({
     t.Literal('REJECTED'),
     t.Literal('AWAITING_INFORMATION'),
   ]),
-  createdAt: t.Date(),
-  updatedAt: t.Date(),
+  // ISO strings, not t.Date(): JSON carries strings and t.Date() would make
+  // Eden type them as Date objects.
+  createdAt: t.String({ format: 'date-time' }),
+  updatedAt: t.String({ format: 'date-time' }),
   items: t.Array(exchangeItemSchema),
 })
 
@@ -71,7 +73,11 @@ export const exchangeRoutes = (sessions: SessionRepository) =>
             has_next: result.hasNext,
             has_previous: result.hasPrevious,
           },
-          data: result.data,
+          data: result.data.map((exchange) => ({
+            ...exchange,
+            createdAt: exchange.createdAt.toISOString(),
+            updatedAt: exchange.updatedAt.toISOString(),
+          })),
         }
       },
       {
