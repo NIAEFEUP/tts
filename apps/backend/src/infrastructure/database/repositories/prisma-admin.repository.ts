@@ -61,5 +61,23 @@ export function createAdminRepository({ db }: { db: Db }): AdminRepository {
         })
         .sort((a, b) => b.year - a.year || a.id - b.id)
     },
+
+    async hasCourseScope(userId, courseId) {
+      const scope = await db.orm.public.AdminCourse.where({ userId, courseId }).select('courseId').first()
+
+      return scope !== null
+    },
+    
+    async hasOccurrenceScope(userId, occurrenceId, occurrenceYear) {
+      const scope = await db.orm.public.AdminOccurrence.where({
+        userId,
+        occurrenceId,
+        occurrenceYear,
+      })
+        .select('occurrenceId')
+        .first()
+
+      return scope !== null
+    },
   }
 }
