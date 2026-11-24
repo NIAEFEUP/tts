@@ -110,6 +110,17 @@ export function createSlotRepository({ db }: { db: Db }): SlotRepository {
         professors: await loadProfessors(db, id),
       }
     },
+
+    // GET /v1/slots/:id/professors — the assigned roster without assembling
+    // the slot's classes.
+    async findProfessors(slotId) {
+      const slot = await db.orm.public.ScheduleSlot.where((row) => row.id.eq(slotId))
+        .select('id')
+        .first()
+      if (!slot) return null
+
+      return loadProfessors(db, slotId)
+    },
   }
 }
 

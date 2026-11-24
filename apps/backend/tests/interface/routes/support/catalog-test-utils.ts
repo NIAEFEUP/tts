@@ -413,6 +413,12 @@ export function createFakeSlotRepository({ classes = CLASSES }: CatalogFixtures 
     async findById(id) {
       return findSlot(id, classes)
     },
+
+    async findProfessors(slotId) {
+      // Same as the Prisma repository: null for an unknown slot, otherwise
+      // the roster (empty when the slot has no professors).
+      return findSlot(slotId, classes)?.professors ?? null
+    },
   }
 }
 

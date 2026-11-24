@@ -43,10 +43,10 @@ export const slotRoutes = ({ sessions }: SlotRoutesDeps) =>
     .get(
       '/:id/professors',
       async ({ repositories, params }) => {
-        const slot = await repositories.slotRepository.findById(params.id)
-        if (!slot) throw new HttpError('slot-not-found', `Schedule slot ${params.id} not found`, 404)
+        const professors = await repositories.slotRepository.findProfessors(params.id)
+        if (!professors) throw new HttpError('slot-not-found', `Schedule slot ${params.id} not found`, 404)
 
-        return slot.professors
+        return professors
       },
       {
         response: { 200: t.Array(professorSchema), 404: 'ApiError' },
