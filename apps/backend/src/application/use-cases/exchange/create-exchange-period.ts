@@ -1,7 +1,12 @@
 import type { AdminRepository } from '@/domain/ports/admin.repository'
 import type { OccurrenceRepository } from '@/domain/ports/occurrence.repository'
 import type { ExchangePeriodsRepository } from '@/domain/ports/exchange-period.repository'
-import { authorizeOccurrencePeriod, authorizeCoursePeriod, type OccurrencePeriodInput, type CoursePeriodInput } from './exchange-period-common'
+import {
+  authorizeOccurrencePeriod,
+  authorizeCoursePeriod,
+  type OccurrencePeriodInput,
+  type CoursePeriodInput,
+} from './exchange-period-common'
 import type { CourseRepository } from '@/domain/ports/course.repository'
 
 export function createCreateExchangeOccurrencePeriod(deps: {
