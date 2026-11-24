@@ -20,10 +20,10 @@ export type AdminRepository = {
   findOccurrencesByAdmin(userId: string): Promise<OccurrenceWithUnit[]>
 
   /** Whether the user has an `AdminCourse` row for this course. */
-  hasCourseScope(userId: string, courseId: string): Promise<boolean>
+  hasCourseScope(userId: string, courseId: number): Promise<boolean>
 
   /**
    * Whether the user has an `AdminOccurrence` row for this occurrence.
    */
-  hasOccurrenceScope(userId: string, occurrenceId: string, occurrenceYear: number): Promise<boolean>
+  hasOccurrenceScope(userId: string, occurrenceId: number, occurrenceYear: number): Promise<boolean>
 }

@@ -66,7 +66,7 @@ export async function authorizeOccurrencePeriod(
   const occurrence = await deps.occurrences.findById(occurrenceId, occurrenceYear)
   if (!occurrence) return { kind: 'occurrence-not-found' }
 
-  if (!(await deps.admins.hasOccurrenceScope(user.id, String(occurrenceId), occurrenceYear))) {
+  if (!(await deps.admins.hasOccurrenceScope(user.id, occurrenceId, occurrenceYear))) {
     return { kind: 'forbidden' }
   }
 
@@ -83,7 +83,7 @@ export async function authorizeCoursePeriod(
   const course = await deps.courses.findById(courseId)
   if (!course) return { kind: 'course-not-found' }
 
-  if (!(await deps.admins.hasCourseScope(user.id, String(courseId)))) {
+  if (!(await deps.admins.hasCourseScope(user.id, courseId))) {
     return { kind: 'forbidden' }
   }
 
