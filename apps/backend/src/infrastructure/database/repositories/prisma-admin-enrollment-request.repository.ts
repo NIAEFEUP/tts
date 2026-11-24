@@ -60,7 +60,6 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
       const requestIds = [...new Set(optionRows.map((option) => option.requestId))]
       let rows = await db.orm.public.EnrollmentRequest.where((request) => request.id.in(requestIds))
         .select(...REQUEST_COLUMNS)
-        .orderBy((request) => request.createdAt.desc())
         .all()
 
       // Withdrawn requests are not for the admin to decide, so they are not listed.
@@ -90,10 +89,23 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
         )
       }
 
+      // Newest first. The id breaks ties, so pages stay stable when two requests have the same time.
+      rows.sort(
+        (a, b) =>
+          b.createdAt.epochMilliseconds - a.createdAt.epochMilliseconds || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0),
+      )
+
       const total = rows.length
       const offset = (filters.page - 1) * filters.pageSize
+      const page = await hydrate(db, rows.slice(offset, offset + filters.pageSize))
       return {
-        requests: await hydrate(db, rows.slice(offset, offset + filters.pageSize)),
+        // A request can touch several occurrences. The admin only gets the options inside the scope.
+        requests: page.map((request) => ({
+          ...request,
+          options: request.options.filter((option) =>
+            scopedKeys.has(`${option.occurrence.id}:${option.occurrence.year}`),
+          ),
+        })),
         page: filters.page,
         pageSize: filters.pageSize,
         total,
@@ -107,7 +119,6 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
           .select(...REQUEST_COLUMNS)
           .first()
         if (!row) return { kind: 'not-found' }
-        if (!isDecidable(row)) return { kind: 'not-pending' }
 
         const options = await tx.orm.public.EnrollmentRequestOption.where({ requestId: id }).all()
         const adminLinks = await tx.orm.public.AdminOccurrence.where({ userId: adminUserId }).all()
@@ -121,6 +132,9 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
           )
         )
           return { kind: 'forbidden' }
+
+        // Scope first, so an admin outside the scope cannot learn the state of the request.
+        if (!isDecidable(row)) return { kind: 'not-pending' }
 
         // Load the classes of each occurrence once and reuse them below.
         const plans = []
@@ -158,7 +172,7 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
           } else {
             await tx.orm.public.Enrollment.where({ userId: row.userId })
               .where((enrollment) => enrollment.classId.in(classIds))
-              .delete()
+              .deleteAndCount()
           }
         }
 
@@ -178,7 +192,6 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
           .select(...REQUEST_COLUMNS)
           .first()
         if (!row) return { kind: 'not-found' }
-        if (!isDecidable(row)) return { kind: 'not-pending' }
 
         const options = await tx.orm.public.EnrollmentRequestOption.where({ requestId: id }).all()
         const adminLinks = await tx.orm.public.AdminOccurrence.where({ userId: adminUserId }).all()
@@ -192,6 +205,9 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
           )
         )
           return { kind: 'forbidden' }
+
+        // Scope first, so an admin outside the scope cannot learn the state of the request.
+        if (!isDecidable(row)) return { kind: 'not-pending' }
 
         const affected = await tx.orm.public.EnrollmentRequest.where((request) => request.id.eq(id))
           .where((request) => request.status.eq('PENDING'))

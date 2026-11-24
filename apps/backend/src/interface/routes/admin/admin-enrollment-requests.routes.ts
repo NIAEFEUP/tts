@@ -88,7 +88,7 @@ export const adminEnrollmentRequestRoutes = ({ sessions }: AdminRoutesDeps) =>
       },
       {
         query: adminEnrollmentRequestQuerySchema,
-        response: { 200: 'EnrollmentRequestPage', 400: 'ApiError', 401: 'ApiError', 403: 'ApiError' },
+        response: { 200: 'EnrollmentRequestPage', 400: 'ApiError', 401: 'ApiError', 403: 'ApiError', 422: 'ApiError' },
         detail: { tags: ['admin'], summary: 'List enrollment requests in my occurrence scope' },
       },
     )

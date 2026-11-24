@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 
 import { COURSE_UNITS, FORBIDDEN_BODY, OCCURRENCES, UNAUTHORIZED_BODY } from '../support/catalog-test-utils'
-import { ADMIN, TEST_USER, createFakeSessions } from '../support/auth-test-utils'
+import { ADMIN, TEST_USER } from '../support/auth-test-utils'
 import { fakeClassIds, fakeUserName } from '../support/admin-test-utils'
 import type { FakeEnrollment } from '../support/admin-test-utils'
 import {
@@ -10,7 +10,6 @@ import {
   makeRequest,
   occurrenceOption,
 } from '../support/enrollment-request-test-utils'
-import { createApp } from '@/main'
 
 const LIST = '/v1/admin/enrollment-requests'
 const accept = (id: string) => `${LIST}/${id}/accept`
@@ -46,13 +45,8 @@ describe('admin enrollment requests routes', () => {
       expect(anonResult.status).toBe(401)
       expect(anonResult.body).toEqual(UNAUTHORIZED_BODY)
 
-      const app = createApp({
-        repositories: {
-          sessionRepository: createFakeSessions({ ...TEST_USER, role: 'USER' }),
-        },
-      })
-      const { request } = await import('../support/http-test-utils')
-      const userResult = await request(app, LIST)
+      const { request } = createEnrollmentRequestsApp({ role: 'USER' })
+      const userResult = await request('GET', LIST)
       expect(userResult.status).toBe(403)
       expect(userResult.body).toEqual(FORBIDDEN_BODY)
     })
@@ -136,6 +130,12 @@ describe('admin enrollment requests routes', () => {
       expect(status).toBe(200)
       expect(listedIds(body).sort()).toEqual(['req-in', 'req-mixed'])
       expect(body).toMatchObject({ total: 2 })
+
+      // A request that touches two occurrences only shows the options inside my scope.
+      const mixedRow = (
+        body as { requests: Array<{ id: string; options: Array<{ occurrence: { id: number } }> }> }
+      ).requests.find((row) => row.id === 'req-mixed')
+      expect(mixedRow?.options.map((option) => option.occurrence.id)).toEqual([IN_SCOPE.id])
     })
 
     it('returns an empty page when I have no scope', async () => {
@@ -231,6 +231,36 @@ describe('admin enrollment requests routes', () => {
       expect(await total('activeStates=UNTREATED')).toBe(1)
       expect(await total('activeStates=UNTREATED,AWAITING_INFORMATION')).toBe(2)
       expect(await total(`activeStates=REJECTED&activeCourse=${IN_SCOPE_COURSE + 1}`)).toBe(0)
+
+      // Course and curricular year have to match on the same option, not on two different ones.
+      const unitYear = (occurrence: (typeof OCCURRENCES)[number]) =>
+        COURSE_UNITS.find((unit) => unit.id === occurrence.courseUnitId)?.courseUnitYear
+      const pair = OCCURRENCES.flatMap((first) => OCCURRENCES.map((second) => [first, second] as const)).find(
+        ([first, second]) =>
+          first.courseId !== second.courseId &&
+          unitYear(first) !== undefined &&
+          unitYear(second) !== undefined &&
+          unitYear(first) !== unitYear(second),
+      )
+      if (!pair) throw new Error('Fixtures need two occurrences with a different course and curricular year')
+      const [first, second] = pair
+      const twoOptions = makeRequest({
+        id: 'req-two-options',
+        userId: STUDENT,
+        options: [occurrenceOption(first.id, first.year, true), occurrenceOption(second.id, second.year, true)],
+      })
+      const scoped = createEnrollmentRequestsApp({
+        requests: [twoOptions],
+        role: 'ADMIN',
+        occurrenceScopes: { [TEST_USER.id]: [first, second] },
+      })
+      const scopedTotal = async (query: string) =>
+        ((await scoped.request('GET', `${LIST}?${query}`)).body as { total: number }).total
+
+      // Course of the first option with the year of the second: no single option has both.
+      expect(await scopedTotal(`activeCourse=${first.courseId}&activeCurricularYear=${unitYear(second)}`)).toBe(0)
+      // Course and year of the first option: the same option has both.
+      expect(await scopedTotal(`activeCourse=${first.courseId}&activeCurricularYear=${unitYear(first)}`)).toBe(1)
     })
 
     it('does not list withdrawn requests', async () => {
@@ -493,6 +523,29 @@ describe('admin enrollment requests routes', () => {
           requests: [mixed],
           role: 'ADMIN',
           occurrenceScopes: {},
+        })
+
+        const result = await request('POST', path)
+        expect(result.status).toBe(403)
+        expect(result.body).toEqual(FORBIDDEN_BODY)
+      })
+    }
+
+    for (const [name, path] of [
+      ['accept', accept('req-out-decided')],
+      ['reject', reject('req-out-decided')],
+    ] as const) {
+      it(`answers 403, not 409, to ${name} on an out-of-scope request that is already decided`, async () => {
+        const decided = makeRequest({
+          id: 'req-out-decided',
+          userId: STUDENT,
+          status: 'CANCELLED',
+          options: [occurrenceOption(OUT_OF_SCOPE.id, OUT_OF_SCOPE.year, false)],
+        })
+        const { request } = createEnrollmentRequestsApp({
+          requests: [decided],
+          role: 'ADMIN',
+          occurrenceScopes: { [TEST_USER.id]: [IN_SCOPE] },
         })
 
         const result = await request('POST', path)

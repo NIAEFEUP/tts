@@ -131,11 +131,13 @@ export function createFakeAdminEnrollmentRequestRepository(
   const check = (adminUserId: string, id: string) => {
     const request = store.get(id)
     if (!request) return { kind: 'not-found' as const }
-    if (!isDecidable(request)) return { kind: 'not-pending' as const }
 
+    // Scope first, so an admin outside the scope cannot learn the state of the request.
     const scope = occurrenceScopes[adminUserId] ?? []
     if (request.options.length === 0 || request.options.some((option) => !inScope(scope, option)))
       return { kind: 'forbidden' as const }
+
+    if (!isDecidable(request)) return { kind: 'not-pending' as const }
 
     return { kind: 'checked' as const, request }
   }
@@ -152,27 +154,28 @@ export function createFakeAdminEnrollmentRequestRepository(
         .filter(({ scoped }) => scoped.length > 0)
         .filter(({ request }) => !filters.activeStates?.length || filters.activeStates.includes(request.adminState))
         .filter(({ scoped }) => {
-          if (filters.activeCourse === undefined) return true
-          return scoped.some((option) =>
-            OCCURRENCES.some(
-              (occurrence) =>
-                occurrence.id === option.occurrence.id &&
-                occurrence.year === option.occurrence.year &&
-                occurrence.courseId === filters.activeCourse,
-            ),
-          )
+          if (filters.activeCourse === undefined && filters.activeCurricularYear === undefined) return true
+          // One option has to match the course and the year together.
+          return scoped.some((option) => {
+            if (filters.activeCourse !== undefined) {
+              const occurrence = OCCURRENCES.find(
+                (row) => row.id === option.occurrence.id && row.year === option.occurrence.year,
+              )
+              if (occurrence?.courseId !== filters.activeCourse) return false
+            }
+            if (filters.activeCurricularYear !== undefined) {
+              const unit = COURSE_UNITS.find((row) => row.id === option.occurrence.courseUnit.id)
+              if (unit?.courseUnitYear !== filters.activeCurricularYear) return false
+            }
+            return true
+          })
         })
-        .filter(({ scoped }) => {
-          if (filters.activeCurricularYear === undefined) return true
-          return scoped.some((option) =>
-            COURSE_UNITS.some(
-              (unit) =>
-                unit.id === option.occurrence.courseUnit.id && unit.courseUnitYear === filters.activeCurricularYear,
-            ),
-          )
-        })
-        .map(({ request }) => request)
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        // The admin only gets the options inside the scope.
+        .map(({ request, scoped }) => ({ ...request, options: scoped }))
+        // Newest first; the id breaks ties.
+        .sort(
+          (a, b) => b.createdAt.getTime() - a.createdAt.getTime() || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0),
+        )
       const offset = (filters.page - 1) * filters.pageSize
       return {
         requests: all.slice(offset, offset + filters.pageSize).map(withUserName),
