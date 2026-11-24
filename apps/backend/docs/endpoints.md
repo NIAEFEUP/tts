@@ -773,8 +773,9 @@ Legacy mapping:
 | `POST`   | `/admin/enrollment-requests/:id/reject` | admin | Reject                           |
 
 The four `/enrollment-requests` routes require a session (`401 unauthorized`
-otherwise) and are scoped to the session user. The admin routes are tracked
-separately (#875) and are not part of this implementation.
+otherwise) and are scoped to the session user. The three admin routes require
+an authenticated `ADMIN` or `SUPERUSER` account and are scoped to the
+occurrences in the admin's `AdminOccurrence` rows.
 
 ### Response shape
 
@@ -868,11 +869,50 @@ id answers `404 enrollment-request-not-found`, another student's request
 answers `403 forbidden`, and a request that is already `ACCEPTED` or
 `CANCELLED` answers `409 enrollment-request-not-pending`.
 
-### `GET /admin/enrollment-requests` — not implemented yet (#875)
+### `GET /admin/enrollment-requests`
 
-The admin list, accept and reject routes are tracked separately in #875 and are
-not registered by this change. Their planned filters are `page` / `page_size`,
-`activeCourse`, `activeCurricularYear` and `activeStates`.
+Lists enrollment requests that contain at least one occurrence in the signed-in
+admin's occurrence scope. Query parameters:
+
+- `page` (default `1`) and `page_size` (default `20`, maximum `100`)
+- `activeCourse` — occurrence course id
+- `activeCurricularYear` — course-unit curricular year
+- `activeStates` — comma-separated `UNTREATED`, `TREATED`, `REJECTED`, or
+  `AWAITING_INFORMATION`
+
+The response is:
+
+```json
+{
+  "requests": [],
+  "page": 1,
+  "pageSize": 20,
+  "total": 0,
+  "totalPages": 0
+}
+```
+
+Anonymous callers receive `401 unauthorized`; signed-in non-admin callers
+receive `403 forbidden`.
+
+### `POST /admin/enrollment-requests/:id/accept`
+
+Accepts a `PENDING` request and applies every enrollment option atomically:
+`enrolling: true` adds the student to the occurrence's classes and
+`enrolling: false` removes the student's existing enrollments in that
+occurrence. The transaction then sets `status` to `ACCEPTED` and `adminState`
+to `TREATED`. A database failure leaves both enrollments and request state
+unchanged.
+
+### `POST /admin/enrollment-requests/:id/reject`
+
+Sets `status` unchanged and `adminState` to `REJECTED` for a `PENDING`
+request. Rejection does not modify enrollments.
+
+Both decisions answer `404 enrollment-request-not-found` for an unknown id,
+`403 forbidden` when the request contains no occurrence in the admin's scope,
+and `409 enrollment-request-not-pending` when the request is already accepted
+or cancelled. Non-pending requests cannot be decided twice.
 
 Legacy mapping:
 
