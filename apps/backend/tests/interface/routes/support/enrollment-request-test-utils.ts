@@ -1,4 +1,5 @@
 import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
+import type { UserRole } from '@/core/auth/user'
 import type {
   EnrollmentRequest,
   EnrollmentRequestOption,
@@ -18,6 +19,7 @@ import {
   createFakeExchangePeriodsRepository,
   createFakeOccurrenceRepository,
 } from './catalog-test-utils'
+import { createFakeAdminEnrollmentRequestRepository } from './admin-test-utils'
 
 // Harness for the `/v1/enrollment-requests` route tests. Like the other
 // `support/` modules it drives the real app through `app.handle(request)` with
@@ -227,6 +229,7 @@ export type EnrollmentRequestsAppOptions = {
   requests?: EnrollmentRequest[]
   exchangePeriods?: ExchangePeriod[]
   enrolledOccurrences?: Array<{ userId: string; occurrenceId: number; occurrenceYear: number }>
+  role?: UserRole
 }
 
 /**
@@ -238,6 +241,7 @@ export function createEnrollmentRequestsApp({
   requests = DEFAULT_REQUESTS,
   exchangePeriods = OPEN_PERIODS,
   enrolledOccurrences = [],
+  role,
 }: EnrollmentRequestsAppOptions = {}) {
   const { repository } = createFakeEnrollmentRequestRepository({ requests })
   const app = createApp({
@@ -246,7 +250,8 @@ export function createEnrollmentRequestsApp({
       enrollmentRepository: createFakeEnrollmentRepository(enrolledOccurrences),
       occurrenceRepository: createFakeOccurrenceRepository(),
       exchangePeriodsRepository: createFakeExchangePeriodsRepository({ exchangePeriods }),
-      sessionRepository: createFakeSessions(),
+      sessionRepository: createFakeSessions(role ? { ...TEST_USER, role } : undefined),
+      adminEnrollmentRequestRepository: createFakeAdminEnrollmentRequestRepository(requests),
     },
   })
 

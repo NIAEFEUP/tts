@@ -1,5 +1,7 @@
 import type { AuthUser, UserRole } from '@/core/auth/user'
 import type { AdminRepository } from '@/domain/ports/admin.repository'
+import type { AdminEnrollmentRequestRepository } from '@/domain/ports/admin-enrollment-request.repository'
+import type { EnrollmentRequest } from '@/domain/ports/enrollment-request.repository'
 import type { Course } from '@/domain/ports/course.repository'
 import type { CourseUnit } from '@/domain/ports/course-unit.repository'
 import type { Occurrence, OccurrenceWithUnit } from '@/domain/ports/occurrence.repository'
@@ -59,6 +61,64 @@ export function createFakeAdminRepository({
       }
 
       return result.sort((a, b) => b.year - a.year || a.id - b.id)
+    },
+  }
+}
+
+export function createFakeAdminEnrollmentRequestRepository(
+  requests: EnrollmentRequest[] = [],
+): AdminEnrollmentRequestRepository {
+  const store = new Map(requests.map((request) => [request.id, structuredClone(request)]))
+  return {
+    async findForAdmin(_adminUserId, filters) {
+      const all = [...store.values()]
+        .filter((request) => !filters.activeStates?.length || filters.activeStates.includes(request.adminState))
+        .filter((request) => {
+          if (filters.activeCourse === undefined) return true
+          return request.options.some((option) =>
+            OCCURRENCES.some(
+              (occurrence) =>
+                occurrence.id === option.occurrence.id &&
+                occurrence.year === option.occurrence.year &&
+                occurrence.courseId === filters.activeCourse,
+            ),
+          )
+        })
+        .filter((request) => {
+          if (filters.activeCurricularYear === undefined) return true
+          return request.options.some((option) =>
+            COURSE_UNITS.some(
+              (unit) =>
+                unit.id === option.occurrence.courseUnit.id && unit.courseUnitYear === filters.activeCurricularYear,
+            ),
+          )
+        })
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      const offset = (filters.page - 1) * filters.pageSize
+      return {
+        requests: all.slice(offset, offset + filters.pageSize),
+        page: filters.page,
+        pageSize: filters.pageSize,
+        total: all.length,
+        totalPages: all.length === 0 ? 0 : Math.ceil(all.length / filters.pageSize),
+      }
+    },
+
+    async acceptForAdmin(_adminUserId, id) {
+      const request = store.get(id)
+      if (!request) return { kind: 'not-found' as const }
+      if (request.status !== 'PENDING') return { kind: 'not-pending' as const }
+      request.status = 'ACCEPTED'
+      request.adminState = 'TREATED'
+      return { kind: 'ok' as const, request }
+    },
+
+    async rejectForAdmin(_adminUserId, id) {
+      const request = store.get(id)
+      if (!request) return { kind: 'not-found' as const }
+      if (request.status !== 'PENDING') return { kind: 'not-pending' as const }
+      request.adminState = 'REJECTED'
+      return { kind: 'ok' as const, request }
     },
   }
 }
