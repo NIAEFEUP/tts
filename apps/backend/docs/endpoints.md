@@ -943,13 +943,13 @@ can be decided.
 
 The checks run in this order: unknown id, scope, state.
 
-| Status | Code                             | When                                                                                                                       |
-| ------ | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `401`  | `unauthorized`                   | No session                                                                                                                 |
-| `403`  | `forbidden`                      | Not an admin, or any option of the request is outside the admin's scope, even if the request is already decided             |
-| `404`  | `enrollment-request-not-found`   | Unknown id                                                                                                                 |
-| `409`  | `enrollment-request-not-pending` | The request is in scope but is not `PENDING`, or its `adminState` is not `UNTREATED` or `AWAITING_INFORMATION`              |
-| `409`  | `occurrence-has-no-classes`      | Accept only: an enrolling option has an occurrence with no classes                                                         |
+| Status | Code                             | When                                                                                                            |
+| ------ | -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `401`  | `unauthorized`                   | No session                                                                                                      |
+| `403`  | `forbidden`                      | Not an admin, or any option of the request is outside the admin's scope, even if the request is already decided |
+| `404`  | `enrollment-request-not-found`   | Unknown id                                                                                                      |
+| `409`  | `enrollment-request-not-pending` | The request is in scope but is not `PENDING`, or its `adminState` is not `UNTREATED` or `AWAITING_INFORMATION`  |
+| `409`  | `occurrence-has-no-classes`      | Accept only: an enrolling option has an occurrence with no classes                                              |
 
 Every option must be inside the admin's scope. One option outside the scope
 gives `403`, even when the other options are inside.
