@@ -10,6 +10,9 @@ import {
   registerCatalogAuthGuard,
 } from '../support/catalog-test-utils'
 
+// One feature, two prefixes: "view course occurrences" is served by both
+// `/v1/courses/:id/occurrences` and `/v1/occurrences/:id`, so they share one suite.
+
 const { app, get } = createCatalogApp()
 
 describe('occurrence routes', () => {
