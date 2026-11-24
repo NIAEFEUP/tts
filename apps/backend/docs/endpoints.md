@@ -910,9 +910,7 @@ Sets `status` unchanged and `adminState` to `REJECTED` for a `PENDING`
 request. Rejection does not modify enrollments.
 
 Both decisions answer `404 enrollment-request-not-found` for an unknown id,
-`403 forbidden` when the request contains no occurrence in the admin's scope,
-and `409 enrollment-request-not-pending` when the request is already accepted
-or cancelled. Non-pending requests cannot be decided twice.
+`403 forbidden` when the request contains any option whose occurrence is outside the admin's scope (every option must be within scope; any out-of-scope option results in `403` even if another option is in scope), and `409 enrollment-request-not-pending` when the request is already accepted or cancelled. Non-pending requests cannot be decided twice.
 
 Legacy mapping:
 
