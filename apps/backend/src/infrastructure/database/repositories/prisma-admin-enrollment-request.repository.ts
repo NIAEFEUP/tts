@@ -139,6 +139,7 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
           .first()
         if (!row) return { kind: 'not-found' }
         if (row.status !== 'PENDING') return { kind: 'not-pending' }
+
         const options = await tx.orm.public.EnrollmentRequestOption.where({ requestId: id }).all()
         const adminLinks = await tx.orm.public.AdminOccurrence.where({ userId: adminUserId }).all()
         if (
@@ -153,9 +154,27 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
           return { kind: 'forbidden' }
 
         for (const option of options) {
+          if (option.enrolling) {
+            const classes = await tx.orm.public.Class.where((classRow) => classRow.occurrenceId.eq(option.occurrenceId))
+              .where((classRow) => classRow.occurrenceYear.eq(option.occurrenceYear))
+              .all()
+            if (classes.length === 0) {
+              return { kind: 'not-pending' }
+            }
+          }
+        }
+
+        const affected = await tx.orm.public.EnrollmentRequest.where({ id, status: 'PENDING' }).updateAndCount({
+          status: 'ACCEPTED',
+          adminState: 'TREATED',
+        })
+        if (affected !== 1) return { kind: 'not-pending' }
+
+        for (const option of options) {
           const classes = await tx.orm.public.Class.where((classRow) => classRow.occurrenceId.eq(option.occurrenceId))
             .where((classRow) => classRow.occurrenceYear.eq(option.occurrenceYear))
             .all()
+
           if (option.enrolling && classes.length > 0) {
             const existing = await tx.orm.public.Enrollment.where({ userId: row.userId }).all()
             const existingIds = new Set(existing.map((enrollment) => enrollment.classId))
@@ -169,11 +188,7 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
               .delete()
           }
         }
-        const affected = await tx.orm.public.EnrollmentRequest.where({ id, status: 'PENDING' }).updateAndCount({
-          status: 'ACCEPTED',
-          adminState: 'TREATED',
-        })
-        if (affected !== 1) return { kind: 'not-pending' }
+
         const updated = await tx.orm.public.EnrollmentRequest.where({ id })
           .select(...REQUEST_COLUMNS)
           .first()
@@ -191,6 +206,7 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
           .first()
         if (!row) return { kind: 'not-found' }
         if (row.status !== 'PENDING') return { kind: 'not-pending' }
+
         const options = await tx.orm.public.EnrollmentRequestOption.where({ requestId: id }).all()
         const adminLinks = await tx.orm.public.AdminOccurrence.where({ userId: adminUserId }).all()
         if (
@@ -203,10 +219,12 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
           )
         )
           return { kind: 'forbidden' }
+
         const affected = await tx.orm.public.EnrollmentRequest.where({ id, status: 'PENDING' }).updateAndCount({
           adminState: 'REJECTED',
         })
         if (affected !== 1) return { kind: 'not-pending' }
+
         const updated = await tx.orm.public.EnrollmentRequest.where({ id })
           .select(...REQUEST_COLUMNS)
           .first()
