@@ -9,6 +9,8 @@ import type { ExchangePeriod } from '@/domain/ports/exchange-period.repository'
 import { createApp } from '@/main'
 import type { App } from '@/main'
 
+import { createFakeAdminEnrollmentRequestRepository } from './admin-test-utils'
+import type { FakeEnrollment, OccurrenceKey } from './admin-test-utils'
 import { TEST_USER, createFakeSessions } from './auth-test-utils'
 import { request } from './http-test-utils'
 import type { ApiResponse, HttpMethod, RequestOptions } from './http-test-utils'
@@ -105,9 +107,22 @@ export const CLOSED_PERIODS: ExchangePeriod[] = OCCURRENCES.map((occurrence) => 
   endsAt: new Date('1991-01-01T00:00:00.000Z'),
 }))
 
+/** By default the signed-in admin (`TEST_USER`) has every occurrence fixture in scope. */
+export const DEFAULT_OCCURRENCE_SCOPES: Record<string, OccurrenceKey[]> = {
+  [TEST_USER.id]: OCCURRENCES.map((occurrence) => ({ id: occurrence.id, year: occurrence.year })),
+}
+
 export function createSharedEnrollmentRequestRepositories({
   requests = DEFAULT_REQUESTS,
-}: { requests?: EnrollmentRequest[] } = {}) {
+  occurrenceScopes = DEFAULT_OCCURRENCE_SCOPES,
+  occurrencesWithoutClasses = [],
+  adminEnrollments = [],
+}: {
+  requests?: EnrollmentRequest[]
+  occurrenceScopes?: Record<string, OccurrenceKey[]>
+  occurrencesWithoutClasses?: OccurrenceKey[]
+  adminEnrollments?: FakeEnrollment[]
+} = {}) {
   const store = new Map(requests.map((request) => [request.id, structuredClone(request)]))
   let nextId = 1
 
@@ -166,40 +181,12 @@ export function createSharedEnrollmentRequestRepositories({
     },
   }
 
-  const adminEnrollmentRequestRepository = {
-    async findForAdmin(_adminUserId: string, filters: any) {
-      const all = [...store.values()]
-        .filter((request) => !filters.activeStates?.length || filters.activeStates.includes(request.adminState))
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      const offset = (filters.page - 1) * filters.pageSize
-      return {
-        requests: all.slice(offset, offset + filters.pageSize),
-        page: filters.page,
-        pageSize: filters.pageSize,
-        total: all.length,
-        totalPages: all.length === 0 ? 0 : Math.ceil(all.length / filters.pageSize),
-      }
-    },
-
-    async acceptForAdmin(_adminUserId: string, id: string) {
-      const request = store.get(id)
-      if (!request) return { kind: 'not-found' as const }
-      if (request.status !== 'PENDING') return { kind: 'not-pending' as const }
-      request.status = 'ACCEPTED'
-      request.adminState = 'TREATED'
-      request.updatedAt = new Date()
-      return { kind: 'ok' as const, request }
-    },
-
-    async rejectForAdmin(_adminUserId: string, id: string) {
-      const request = store.get(id)
-      if (!request) return { kind: 'not-found' as const }
-      if (request.status !== 'PENDING') return { kind: 'not-pending' as const }
-      request.adminState = 'REJECTED'
-      request.updatedAt = new Date()
-      return { kind: 'ok' as const, request }
-    },
-  }
+  // Same store as the student repository, so a withdrawal is visible to the admin.
+  const adminEnrollmentRequestRepository = createFakeAdminEnrollmentRequestRepository(store, {
+    occurrenceScopes,
+    occurrencesWithoutClasses,
+    enrollments: adminEnrollments,
+  })
 
   return { enrollmentRequestRepository, adminEnrollmentRequestRepository, store }
 }
@@ -230,6 +217,12 @@ export type EnrollmentRequestsAppOptions = {
   requests?: EnrollmentRequest[]
   exchangePeriods?: ExchangePeriod[]
   enrolledOccurrences?: Array<{ userId: string; occurrenceId: number; occurrenceYear: number }>
+  /** `AdminOccurrence` rows: admin user id → pairs. Defaults to every occurrence for the signed-in user. */
+  occurrenceScopes?: Record<string, OccurrenceKey[]>
+  /** Occurrences with no classes: accepting an enroll option on them answers `occurrence-has-no-classes`. */
+  occurrencesWithoutClasses?: OccurrenceKey[]
+  /** The `Enrollment` table seen by the admin decisions. Mutated by accept, so tests can assert on it. */
+  adminEnrollments?: FakeEnrollment[]
   role?: UserRole
 }
 
@@ -237,10 +230,16 @@ export function createEnrollmentRequestsApp({
   requests = DEFAULT_REQUESTS,
   exchangePeriods = OPEN_PERIODS,
   enrolledOccurrences = [],
+  occurrenceScopes = DEFAULT_OCCURRENCE_SCOPES,
+  occurrencesWithoutClasses = [],
+  adminEnrollments = [],
   role,
 }: EnrollmentRequestsAppOptions = {}) {
   const { enrollmentRequestRepository, adminEnrollmentRequestRepository } = createSharedEnrollmentRequestRepositories({
     requests,
+    occurrenceScopes,
+    occurrencesWithoutClasses,
+    adminEnrollments,
   })
   const app = createApp({
     repositories: {
