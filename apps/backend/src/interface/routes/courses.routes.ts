@@ -1,9 +1,9 @@
 // Elysia is the web framework; `t` is its schema validator (like Zod).
-import { Elysia, t } from 'elysia'
+import { Elysia, status, t } from 'elysia'
 
 // HttpError is a custom error class; the global error handler catches it and
 // returns clean JSON responses with the right status code.
-import { HttpError } from '@/interface/errors/errors'
+import { HttpError, httpError } from '@/interface/errors/errors'
 
 // The port (interface) defines *what* methods exist — not *how* they work.
 // Imported as `type` only: the route never touches the database directly.
@@ -11,10 +11,20 @@ import type { CourseRepository } from '@/domain/ports/course.repository'
 import type { CourseUnitRepository } from '@/domain/ports/course-unit.repository'
 import type { OccurrenceRepository } from '@/domain/ports/occurrence.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
-import type { ExchangePeriodsRepository } from '@/domain/ports/exchange-period.repository'
+import type { ExchangePeriodsRepository, ExchangePeriod } from '@/domain/ports/exchange-period.repository'
+import type { AdminRepository } from '@/domain/ports/admin.repository'
+import { isAdmin } from '@/core/auth/user'
+import { createCreateExchangeCoursePeriods } from '@/application/use-cases/exchange/create-exchange-period'
+import type { CoursePeriodFailure } from '@/application/use-cases/exchange/exchange-period-common'
 import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { apiError } from '@/interface/middleware/error-handler'
-import { courseSchema, courseUnitSchema, exchangePeriodSchema, occurrenceWithUnitSchema } from './catalog.schemas'
+import {
+  courseSchema,
+  courseUnitSchema,
+  createExchangePeriodSchema,
+  exchangePeriodSchema,
+  occurrenceWithUnitSchema,
+} from './catalog.schemas'
 
 // Routes read `repositories` off the Elysia context — no infrastructure imports.
 // A missing course throws `HttpError('course-not-found')`; the global `onError`
@@ -26,6 +36,27 @@ import { courseSchema, courseUnitSchema, exchangePeriodSchema, occurrenceWithUni
 // `use()` still merges the parent's decoration at runtime.
 // This tells TypeScript: "this plugin expects `repositories.courseRepository`
 // to be available on the Elysia context."
+function presentPeriod(period: ExchangePeriod) {
+  return {
+    id: period.id,
+    occurrenceId: period.occurrenceId,
+    occurrenceYear: period.occurrenceYear,
+    startsAt: period.startsAt.toISOString(),
+    endsAt: period.endsAt.toISOString(),
+  }
+}
+
+function authorisationError(failure: CoursePeriodFailure, courseId: number): HttpError {
+  switch (failure.kind) {
+    case 'forbidden':
+      return httpError.forbidden()
+    case 'invalid-period-range':
+      return new HttpError('invalid-period-range', 'startsAt must be before endsAt', 400)
+    case 'course-not-found':
+      return new HttpError('course-not-found', `Course ${courseId} not found`, 404)
+  }
+}
+
 type CourseDependencies = {
   decorator: {
     repositories: {
@@ -33,6 +64,7 @@ type CourseDependencies = {
       courseUnitRepository: CourseUnitRepository
       occurrenceRepository: OccurrenceRepository
       exchangePeriodsRepository: ExchangePeriodsRepository
+      adminRepository: AdminRepository
     }
   }
   store: {}
@@ -154,5 +186,54 @@ export const courseRoutes = ({ sessions }: CourseRoutesDeps) =>
         response: { 200: t.Array(t.Pick(exchangePeriodSchema, ['id', 'startsAt', 'endsAt'])), 404: 'ApiError' },
         params: t.Object({ id: t.Integer() }),
         detail: { tags: ['courses'], summary: 'List exchange periods of a course' },
+      },
+    )
+    .post(
+      '/:id/periods',
+      async ({ repositories, user, params, body }) => {
+        if (!user) throw httpError.unauthorized()
+        if (!isAdmin(user)) throw httpError.forbidden()
+
+        const createExchangeCoursePeriods = createCreateExchangeCoursePeriods({
+          admins: repositories.adminRepository,
+          courses: repositories.courseRepository,
+          periods: repositories.exchangePeriodsRepository,
+        })
+        const result = await createExchangeCoursePeriods({
+          user,
+          courseId: params.id,
+          startsAt: new Date(body.startsAt),
+          endsAt: new Date(body.endsAt),
+        })
+
+        switch (result.kind) {
+          case 'forbidden':
+          case 'invalid-period-range':
+          case 'course-not-found':
+            throw authorisationError(result, params.id)
+          case 'overlap':
+            throw new HttpError(
+              'exchange-period-overlap',
+              `Exchange period overlaps another period for occurrence ${result.occurrenceId} in ${result.occurrenceYear}`,
+              409,
+            )
+          case 'created':
+            break
+        }
+
+        return status(201, result.periods.map(presentPeriod))
+      },
+      {
+        params: t.Object({ id: t.Integer() }),
+        body: createExchangePeriodSchema,
+        response: {
+          201: t.Array(exchangePeriodSchema),
+          400: 'ApiError',
+          401: 'ApiError',
+          403: 'ApiError',
+          404: 'ApiError',
+          409: 'ApiError',
+        },
+        detail: { tags: ['courses'], summary: 'Open exchange periods for every occurrence of a course' },
       },
     )
