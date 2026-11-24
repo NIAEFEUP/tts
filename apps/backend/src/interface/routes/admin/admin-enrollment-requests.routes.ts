@@ -1,13 +1,21 @@
 import { Elysia, t } from 'elysia'
 
 import { HttpError, httpError } from '@/interface/errors/errors'
-import type { AdminEnrollmentRequestRepository } from '@/domain/ports/admin-enrollment-request.repository'
+import type {
+  AdminEnrollmentRequestDecision,
+  AdminEnrollmentRequestRepository,
+} from '@/domain/ports/admin-enrollment-request.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import { isAdmin } from '@/core/auth/user'
 import { createRequiredAuthMiddleware } from '@/interface/middleware/auth.middleware'
 import { apiError } from '@/interface/middleware/error-handler'
-import { enrollmentRequestSchema } from '../enrollment-requests/enrollment-requests.schemas'
-import { toEnrollmentRequestResponse } from '../enrollment-requests/enrollment-requests.presenter'
+import { adminEnrollmentRequestSchema } from '@/interface/routes/enrollment-requests/enrollment-requests.schemas'
+import { toAdminEnrollmentRequestResponse } from '@/interface/routes/enrollment-requests/enrollment-requests.presenter'
+import {
+  adminEnrollmentRequestParamsSchema,
+  adminEnrollmentRequestQuerySchema,
+  parseActiveStates,
+} from '@/interface/validators/admin-enrollment-request.validator'
 
 type AdminDependencies = {
   decorator: {
@@ -24,6 +32,26 @@ export type AdminRoutesDeps = {
   sessions: SessionRepository
 }
 
+/** Turns a decision outcome into the response body, or the matching HTTP error. */
+function toDecisionResponse(result: AdminEnrollmentRequestDecision, id: string) {
+  switch (result.kind) {
+    case 'ok':
+      return toAdminEnrollmentRequestResponse(result.request)
+    case 'not-found':
+      throw new HttpError('enrollment-request-not-found', `Enrollment request ${id} not found`, 404)
+    case 'forbidden':
+      throw httpError.forbidden()
+    case 'not-pending':
+      throw new HttpError('enrollment-request-not-pending', 'Only pending enrollment requests can be decided', 409)
+    case 'occurrence-has-no-classes':
+      throw new HttpError(
+        'occurrence-has-no-classes',
+        `Enrollment request ${id} cannot be accepted: an occurrence to enroll in has no classes`,
+        409,
+      )
+  }
+}
+
 export const adminEnrollmentRequestRoutes = ({ sessions }: AdminRoutesDeps) =>
   new Elysia<'/v1/admin/enrollment-requests', AdminDependencies>({
     prefix: '/v1/admin/enrollment-requests',
@@ -32,7 +60,7 @@ export const adminEnrollmentRequestRoutes = ({ sessions }: AdminRoutesDeps) =>
     .model({ ApiError: apiError })
     .model({
       EnrollmentRequestPage: t.Object({
-        requests: t.Array(enrollmentRequestSchema),
+        requests: t.Array(adminEnrollmentRequestSchema),
         page: t.Integer(),
         pageSize: t.Integer(),
         total: t.Integer(),
@@ -45,31 +73,22 @@ export const adminEnrollmentRequestRoutes = ({ sessions }: AdminRoutesDeps) =>
         if (!user) throw httpError.unauthorized()
         if (!isAdmin(user)) throw httpError.forbidden()
 
-        const activeStates = query.activeStates
-          ? query.activeStates.split(',').filter((state) => state.length > 0)
-          : undefined
         const page = await repositories.adminEnrollmentRequestRepository.findForAdmin(user.id, {
           page: query.page ?? 1,
           pageSize: query.page_size ?? 20,
           activeCourse: query.activeCourse,
           activeCurricularYear: query.activeCurricularYear,
-          activeStates,
+          activeStates: parseActiveStates(query.activeStates),
         })
 
         return {
           ...page,
-          requests: page.requests.map(toEnrollmentRequestResponse),
+          requests: page.requests.map(toAdminEnrollmentRequestResponse),
         }
       },
       {
-        query: t.Object({
-          page: t.Optional(t.Integer({ minimum: 1, default: 1 })),
-          page_size: t.Optional(t.Integer({ minimum: 1, maximum: 100, default: 20 })),
-          activeCourse: t.Optional(t.Integer()),
-          activeCurricularYear: t.Optional(t.Integer()),
-          activeStates: t.Optional(t.String()),
-        }),
-        response: { 200: 'EnrollmentRequestPage', 401: 'ApiError', 403: 'ApiError' },
+        query: adminEnrollmentRequestQuerySchema,
+        response: { 200: 'EnrollmentRequestPage', 400: 'ApiError', 401: 'ApiError', 403: 'ApiError' },
         detail: { tags: ['admin'], summary: 'List enrollment requests in my occurrence scope' },
       },
     )
@@ -80,25 +99,17 @@ export const adminEnrollmentRequestRoutes = ({ sessions }: AdminRoutesDeps) =>
         if (!isAdmin(user)) throw httpError.forbidden()
 
         const result = await repositories.adminEnrollmentRequestRepository.acceptForAdmin(user.id, params.id)
-
-        switch (result.kind) {
-          case 'ok':
-            return toEnrollmentRequestResponse(result.request)
-          case 'not-found':
-            throw new HttpError('enrollment-request-not-found', `Enrollment request ${params.id} not found`, 404)
-          case 'forbidden':
-            throw httpError.forbidden()
-          case 'not-pending':
-            throw new HttpError(
-              'enrollment-request-not-pending',
-              'Only pending enrollment requests can be decided',
-              409,
-            )
-        }
+        return toDecisionResponse(result, params.id)
       },
       {
-        params: t.Object({ id: t.String({ minLength: 1 }) }),
-        response: { 200: enrollmentRequestSchema, 401: 'ApiError', 403: 'ApiError', 404: 'ApiError', 409: 'ApiError' },
+        params: adminEnrollmentRequestParamsSchema,
+        response: {
+          200: adminEnrollmentRequestSchema,
+          401: 'ApiError',
+          403: 'ApiError',
+          404: 'ApiError',
+          409: 'ApiError',
+        },
         detail: { tags: ['admin'], summary: 'Accept an enrollment request' },
       },
     )
@@ -109,25 +120,17 @@ export const adminEnrollmentRequestRoutes = ({ sessions }: AdminRoutesDeps) =>
         if (!isAdmin(user)) throw httpError.forbidden()
 
         const result = await repositories.adminEnrollmentRequestRepository.rejectForAdmin(user.id, params.id)
-
-        switch (result.kind) {
-          case 'ok':
-            return toEnrollmentRequestResponse(result.request)
-          case 'not-found':
-            throw new HttpError('enrollment-request-not-found', `Enrollment request ${params.id} not found`, 404)
-          case 'forbidden':
-            throw httpError.forbidden()
-          case 'not-pending':
-            throw new HttpError(
-              'enrollment-request-not-pending',
-              'Only pending enrollment requests can be decided',
-              409,
-            )
-        }
+        return toDecisionResponse(result, params.id)
       },
       {
-        params: t.Object({ id: t.String({ minLength: 1 }) }),
-        response: { 200: enrollmentRequestSchema, 401: 'ApiError', 403: 'ApiError', 404: 'ApiError', 409: 'ApiError' },
+        params: adminEnrollmentRequestParamsSchema,
+        response: {
+          200: adminEnrollmentRequestSchema,
+          401: 'ApiError',
+          403: 'ApiError',
+          404: 'ApiError',
+          409: 'ApiError',
+        },
         detail: { tags: ['admin'], summary: 'Reject an enrollment request' },
       },
     )

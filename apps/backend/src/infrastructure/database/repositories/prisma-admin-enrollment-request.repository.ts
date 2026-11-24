@@ -1,72 +1,38 @@
 import type {
+  AdminEnrollmentRequest,
   AdminEnrollmentRequestDecision,
   AdminEnrollmentRequestFilters,
   AdminEnrollmentRequestPage,
   AdminEnrollmentRequestRepository,
 } from '@/domain/ports/admin-enrollment-request.repository'
-import type { EnrollmentRequest, EnrollmentRequestOption } from '@/domain/ports/enrollment-request.repository'
+import type { EnrollmentRequest, EnrollmentRequestAdminState } from '@/domain/ports/enrollment-request.repository'
 import type { Db } from '@/infrastructure/database/prisma'
+import { REQUEST_COLUMNS, loadEnrollmentRequests, type RequestRow } from './prisma-enrollment-request.utils'
 
 type OrmClient = { orm: Db['orm'] }
-type RequestRow = {
-  id: string
-  userId: string
-  status: EnrollmentRequest['status']
-  adminState: EnrollmentRequest['adminState']
-  createdAt: { epochMilliseconds: number }
-  updatedAt: { epochMilliseconds: number }
+
+// Only these admin states can still be decided. TREATED and REJECTED are final.
+const DECIDABLE_ADMIN_STATES: EnrollmentRequestAdminState[] = ['UNTREATED', 'AWAITING_INFORMATION']
+
+function isDecidable(row: RequestRow): boolean {
+  return row.status === 'PENDING' && DECIDABLE_ADMIN_STATES.includes(row.adminState)
 }
 
-const REQUEST_COLUMNS = ['id', 'userId', 'status', 'adminState', 'createdAt', 'updatedAt'] as const
+// Adds the student name, one query for the whole page.
+async function withUserNames(client: OrmClient, requests: EnrollmentRequest[]): Promise<AdminEnrollmentRequest[]> {
+  if (requests.length === 0) return []
+  const userIds = [...new Set(requests.map((request) => request.userId))]
+  const users = await client.orm.public.User.where((user) => user.id.in(userIds)).all()
+  const namesById = new Map(users.map((user) => [user.id, user.name] as const))
+  return requests.map((request) => {
+    const userName = namesById.get(request.userId)
+    if (userName === undefined) throw new Error(`User ${request.userId} not found`)
+    return { ...request, userName }
+  })
+}
 
-async function loadRequests(client: OrmClient, rows: RequestRow[]): Promise<EnrollmentRequest[]> {
-  if (rows.length === 0) return []
-  const options = await client.orm.public.EnrollmentRequestOption.where((option) =>
-    option.requestId.in(rows.map((row) => row.id)),
-  )
-    .orderBy((option) => option.occurrenceId.asc())
-    .all()
-
-  const optionsByRequestId = new Map<string, EnrollmentRequestOption[]>()
-  if (options.length > 0) {
-    const occurrenceIds = [...new Set(options.map((option) => option.occurrenceId))]
-    const occurrences = await client.orm.public.Occurrence.where((occurrence) => occurrence.id.in(occurrenceIds))
-      .include('courseUnit', (courseUnit) => courseUnit.select('id', 'acronym', 'name', 'semester'))
-      .all()
-    const occurrencesByKey = new Map(
-      occurrences.map((occurrence) => [`${occurrence.id}:${occurrence.year}`, occurrence] as const),
-    )
-    for (const option of options) {
-      const occurrence = occurrencesByKey.get(`${option.occurrenceId}:${option.occurrenceYear}`)
-      if (!occurrence?.courseUnit)
-        throw new Error(`Occurrence ${option.occurrenceId}:${option.occurrenceYear} not found`)
-      const view: EnrollmentRequestOption = {
-        occurrence: {
-          id: occurrence.id,
-          year: occurrence.year,
-          courseUnit: {
-            id: occurrence.courseUnit.id,
-            acronym: occurrence.courseUnit.acronym,
-            name: occurrence.courseUnit.name,
-            semester: occurrence.courseUnit.semester,
-          },
-        },
-        enrolling: option.enrolling,
-      }
-      const assigned = optionsByRequestId.get(option.requestId)
-      if (assigned) assigned.push(view)
-      else optionsByRequestId.set(option.requestId, [view])
-    }
-  }
-  return rows.map((row) => ({
-    id: row.id,
-    userId: row.userId,
-    status: row.status,
-    adminState: row.adminState,
-    createdAt: new Date(row.createdAt.epochMilliseconds),
-    updatedAt: new Date(row.updatedAt.epochMilliseconds),
-    options: optionsByRequestId.get(row.id) ?? [],
-  }))
+async function hydrate(client: OrmClient, rows: RequestRow[]): Promise<AdminEnrollmentRequest[]> {
+  return withUserNames(client, await loadEnrollmentRequests(client, rows))
 }
 
 export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db }): AdminEnrollmentRequestRepository {
@@ -97,6 +63,9 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
         .orderBy((request) => request.createdAt.desc())
         .all()
 
+      // Withdrawn requests are not for the admin to decide, so they are not listed.
+      rows = rows.filter((row) => row.status !== 'CANCELLED')
+
       if (filters.activeStates?.length) rows = rows.filter((row) => filters.activeStates!.includes(row.adminState))
       if (filters.activeCourse !== undefined || filters.activeCurricularYear !== undefined) {
         const occurrencesByKey = new Map(
@@ -124,7 +93,7 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
       const total = rows.length
       const offset = (filters.page - 1) * filters.pageSize
       return {
-        requests: await loadRequests(db, rows.slice(offset, offset + filters.pageSize)),
+        requests: await hydrate(db, rows.slice(offset, offset + filters.pageSize)),
         page: filters.page,
         pageSize: filters.pageSize,
         total,
@@ -138,7 +107,7 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
           .select(...REQUEST_COLUMNS)
           .first()
         if (!row) return { kind: 'not-found' }
-        if (row.status !== 'PENDING') return { kind: 'not-pending' }
+        if (!isDecidable(row)) return { kind: 'not-pending' }
 
         const options = await tx.orm.public.EnrollmentRequestOption.where({ requestId: id }).all()
         const adminLinks = await tx.orm.public.AdminOccurrence.where({ userId: adminUserId }).all()
@@ -153,38 +122,42 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
         )
           return { kind: 'forbidden' }
 
-        for (const option of options) {
-          if (option.enrolling) {
-            const classes = await tx.orm.public.Class.where((classRow) => classRow.occurrenceId.eq(option.occurrenceId))
-              .where((classRow) => classRow.occurrenceYear.eq(option.occurrenceYear))
-              .all()
-            if (classes.length === 0) {
-              return { kind: 'not-pending' }
-            }
-          }
-        }
-
-        const affected = await tx.orm.public.EnrollmentRequest.where({ id, status: 'PENDING' }).updateAndCount({
-          status: 'ACCEPTED',
-          adminState: 'TREATED',
-        })
-        if (affected !== 1) return { kind: 'not-pending' }
-
+        // Load the classes of each occurrence once and reuse them below.
+        const plans = []
         for (const option of options) {
           const classes = await tx.orm.public.Class.where((classRow) => classRow.occurrenceId.eq(option.occurrenceId))
             .where((classRow) => classRow.occurrenceYear.eq(option.occurrenceYear))
             .all()
+          // The request is still pending, but it cannot be applied. This is not "not-pending".
+          if (option.enrolling && classes.length === 0) return { kind: 'occurrence-has-no-classes' }
+          plans.push({ option, classes })
+        }
 
-          if (option.enrolling && classes.length > 0) {
-            const existing = await tx.orm.public.Enrollment.where({ userId: row.userId }).all()
-            const existingIds = new Set(existing.map((enrollment) => enrollment.classId))
-            const missing = classes
-              .filter((classRow) => !existingIds.has(classRow.id))
-              .map((classRow) => ({ userId: row.userId, classId: classRow.id }))
-            if (missing.length > 0) await tx.orm.public.Enrollment.createAll(missing)
-          } else if (!option.enrolling && classes.length > 0) {
+        const affected = await tx.orm.public.EnrollmentRequest.where((request) => request.id.eq(id))
+          .where((request) => request.status.eq('PENDING'))
+          .where((request) => request.adminState.in(DECIDABLE_ADMIN_STATES))
+          .updateAndCount({
+            status: 'ACCEPTED',
+            adminState: 'TREATED',
+          })
+        if (affected !== 1) return { kind: 'not-pending' }
+
+        for (const { option, classes } of plans) {
+          if (classes.length === 0) continue
+          const classIds = classes.map((classRow) => classRow.id)
+
+          if (option.enrolling) {
+            // One class per occurrence, so the student sees the course unit once in the schedule.
+            // If the student is already in a class of this occurrence, there is nothing to add.
+            const existing = await tx.orm.public.Enrollment.where({ userId: row.userId })
+              .where((enrollment) => enrollment.classId.in(classIds))
+              .all()
+            const [target] = [...classes].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+            if (existing.length === 0 && target)
+              await tx.orm.public.Enrollment.createAll([{ userId: row.userId, classId: target.id }])
+          } else {
             await tx.orm.public.Enrollment.where({ userId: row.userId })
-              .where((enrollment) => enrollment.classId.in(classes.map((classRow) => classRow.id)))
+              .where((enrollment) => enrollment.classId.in(classIds))
               .delete()
           }
         }
@@ -193,7 +166,7 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
           .select(...REQUEST_COLUMNS)
           .first()
         if (!updated) throw new Error(`Enrollment request ${id} not found after acceptance`)
-        const [request] = await loadRequests(tx, [updated])
+        const [request] = await hydrate(tx, [updated])
         if (!request) throw new Error(`Enrollment request ${id} could not be hydrated after acceptance`)
         return { kind: 'ok', request }
       })
@@ -205,7 +178,7 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
           .select(...REQUEST_COLUMNS)
           .first()
         if (!row) return { kind: 'not-found' }
-        if (row.status !== 'PENDING') return { kind: 'not-pending' }
+        if (!isDecidable(row)) return { kind: 'not-pending' }
 
         const options = await tx.orm.public.EnrollmentRequestOption.where({ requestId: id }).all()
         const adminLinks = await tx.orm.public.AdminOccurrence.where({ userId: adminUserId }).all()
@@ -220,16 +193,19 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
         )
           return { kind: 'forbidden' }
 
-        const affected = await tx.orm.public.EnrollmentRequest.where({ id, status: 'PENDING' }).updateAndCount({
-          adminState: 'REJECTED',
-        })
+        const affected = await tx.orm.public.EnrollmentRequest.where((request) => request.id.eq(id))
+          .where((request) => request.status.eq('PENDING'))
+          .where((request) => request.adminState.in(DECIDABLE_ADMIN_STATES))
+          .updateAndCount({
+            adminState: 'REJECTED',
+          })
         if (affected !== 1) return { kind: 'not-pending' }
 
         const updated = await tx.orm.public.EnrollmentRequest.where({ id })
           .select(...REQUEST_COLUMNS)
           .first()
         if (!updated) throw new Error(`Enrollment request ${id} not found after rejection`)
-        const [request] = await loadRequests(tx, [updated])
+        const [request] = await hydrate(tx, [updated])
         if (!request) throw new Error(`Enrollment request ${id} could not be hydrated after rejection`)
         return { kind: 'ok', request }
       })
