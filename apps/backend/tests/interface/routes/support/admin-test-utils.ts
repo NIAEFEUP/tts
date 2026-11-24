@@ -173,9 +173,7 @@ export function createFakeAdminEnrollmentRequestRepository(
         // The admin only gets the options inside the scope.
         .map(({ request, scoped }) => ({ ...request, options: scoped }))
         // Newest first; the id breaks ties.
-        .sort(
-          (a, b) => b.createdAt.getTime() - a.createdAt.getTime() || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0),
-        )
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0))
       const offset = (filters.page - 1) * filters.pageSize
       return {
         requests: all.slice(offset, offset + filters.pageSize).map(withUserName),
