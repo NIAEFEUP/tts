@@ -20,6 +20,12 @@ const unreachable: AdminRepository = {
   async findOccurrencesByAdmin() {
     throw new Error('the repository must not be called')
   },
+  async hasCourseScope() {
+    throw new Error('the repository must not be called')
+  },
+  async hasOccurrenceScope() {
+    throw new Error('the repository must not be called')
+  },
 }
 
 describe('GET /v1/admin/courses', () => {
