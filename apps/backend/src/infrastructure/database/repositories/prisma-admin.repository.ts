@@ -67,7 +67,7 @@ export function createAdminRepository({ db }: { db: Db }): AdminRepository {
 
       return scope !== null
     },
-    
+
     async hasOccurrenceScope(userId, occurrenceId, occurrenceYear) {
       const scope = await db.orm.public.AdminOccurrence.where({
         userId,

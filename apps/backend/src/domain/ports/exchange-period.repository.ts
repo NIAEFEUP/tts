@@ -36,6 +36,9 @@ export type CourseExchangePeriodsWriteResult =
 
 /* The repository contract.*/
 export type ExchangePeriodsRepository = {
+  /** Period with the given surrogate id, or `null` if none exists. */
+  findById(id: string): Promise<ExchangePeriod | null>
+
   /** Periods of the given occurrence, ordered by `startsAt`. */
   findByOccurrence(occurrenceId: number, occurrenceYear: number): Promise<ExchangePeriod[]>
 

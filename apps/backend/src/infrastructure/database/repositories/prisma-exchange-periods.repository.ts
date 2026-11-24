@@ -112,6 +112,12 @@ async function hasPendingRequestBackedByPeriod(client: OrmClient, period: Period
 
 export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePeriodsRepository {
   return {
+    async findById(id) {
+      const row = await db.orm.public.ExchangePeriod.where({ id })
+        .select(...PERIOD_COLUMNS)
+        .first()
+      return row ? toExchangePeriod(row) : null
+    },
     // Exchange periods of one occurrence. An occurrence is the
     // `(occurrenceId, occurrenceYear)` pair: Sigarra reuses the id across
     // academic years, so the id alone would return periods from other years.
