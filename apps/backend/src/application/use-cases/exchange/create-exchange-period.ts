@@ -34,7 +34,7 @@ export function createCreateExchangeCoursePeriods(deps: {
 
     const { courseId, startsAt, endsAt } = input
     return deps.periods.createForCourse({
-      courseId: String(courseId),
+      courseId,
       startsAt,
       endsAt,
     })

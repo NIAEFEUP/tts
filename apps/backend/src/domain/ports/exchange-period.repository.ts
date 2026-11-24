@@ -25,6 +25,7 @@ export type NewExchangePeriod = {
 export type ExchangePeriodWriteResult =
   | { kind: 'created'; period: ExchangePeriod }
   | { kind: 'updated'; period: ExchangePeriod }
+  | { kind: 'deleted'; period: ExchangePeriod }
   | { kind: 'overlap' }
   | { kind: 'not-found' }
   | { kind: 'pending-requests' }
@@ -68,5 +69,5 @@ export type ExchangePeriodsRepository = {
    * Creates the same window for every occurrence of a course.
    * The overlap check and all inserts must run in one transaction.
    */
-  createForCourse(input: { courseId: string; startsAt: Date; endsAt: Date }): Promise<CourseExchangePeriodsWriteResult>
+  createForCourse(input: { courseId: number; startsAt: Date; endsAt: Date }): Promise<CourseExchangePeriodsWriteResult>
 }
