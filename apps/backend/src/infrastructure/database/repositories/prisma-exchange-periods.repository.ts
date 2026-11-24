@@ -7,6 +7,109 @@ import type {
 } from '@/domain/ports/exchange-period.repository'
 import type { Db } from '@/infrastructure/database/prisma'
 
+type OrmClient = { orm: Db['orm'] }
+
+type PeriodRow = {
+  id: string
+  occurrenceId: number
+  occurrenceYear: number
+  startsAt: { epochMilliseconds: number }
+  endsAt: { epochMilliseconds: number }
+}
+
+const PERIOD_COLUMNS = ['id', 'occurrenceId', 'occurrenceYear', 'startsAt', 'endsAt'] as const
+
+function toExchangePeriod(row: PeriodRow): ExchangePeriod {
+  return {
+    id: row.id,
+    occurrenceId: row.occurrenceId,
+    occurrenceYear: row.occurrenceYear,
+    startsAt: new Date(row.startsAt.epochMilliseconds),
+    endsAt: new Date(row.endsAt.epochMilliseconds),
+  }
+}
+
+// Pure so tests can run the real selection without a database. `periods` must already be ordered by `startsAt`.
+export function selectCourseWindows(
+  occurrences: { id: number; year: number }[],
+  periods: PeriodRow[],
+): CourseExchangePeriod[] {
+  const courseOccurences = new Set(occurrences.map((occurrence) => `${occurrence.id}:${occurrence.year}`))
+  // The same window is stored once per occurrence, so a course would repeat it.
+  // Collapse each window to one representative period. The smallest id wins so
+  // the answer does not depend on the order Postgres returns the tied rows in.
+  const windows = new Map<string, CourseExchangePeriod>()
+
+  for (const period of periods) {
+    if (!courseOccurences.has(`${period.occurrenceId}:${period.occurrenceYear}`)) continue
+
+    const startsAt = new Date(period.startsAt.epochMilliseconds)
+    const endsAt = new Date(period.endsAt.epochMilliseconds)
+    const key = `${startsAt.getTime()}:${endsAt.getTime()}`
+    const seen = windows.get(key)
+
+    if (seen === undefined || period.id < seen.id) {
+      windows.set(key, { id: period.id, startsAt, endsAt })
+    }
+  }
+  return [...windows.values()]
+}
+
+async function hasOverlap(
+  client: OrmClient,
+  input: {
+    occurrenceId: number
+    occurrenceYear: number
+    startsAt: Date
+    endsAt: Date
+    excludingId?: string
+  },
+): Promise<boolean> {
+  const { occurrenceId, occurrenceYear, startsAt, endsAt, excludingId } = input
+
+  const query = client.orm.public.ExchangePeriod.where({ occurrenceId, occurrenceYear }).where((period) =>
+    and(period.startsAt.lt(endsAt), period.endsAt.gt(startsAt)),
+  )
+
+  const match =
+    excludingId === undefined
+      ? await query.select('id').first()
+      : await query
+          .where((period) => period.id.neq(excludingId))
+          .select('id')
+          .first()
+
+  return match !== null
+}
+
+async function hasPendingRequestBackedByPeriod(client: OrmClient, period: PeriodRow): Promise<boolean> {
+  const options = await client.orm.public.EnrollmentRequestOption.where({
+    occurrenceId: period.occurrenceId,
+    occurrenceYear: period.occurrenceYear,
+  })
+    .select('requestId')
+    .all()
+
+  const requestIds = [...new Set(options.map((option) => option.requestId))]
+  if (requestIds.length === 0) return false
+
+  const startsAt = new Date(period.startsAt.epochMilliseconds)
+  const endsAt = new Date(period.endsAt.epochMilliseconds)
+
+  const pendingRequest = await client.orm.public.EnrollmentRequest.where((request) =>
+    and(
+      request.id.in(requestIds),
+      request.status.eq('PENDING'),
+      request.createdAt.gte(startsAt),
+      request.createdAt.lte(endsAt),
+    ),
+  )
+    .select('id')
+    .first()
+
+  return pendingRequest !== null
+}
+
 export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePeriodsRepository {
   return {
     // Exchange periods of one occurrence. An occurrence is the
@@ -155,107 +258,4 @@ export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePer
       })
     },
   }
-}
-
-type OrmClient = { orm: Db['orm'] }
-
-type PeriodRow = {
-  id: string
-  occurrenceId: number
-  occurrenceYear: number
-  startsAt: { epochMilliseconds: number }
-  endsAt: { epochMilliseconds: number }
-}
-
-const PERIOD_COLUMNS = ['id', 'occurrenceId', 'occurrenceYear', 'startsAt', 'endsAt'] as const
-
-function toExchangePeriod(row: PeriodRow): ExchangePeriod {
-  return {
-    id: row.id,
-    occurrenceId: row.occurrenceId,
-    occurrenceYear: row.occurrenceYear,
-    startsAt: new Date(row.startsAt.epochMilliseconds),
-    endsAt: new Date(row.endsAt.epochMilliseconds),
-  }
-}
-
-// Pure so tests can run the real selection without a database. `periods` must already be ordered by `startsAt`.
-export function selectCourseWindows(
-  occurrences: { id: number; year: number }[],
-  periods: PeriodRow[],
-): CourseExchangePeriod[] {
-  const courseOccurences = new Set(occurrences.map((occurrence) => `${occurrence.id}:${occurrence.year}`))
-  // The same window is stored once per occurrence, so a course would repeat it.
-  // Collapse each window to one representative period. The smallest id wins so
-  // the answer does not depend on the order Postgres returns the tied rows in.
-  const windows = new Map<string, CourseExchangePeriod>()
-
-  for (const period of periods) {
-    if (!courseOccurences.has(`${period.occurrenceId}:${period.occurrenceYear}`)) continue
-
-    const startsAt = new Date(period.startsAt.epochMilliseconds)
-    const endsAt = new Date(period.endsAt.epochMilliseconds)
-    const key = `${startsAt.getTime()}:${endsAt.getTime()}`
-    const seen = windows.get(key)
-
-    if (seen === undefined || period.id < seen.id) {
-      windows.set(key, { id: period.id, startsAt, endsAt })
-    }
-  }
-  return [...windows.values()]
-}
-
-async function hasOverlap(
-  client: OrmClient,
-  input: {
-    occurrenceId: number
-    occurrenceYear: number
-    startsAt: Date
-    endsAt: Date
-    excludingId?: string
-  },
-): Promise<boolean> {
-  const { occurrenceId, occurrenceYear, startsAt, endsAt, excludingId } = input
-
-  const query = client.orm.public.ExchangePeriod.where({ occurrenceId, occurrenceYear }).where((period) =>
-    and(period.startsAt.lt(endsAt), period.endsAt.gt(startsAt)),
-  )
-
-  const match =
-    excludingId === undefined
-      ? await query.select('id').first()
-      : await query
-          .where((period) => period.id.neq(excludingId))
-          .select('id')
-          .first()
-
-  return match !== null
-}
-
-async function hasPendingRequestBackedByPeriod(client: OrmClient, period: PeriodRow): Promise<boolean> {
-  const options = await client.orm.public.EnrollmentRequestOption.where({
-    occurrenceId: period.occurrenceId,
-    occurrenceYear: period.occurrenceYear,
-  })
-    .select('requestId')
-    .all()
-
-  const requestIds = [...new Set(options.map((option) => option.requestId))]
-  if (requestIds.length === 0) return false
-
-  const startsAt = new Date(period.startsAt.epochMilliseconds)
-  const endsAt = new Date(period.endsAt.epochMilliseconds)
-
-  const pendingRequest = await client.orm.public.EnrollmentRequest.where((request) =>
-    and(
-      request.id.in(requestIds),
-      request.status.eq('PENDING'),
-      request.createdAt.gte(startsAt),
-      request.createdAt.lte(endsAt),
-    ),
-  )
-    .select('id')
-    .first()
-
-  return pendingRequest !== null
 }
