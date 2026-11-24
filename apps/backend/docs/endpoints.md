@@ -878,7 +878,10 @@ admin's occurrence scope. Query parameters:
 - `activeCourse` — occurrence course id
 - `activeCurricularYear` — course-unit curricular year
 - `activeStates` — comma-separated `UNTREATED`, `TREATED`, `REJECTED`, or
-  `AWAITING_INFORMATION`
+  `AWAITING_INFORMATION`. Any other value answers `400 invalid-active-states`.
+
+Requests withdrawn by the student (`status` `CANCELLED`) are not listed, since
+there is nothing left for the admin to decide.
 
 The response is:
 
@@ -892,25 +895,40 @@ The response is:
 }
 ```
 
+Each item of `requests` is the request object from [Response shape](#response-shape)
+plus who made it: `userId` (the student number) and `userName` (the student
+name). The accept and reject responses carry the same two fields.
+
 Anonymous callers receive `401 unauthorized`; signed-in non-admin callers
 receive `403 forbidden`.
 
 ### `POST /admin/enrollment-requests/:id/accept`
 
-Accepts a `PENDING` request and applies every enrollment option atomically:
-`enrolling: true` adds the student to the occurrence's classes and
-`enrolling: false` removes the student's existing enrollments in that
-occurrence. The transaction then sets `status` to `ACCEPTED` and `adminState`
-to `TREATED`. A database failure leaves both enrollments and request state
-unchanged.
+Accepts a decidable request and applies every enrollment option atomically.
+A request is decidable when `status` is `PENDING` and `adminState` is
+`UNTREATED` or `AWAITING_INFORMATION`; `TREATED` and `REJECTED` are final.
+
+- `enrolling: true` enrolls the student in one class of the occurrence, the one
+  with the lowest class id, so the course unit appears once in
+  `/users/me/schedule`. If the student is already in a class of that
+  occurrence, nothing is added.
+- `enrolling: false` removes the student's existing enrollments in that
+  occurrence.
+
+The transaction then sets `status` to `ACCEPTED` and `adminState` to
+`TREATED`. A database failure leaves both enrollments and request state
+unchanged. If an `enrolling: true` option targets an occurrence that has no
+classes, the request cannot be applied: nothing changes and the answer is
+`409 occurrence-has-no-classes`.
 
 ### `POST /admin/enrollment-requests/:id/reject`
 
-Sets `status` unchanged and `adminState` to `REJECTED` for a `PENDING`
-request. Rejection does not modify enrollments.
+Sets `adminState` to `REJECTED` for a decidable request (same rule as accept);
+`status` stays `PENDING`. Rejection is final: a rejected request cannot be
+accepted or rejected again. Rejection does not modify enrollments.
 
 Both decisions answer `404 enrollment-request-not-found` for an unknown id,
-`403 forbidden` when the request contains any option whose occurrence is outside the admin's scope (every option must be within scope; any out-of-scope option results in `403` even if another option is in scope), and `409 enrollment-request-not-pending` when the request is already accepted or cancelled. Non-pending requests cannot be decided twice.
+`403 forbidden` when the request contains any option whose occurrence is outside the admin's scope (every option must be within scope; any out-of-scope option results in `403` even if another option is in scope), and `409 enrollment-request-not-pending` when the request is not decidable: it is cancelled or accepted, or its `adminState` is already `TREATED` or `REJECTED`. A request cannot be decided twice. Accept also answers `409 occurrence-has-no-classes` as described above.
 
 Legacy mapping:
 
