@@ -36,7 +36,7 @@ and it becomes the global access tier on `User.role` (`UserRole`).
 | `slot`                     | `ScheduleSlot`              | Column renames only (`day` → 0-based `dayOfWeek`, `decimal(3,1)` hours → integer minutes). `classId` is **not** folded in — see `SlotClass`.                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `slot_class`               | `SlotClass`                 | **Kept as a real join table.** One lesson genuinely serves many classes: legacy `is_composed` marked slots shared by several classes (a "T" lecture shared by `1LEIC01`…`1LEIC10`), and the sync writes one slot plus one join row per class. Folding it into a single `classId` would make a shared lesson unrepresentable.                                                                                                                                                                                                                         |
 | `slot_professor`           | `SlotProfessor`             | Now a composite PK `(slotId, professorId)` — legacy's table was shaped as OneToOne on `slot_id`, which silently limited a slot to one professor.                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `course_metadata`          | —                           | **Dropped.** Its only content was `ects`, which moved onto `Occurrence`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `course_metadata`          | —                           | **Dropped.** Its `ects` moved onto `Occurrence` and its `course_unit_year` (the curricular year) onto `CourseUnit`.                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `course_group`             | —                           | **Dropped.** Legacy exposed two routes over it (`/course/<id>/groups`, `/course_group/<id>/course_units`), but the frontend never calls them and no other consumer is known. Confirm no external consumer before the legacy DB is retired.                                                                                                                                                                                                                                                                                                           |
 | `course_unit_course_group` | —                           | **Dropped.** Only existed to join the two above.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
@@ -56,7 +56,13 @@ and it becomes the global access tier on `User.role` (`UserRole`).
 | `exchange_admin_course_units` | `AdminOccurrence` | `exchange_admin` FK → `userId`; the row is now scoped to an _occurrence_, not an abstract course unit (composite `(occurrenceId, occurrenceYear)`).                                              |
 | `info`                        | —                 | **Dropped.** The scrape is now a manual populate step, so data-freshness signaling has no reader (the only frontend consumer, `/info/`, was dead code — commented-out cache-invalidation logic). |
 
-### Exchanges — 6 tables → 2
+### Exchanges — 6 legacy tables
+
+> **Post-#966.** The port below landed as `ExchangeRequest` + `ExchangeItem`.
+> Since then `ExchangeRequest` is an offer (one proposed move, no cycle of its
+> own), and `ExchangeItem` belongs to `ExchangeCycle` alongside
+> `ExchangeParticipant` and `ExchangeCycleSource`. This table records the
+> original legacy mapping, not the current aggregate.
 
 | Legacy table                      | New model         | Change                                                                                                                                                                                                                                                                                            |
 | --------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -132,17 +138,23 @@ DirectExchangeParticipants(participant_nmec=auth_user, goes_from=B, goes_to=A, .
 A single row without `userId` cannot represent this — you cannot tell whose move
 is whose, nor when each side accepted.
 
-`"accepted by all participants"` is now **derived** (`every item accepted`)
-rather than stored, which is what `DirectExchangePendingMotive()` reverse-engineered
-from the row set on every read.
+`"accepted by all participants"` is now **derived** from the item lifecycles
+rather than reverse-engineered on every read: each item carries an explicit
+`status` (`PENDING | ACCEPTED | CANCELLED | INVALID`), plus `acceptedAt` (the
+authoritative accept moment) and `statusReason` (why a move was cancelled or
+invalidated), and the cycle's status is recomputed from its items in the same
+transaction that writes them — never set independently. `DirectExchangePendingMotive()`
+now reads a column instead of the row set. `ExchangeParticipant.acceptedAt`
+predates per-item status: it mirrors `ExchangeItem.acceptedAt` and is not a
+second source of truth.
 
 Integrity of the class references is enforced at the DB level: `fromClassId` and
 `toClassId` are **composite foreign keys**
 `(fromClassId/toClassId, occurrenceId, occurrenceYear) → Class(id, occurrenceId, occurrenceYear)`,
 so a referenced class is guaranteed to belong to the same occurrence as the item —
 not merely to exist. `userId` uses `ON DELETE RESTRICT`: silently cascading away
-one side's row would flip the derived "all accepted" to true with a side missing;
-user deletion must explicitly cancel affected requests instead.
+one side's row would leave the cycle's derived status claiming completion with a
+side missing; user deletion must explicitly cancel affected requests instead.
 
 ---
 

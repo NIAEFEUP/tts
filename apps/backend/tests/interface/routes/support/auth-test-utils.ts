@@ -104,6 +104,11 @@ export function getCookie(response: Response, name: string): string | null {
   return null
 }
 
+/** Full `Set-Cookie` header for `name` in `response`, or `null` (attributes included). */
+export function getSetCookie(response: Response, name: string): string | null {
+  return response.headers.getSetCookie().find((header) => header.startsWith(`${name}=`)) ?? null
+}
+
 /** A `UserRepository` that knows exactly `users`, looked up by `id`. */
 export function createFakeUserDirectory(users: AuthUser[]): UserRepository {
   return {

@@ -4,6 +4,7 @@ import useStudentCourseUnits from '../../../../hooks/useStudentCourseUnits'
 import { Button } from '../../../ui/new/button'
 import { ChooseIncludedCourseUnits } from './ChooseIncludedCourseUnits'
 import { CustomizeRequest } from './CustomizeRequest'
+import { CourseUnitsError } from '../../CourseUnitsError'
 import { ExchangeSidebarStatus } from '../../../../pages/Exchange'
 
 type Props = {
@@ -15,7 +16,7 @@ export const CreateRequest = ({ setExchangeSidebarStatus }: Props) => {
   const [selectedCourseUnits, setSelectedCourseUnits] = useState<CourseInfo[]>([])
   const [selectingCourseUnits, setSelectingCourseUnits] = useState<boolean>(false)
   const [hasStudentToExchange, setHasStudentToExchange] = useState<boolean>(false)
-  const { enrolledCourseUnits } = useStudentCourseUnits()
+  const { enrolledCourseUnits, error: courseUnitsError } = useStudentCourseUnits()
 
   return (
     <div className="flex flex-col">
@@ -34,7 +35,9 @@ export const CreateRequest = ({ setExchangeSidebarStatus }: Props) => {
         </div>
 
         <div>
-          {selectingCourseUnits ? (
+          {courseUnitsError ? (
+            <CourseUnitsError />
+          ) : selectingCourseUnits ? (
             <ChooseIncludedCourseUnits
               setSelectedCourseUnits={setSelectedCourseUnits}
               enrolledCourseUnits={enrolledCourseUnits}

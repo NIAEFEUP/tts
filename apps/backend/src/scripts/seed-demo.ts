@@ -19,7 +19,8 @@ console.log(
     `${catalog.occurrences} occurrences.\n` +
     `Demo: ${demo.users} users, ${demo.classes} classes, ${demo.enrollments} enrollments, ` +
     `${demo.exchangePeriods} exchange periods, ` +
-    `${demo.exchangeRequests} exchange requests (${demo.exchangeItems} items), ` +
+    `${demo.exchangeOffers} exchange offers (${demo.exchangeCycles} cycles, ` +
+    `${demo.exchangeParticipants} participants, ${demo.exchangeSources} sources, ${demo.exchangeItems} items), ` +
     `${demo.enrollmentRequests} enrollment requests (${demo.enrollmentRequestOptions} options), ` +
     `admin scope on ${demo.adminCourses} courses / ${demo.adminOccurrences} occurrences.`,
 )

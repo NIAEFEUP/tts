@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import CoursePicker from './CoursePicker'
 import CoursePickerContext from '../../../../contexts/coursePicker/CoursePickerContext'
 import { Major, CourseInfo } from '../../../../@types'
-import BackendAPI from '../../../../api/backend'
+import occurrenceService from '../../../../api/services/occurrenceService'
 import { Dispatch, SetStateAction } from 'react'
 import useLocalStorage from '../../../../hooks/useLocalStorage'
+import { toast } from '../../../ui/new/toaster'
 
 type Props = {
   enrollCourses: CourseInfo[]
@@ -19,10 +20,32 @@ export const ExchangeCoursePicker = ({ enrollCourses, setEnrollCourses, allowedA
   const [selectedMajor, setSelectedMajor] = useLocalStorage<Major>('enrollMajor', null)
 
   useEffect(() => {
-    BackendAPI.getCoursesClasses(checkboxedCourses).then((courseWithClasses) => {
-      setEnrollCourses(courseWithClasses)
-    })
-  }, [checkboxedCourses])
+    let cancelled = false
+
+    Promise.all(
+      checkboxedCourses.map(async (course) => {
+        const { classes } = await occurrenceService.getClasses(course.id, course.occurrenceYear)
+        return { ...course, classes }
+      }),
+    )
+      .then((coursesWithClasses) => {
+        if (!cancelled) setEnrollCourses(coursesWithClasses)
+      })
+      .catch((error) => {
+        console.error(error)
+        if (!cancelled) {
+          toast({
+            title: 'Erro ao carregar as turmas',
+            description: 'Não foi possível carregar as turmas das unidades curriculares selecionadas.',
+            duration: 3000,
+          })
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [checkboxedCourses, setEnrollCourses])
 
   return (
     <CoursePickerContext.Provider

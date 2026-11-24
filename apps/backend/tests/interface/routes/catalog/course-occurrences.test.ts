@@ -8,12 +8,20 @@ import {
   VALIDATION_ERROR_BODY,
   createCatalogApp,
   registerCatalogAuthGuard,
+  withCourseUnit,
 } from '../support/catalog-test-utils'
 
 // One feature, two prefixes: "view course occurrences" is served by both
 // `/v1/courses/:id/occurrences` and `/v1/occurrences/:id`, so they share one suite.
 
 const { app, get } = createCatalogApp()
+
+// The enriched occurrence shape: the occurrence joined with its course unit's
+// human-readable fields. `GET /v1/courses/:id/occurrences` and
+// `GET /v1/occurrences/:id` both return it. `withCourseUnit` is the same helper
+// the fake repository joins with, so the assertions cannot drift from it.
+const BD_2025 = withCourseUnit(OCCURRENCES[0], COURSE_UNITS[0])
+const COMP_2025 = withCourseUnit(OCCURRENCES[2], COURSE_UNITS[1])
 
 describe('occurrence routes', () => {
   registerCatalogAuthGuard(app, [
@@ -34,14 +42,25 @@ describe('occurrence routes', () => {
     expect(contentType).toMatch(/^application\/json/)
     // Course 22841 has two occurrences (units 42 and 43, both year 2025).
     // Sorted newest year first, then by id ascending.
-    expect(body).toEqual([OCCURRENCES[0], OCCURRENCES[2]])
+    expect(body).toEqual([BD_2025, COMP_2025])
+  })
+
+  it('each occurrence carries its course unit acronym, name, and curricular year', async () => {
+    const { body } = await get('/v1/courses/22841/occurrences')
+
+    // BD is a 2nd-year unit, COMP a 1st-year one: the picker groups its year
+    // tabs by this field, so a bare academic `year` would not be enough.
+    expect(body).toMatchObject([
+      { courseUnitId: 42, acronym: 'BD', courseUnitYear: 2 },
+      { courseUnitId: 43, acronym: 'COMP', courseUnitYear: 1 },
+    ])
   })
 
   it('the year query param filters the occurrences', async () => {
     const { status, body } = await get('/v1/courses/22841/occurrences?year=2025')
 
     expect(status).toBe(200)
-    expect(body).toEqual([OCCURRENCES[0], OCCURRENCES[2]])
+    expect(body).toEqual([BD_2025, COMP_2025])
   })
 
   it('a year with no matching occurrences answers an empty list, not an error', async () => {
@@ -57,15 +76,15 @@ describe('occurrence routes', () => {
     const sem1 = await get('/v1/courses/22841/occurrences?semester=1')
     const sem2 = await get('/v1/courses/22841/occurrences?semester=2')
 
-    expect(sem1.body).toEqual([OCCURRENCES[0]])
-    expect(sem2.body).toEqual([OCCURRENCES[2]])
+    expect(sem1.body).toEqual([BD_2025])
+    expect(sem2.body).toEqual([COMP_2025])
   })
 
   it('the year and semester filters combine', async () => {
     const { status, body } = await get('/v1/courses/22841/occurrences?year=2025&semester=2')
 
     expect(status).toBe(200)
-    expect(body).toEqual([OCCURRENCES[2]])
+    expect(body).toEqual([COMP_2025])
   })
 
   it('a course with no occurrences answers an empty list, not an error', async () => {
@@ -104,13 +123,9 @@ describe('occurrence routes', () => {
 
     expect(status).toBe(200)
     expect(contentType).toMatch(/^application\/json/)
-    // The response enriches the bare occurrence with the course unit's name and
-    // acronym so the client does not need a second round-trip.
-    expect(body).toEqual({
-      ...OCCURRENCES[0],
-      acronym: COURSE_UNITS[0].acronym,
-      name: COURSE_UNITS[0].name,
-    })
+    // The response enriches the bare occurrence with the course unit's name,
+    // acronym, and curricular year so the client needs no second round-trip.
+    expect(body).toEqual(BD_2025)
   })
 
   it('the same occurrence id with a different year answers 404', async () => {
@@ -157,9 +172,7 @@ describe('occurrence routes', () => {
     expect(status).toBe(200)
     expect(contentType).toMatch(/^application\/json/)
     expect(body).toEqual({
-      ...OCCURRENCES[0],
-      acronym: COURSE_UNITS[0].acronym,
-      name: COURSE_UNITS[0].name,
+      ...BD_2025,
       classes: [
         {
           id: CLASSES[0].id,
@@ -325,11 +338,20 @@ describe('occurrence routes', () => {
 
     expect(status).toBe(200)
     expect(contentType).toMatch(/^application\/json/)
-    // 587179/2025 repeats the September window of 587177/2025: it appears once.
+    // 587179/2025 repeats the September window of 587177/2025: it appears once,
+    // carrying the smallest id of the rows that share the window.
     // The 2024 period of the same id and the other course's period are out.
     expect(body).toEqual([
-      { startsAt: '2025-09-01T00:00:00.000Z', endsAt: '2025-09-15T00:00:00.000Z' },
-      { startsAt: '2026-02-01T00:00:00.000Z', endsAt: '2026-02-15T00:00:00.000Z' },
+      {
+        id: 'period-587177-2025-09',
+        startsAt: '2025-09-01T00:00:00.000Z',
+        endsAt: '2025-09-15T00:00:00.000Z',
+      },
+      {
+        id: 'period-587177-2025-02',
+        startsAt: '2026-02-01T00:00:00.000Z',
+        endsAt: '2026-02-15T00:00:00.000Z',
+      },
     ])
   })
 
@@ -337,7 +359,9 @@ describe('occurrence routes', () => {
     const { status, body } = await get('/v1/courses/22990/periods')
 
     expect(status).toBe(200)
-    expect(body).toEqual([{ startsAt: '2024-10-01T00:00:00.000Z', endsAt: '2024-10-15T00:00:00.000Z' }])
+    expect(body).toEqual([
+      { id: 'period-587178-2024-10', startsAt: '2024-10-01T00:00:00.000Z', endsAt: '2024-10-15T00:00:00.000Z' },
+    ])
   })
 
   it('a course with no periods answers an empty list, not an error', async () => {

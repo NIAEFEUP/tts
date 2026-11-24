@@ -1,32 +1,29 @@
-import { useMemo } from 'react'
-import api from '../api/backend'
+import { useContext } from 'react'
 import useSWR from 'swr'
 
+import studentService from '../api/services/studentService'
+import SessionContext from '../contexts/SessionContext'
+
+const ELIGIBLE_OCCURRENCES_KEY = ['v1/users/me/eligible-occurrences'] as const
+
 export default () => {
-  const getEligibileCourseUnits = async () => {
-    try {
-      const res = await fetch(`${api.BACKEND_URL}/student/course_units/eligible`, {
-        credentials: 'include',
-      })
+  const { signedIn, isSessionLoading } = useContext(SessionContext)
 
-      if (res.ok) {
-        return await res.json()
-      }
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
+    signedIn ? ELIGIBLE_OCCURRENCES_KEY : null,
+    studentService.getEligibleOccurrences,
+  )
 
-      return []
-    } catch (e) {
-      console.error(e)
-      return []
-    }
-  }
+  // SWR keeps the last successful response when a background revalidation
+  // fails, so `data` and `error` can both be set. Only a failure with nothing
+  // cached is a page-level error; otherwise keep rendering the cached list.
 
-  const { data, error, mutate, isValidating } = useSWR('eligibleCourseUnits', getEligibileCourseUnits, {})
-  const enrolledCourseUnits = useMemo(() => (data ? data : null), [data])
+  const loaded = data !== undefined
 
   return {
-    enrolledCourseUnits,
-    error,
-    loading: !data,
+    enrolledCourseUnits: data ?? null,
+    error: loaded ? null : (error ?? null),
+    loading: isSessionLoading || isLoading,
     isValidating,
     forceCourseUnitsRevalidation: mutate,
   }

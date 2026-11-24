@@ -94,7 +94,7 @@ Every PR **must** be linked to:
 
 | Milestone      | Branch to target |
 | -------------- | ---------------- |
-| Backend Remake | `monorepo`       |
+| Backend Remake | `beta`           |
 
 > If your work doesn't fit any milestone, discuss with a coordinator before creating a new one. Those PRs may target `develop` directly.
 

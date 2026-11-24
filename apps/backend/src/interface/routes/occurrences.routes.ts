@@ -68,8 +68,8 @@ export const occurrenceRoutes = ({ sessions }: OccurrenceRoutesDeps) =>
     // (and it is skipped entirely in production).
     .model({ ApiError: apiError })
     // GET /v1/occurrences/587177?year=2025
-    // Returns a single occurrence enriched with its course unit's name and
-    // acronym. `year` is required because the occurrence id alone is not
+    // Returns a single occurrence enriched with its course unit's name,
+    // acronym, and curricular year. `year` is required because the occurrence id alone is not
     // unique — Sigarra reuses the same id across academic years, so the real
     // key is the composite `(id, year)`. An unknown (id, year) pair throws
     // HttpError → 404.

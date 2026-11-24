@@ -3,8 +3,8 @@
 //   - `src/scripts/seed-demo.ts`  → catalog + mock exchange data (`bun run db:seed:demo`)
 //
 // Both run `reset()` first, which truncates every table. The two are therefore
-// mutually exclusive: `db:seed` empties the demo tables (ExchangeItem,
-// ExchangeRequest, User, …) and `db:seed:demo` re-creates them.
+// mutually exclusive: `db:seed` empties the demo tables (offers, cycles,
+// participants, items, users, …) and `db:seed:demo` re-creates them.
 //
 // Prisma 8 has no `prisma db seed`; per the package-owned prisma-8 skill the
 // supported pattern is a standalone script that imports the `db` client.
@@ -18,6 +18,7 @@
 import 'temporal-polyfill/global' // Prisma 8 DateTime fields are Temporal.Instant
 
 import { Temporal } from 'temporal-polyfill'
+import { ENV } from 'varlock/env'
 import { normalizeNmec } from '@/core/auth/nmec'
 import { db } from '@/infrastructure/database/prisma'
 import fixture from './fixtures/feup-leic-meic-mesw.json' with { type: 'json' }
@@ -27,7 +28,11 @@ type Occurrence = (typeof fixture.occurrences)[number]
 type Participant = { nmec: string; classId: number }
 
 type ExchangeType = 'DIRECT' | 'MARKETPLACE' | 'URGENT'
-type ExchangeStatus = 'PENDING' | 'ACCEPTED' | 'CANCELLED'
+type ExchangeOfferStatus = 'OPEN' | 'MATCHED' | 'CANCELLED' | 'EXPIRED'
+type ExchangeCycleStatus = 'PENDING' | 'ACCEPTED' | 'CANCELLED'
+type ExchangeCycleOrigin = 'DIRECT' | 'MARKETPLACE' | 'URGENT' | 'AUTO_MATCH'
+type ExchangeItemStatus = 'PENDING' | 'ACCEPTED' | 'CANCELLED' | 'INVALID'
+type EnrollmentRequestStatus = 'PENDING' | 'ACCEPTED' | 'CANCELLED'
 type AdminValidationState = 'UNTREATED' | 'TREATED' | 'REJECTED' | 'AWAITING_INFORMATION'
 
 // --- Safety guard -----------------------------------------------------------
@@ -35,8 +40,7 @@ type AdminValidationState = 'UNTREATED' | 'TREATED' | 'REJECTED' | 'AWAITING_INF
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]'])
 
 function assertLocalDatabase(): void {
-  const databaseUrl = process.env.DATABASE_URL
-  if (!databaseUrl) throw new Error('DATABASE_URL is not set.')
+  const databaseUrl = ENV.DATABASE_URL
 
   const { hostname } = new URL(databaseUrl)
   if (!LOOPBACK_HOSTS.has(hostname)) {
@@ -51,16 +55,11 @@ function assertLocalDatabase(): void {
 
 // The demo admin is whoever sets `ADMIN_UP` (an NMEC / "up" number) in their
 // environment; falls back to a generic `admin` account. Its role comes from
-// `ADMIN_ROLE` (USER | ADMIN | SUPERUSER, default ADMIN). See `.env.schema`.
-const ADMIN_ID = normalizeNmec(process.env.ADMIN_UP?.trim() || 'admin')
+// `ADMIN_ROLE` (USER | ADMIN | SUPERUSER, default ADMIN). Both are declared and
+// validated by `.env.schema`, so `ADMIN_ROLE` is already narrowed to the enum.
+const ADMIN_ID = normalizeNmec(ENV.ADMIN_UP.trim())
 
-const USER_ROLES = ['USER', 'ADMIN', 'SUPERUSER'] as const
-type UserRole = (typeof USER_ROLES)[number]
-
-const ADMIN_ROLE = (process.env.ADMIN_ROLE?.trim().toUpperCase() || 'ADMIN') as UserRole
-if (!USER_ROLES.includes(ADMIN_ROLE)) {
-  throw new Error(`ADMIN_ROLE must be one of ${USER_ROLES.join(', ')} (got "${process.env.ADMIN_ROLE}").`)
-}
+const ADMIN_ROLE = ENV.ADMIN_ROLE
 
 // NMECs end in `999`: the frontend maps any username ending in 999 to a mock
 // avatar (see apps/frontend/src/api/services/studentInfo.ts).
@@ -99,7 +98,8 @@ async function reset(tx: Tx): Promise<void> {
     TRUNCATE TABLE
       "AdminCourse", "AdminOccurrence", "Class", "Course", "CourseUnit",
       "Enrollment", "EnrollmentRequest", "EnrollmentRequestOption",
-      "ExchangeItem", "ExchangePeriod", "ExchangeRequest", "Faculty",
+      "ExchangeCycle", "ExchangeCycleSource", "ExchangeItem",
+      "ExchangeParticipant", "ExchangePeriod", "ExchangeRequest", "Faculty",
       "FacultyCourse", "Occurrence", "PlannerState", "Professor",
       "ScheduleSlot", "Session", "SlotClass", "SlotProfessor",
       "StudentCourseMetadata", "User"
@@ -145,6 +145,7 @@ async function seedCatalog(tx: Tx): Promise<void> {
       acronym: unit.acronym,
       name: unit.name,
       semester: unit.semester,
+      courseUnitYear: unit.courseUnitYear,
     })
     unitIdByKey.set(unit.key, row.id)
   }
@@ -175,7 +176,10 @@ type DemoSummary = {
   classes: number
   enrollments: number
   exchangePeriods: number
-  exchangeRequests: number
+  exchangeOffers: number
+  exchangeCycles: number
+  exchangeParticipants: number
+  exchangeSources: number
   exchangeItems: number
   enrollmentRequests: number
   enrollmentRequestOptions: number
@@ -184,13 +188,22 @@ type DemoSummary = {
 }
 
 type ExchangeItemInsert = {
-  requestId: string
+  cycleId: string
   userId: string
   occurrenceId: number
   occurrenceYear: number
   fromClassId: number
   toClassId: number
-  accepted?: boolean
+  status?: ExchangeItemStatus
+  acceptedAt?: Temporal.Instant
+  statusReason?: string
+}
+
+type CycleParticipantInsert = {
+  nmec: string
+  fromClassId: number
+  toClassId: number
+  accepted: boolean
 }
 
 async function seedDemo(tx: Tx): Promise<DemoSummary> {
@@ -290,10 +303,6 @@ async function seedDemo(tx: Tx): Promise<DemoSummary> {
     if (!p) throw new Error(`No participant #${index} at occurrence ${occurrenceId}`)
     return p
   }
-  const otherClass = (occurrenceId: number, classId: number) => {
-    const ids = classIdsByOcc.get(occurrenceId)!
-    return classId === ids.a ? ids.b : ids.a
-  }
 
   const lEic = occurrencesByCourse.get(22841)!
   const mEic = occurrencesByCourse.get(22862)!
@@ -308,70 +317,168 @@ async function seedDemo(tx: Tx): Promise<DemoSummary> {
     })),
   )
 
-  // 6. Sample exchanges: three of each type, each created by a different student.
+  // 6. Sample exchanges: three offers of each type, each created by a different
+  //    student. A claimed or assigned offer gets a cycle with two participants
+  //    and their moves; an open marketplace offer stays cycle-less.
   const exchangeItemRows: ExchangeItemInsert[] = []
+  let exchangeOffers = 0
+  let exchangeCycles = 0
+  let exchangeParticipants = 0
+  let exchangeSources = 0
 
+  const createOffer = async (
+    type: ExchangeType,
+    o: Occurrence,
+    creator: Participant,
+    toClassId: number,
+    opts: {
+      status?: ExchangeOfferStatus
+      targetUserId?: string
+      message?: string
+    } = {},
+  ) => {
+    exchangeOffers += 1
+    return tx.orm.public.ExchangeRequest.create({
+      creatorId: creator.nmec,
+      targetUserId: opts.targetUserId,
+      type,
+      status: opts.status ?? 'OPEN',
+      message: opts.message,
+      occurrenceId: o.id,
+      occurrenceYear: o.year,
+      fromClassId: creator.classId,
+      toClassId,
+    })
+  }
+
+  const createCycle = async (
+    requestId: string,
+    o: Occurrence,
+    origin: ExchangeCycleOrigin,
+    participants: CycleParticipantInsert[],
+    opts: {
+      status?: ExchangeCycleStatus
+      adminState?: AdminValidationState
+    } = {},
+  ) => {
+    const cycleStatus = opts.status ?? 'PENDING'
+    const cycle = await tx.orm.public.ExchangeCycle.create({
+      origin,
+      status: cycleStatus,
+      adminState: opts.adminState,
+    })
+    exchangeCycles += 1
+    exchangeParticipants += participants.length
+    exchangeSources += 1
+
+    await tx.orm.public.ExchangeParticipant.createAll(
+      participants.map((p) => ({
+        cycleId: cycle.id,
+        userId: p.nmec,
+        acceptedAt: p.accepted ? EXCHANGE_OPENS : undefined,
+      })),
+    )
+    await tx.orm.public.ExchangeCycleSource.create({ cycleId: cycle.id, requestId })
+
+    for (const p of participants) {
+      // Items mirror their cycle: cancelling a cycle invalidates every move, so
+      // its items are CANCELLED with a reason; otherwise accepted participants
+      // get ACCEPTED (with the same timestamp as the participant row) and the
+      // rest stay PENDING. This matches the rule #992 derives cycle status from.
+      const cancelled = cycleStatus === 'CANCELLED'
+      exchangeItemRows.push({
+        cycleId: cycle.id,
+        userId: p.nmec,
+        occurrenceId: o.id,
+        occurrenceYear: o.year,
+        fromClassId: p.fromClassId,
+        toClassId: p.toClassId,
+        status: cancelled ? 'CANCELLED' : p.accepted ? 'ACCEPTED' : 'PENDING',
+        statusReason: cancelled ? 'Cycle cancelled' : undefined,
+        acceptedAt: p.accepted ? EXCHANGE_OPENS : undefined,
+      })
+    }
+
+    return cycle
+  }
+
+  // The demo has exactly two classes per occurrence, so the counterpart is the
+  // first participant in the other class.
+  const counterpart = (o: Occurrence, creatorIdx: number): Participant => {
+    const list = participantsByOcc.get(o.id) ?? []
+    const creator = list[creatorIdx]
+    const other = list.find((p) => p.nmec !== creator?.nmec && p.classId !== creator?.classId)
+    if (!creator || !other) {
+      throw new Error(`No counterpart for participant #${creatorIdx} at occurrence ${o.id}`)
+    }
+    return other
+  }
+
+  // DIRECT ×3: the two students are the swap, so the cycle exists immediately.
   const direct = async (
     o: Occurrence,
     creatorIdx: number,
     targetIdx: number,
-    status: ExchangeStatus,
+    cycleStatus: ExchangeCycleStatus,
     opts: { adminState?: AdminValidationState; accepted?: boolean } = {},
   ) => {
     const creator = pick(o.id, creatorIdx)
     const target = pick(o.id, targetIdx)
-    const req = await tx.orm.public.ExchangeRequest.create({
-      creatorId: creator.nmec,
-      targetUserId: target.nmec,
-      type: 'DIRECT',
-      status,
-      adminState: opts.adminState,
-    })
     const accepted = opts.accepted ?? false
-    exchangeItemRows.push(
-      {
-        requestId: req.id,
-        userId: creator.nmec,
-        occurrenceId: o.id,
-        occurrenceYear: o.year,
-        fromClassId: creator.classId,
-        toClassId: target.classId,
-        accepted,
-      },
-      {
-        requestId: req.id,
-        userId: target.nmec,
-        occurrenceId: o.id,
-        occurrenceYear: o.year,
-        fromClassId: target.classId,
-        toClassId: creator.classId,
-        accepted,
-      },
+
+    const offer = await createOffer('DIRECT', o, creator, target.classId, {
+      status: cycleStatus === 'CANCELLED' ? 'CANCELLED' : 'MATCHED',
+      targetUserId: target.nmec,
+    })
+
+    await createCycle(
+      offer.id,
+      o,
+      'DIRECT',
+      [
+        { nmec: creator.nmec, fromClassId: creator.classId, toClassId: target.classId, accepted },
+        { nmec: target.nmec, fromClassId: target.classId, toClassId: creator.classId, accepted },
+      ],
+      { status: cycleStatus, adminState: opts.adminState },
     )
   }
 
-  const single = async (
+  // MARKETPLACE/URGENT: an open offer has no cycle; claiming or assigning one
+  // creates the two-participant swap.
+  const claimed = async (
     type: Exclude<ExchangeType, 'DIRECT'>,
     o: Occurrence,
     creatorIdx: number,
-    opts: { status?: ExchangeStatus; adminState?: AdminValidationState; message?: string } = {},
+    opts: {
+      open?: boolean
+      cycleStatus?: ExchangeCycleStatus
+      adminState?: AdminValidationState
+      accepted?: boolean
+      message?: string
+    } = {},
   ) => {
     const creator = pick(o.id, creatorIdx)
-    const req = await tx.orm.public.ExchangeRequest.create({
-      creatorId: creator.nmec,
-      type,
-      status: opts.status ?? 'PENDING',
-      adminState: opts.adminState,
+    const other = counterpart(o, creatorIdx)
+    const open = opts.open ?? false
+
+    const offer = await createOffer(type, o, creator, other.classId, {
+      status: open ? 'OPEN' : opts.cycleStatus === 'CANCELLED' ? 'CANCELLED' : 'MATCHED',
+      targetUserId: open ? undefined : other.nmec,
       message: opts.message,
     })
-    exchangeItemRows.push({
-      requestId: req.id,
-      userId: creator.nmec,
-      occurrenceId: o.id,
-      occurrenceYear: o.year,
-      fromClassId: creator.classId,
-      toClassId: otherClass(o.id, creator.classId),
-    })
+    if (open) return
+
+    const accepted = opts.accepted ?? false
+    await createCycle(
+      offer.id,
+      o,
+      type,
+      [
+        { nmec: creator.nmec, fromClassId: creator.classId, toClassId: other.classId, accepted },
+        { nmec: other.nmec, fromClassId: other.classId, toClassId: creator.classId, accepted },
+      ],
+      { status: opts.cycleStatus, adminState: opts.adminState },
+    )
   }
 
   // DIRECT ×3
@@ -380,21 +487,27 @@ async function seedDemo(tx: Tx): Promise<DemoSummary> {
   await direct(mEic[0], 0, 1, 'CANCELLED')
 
   // MARKETPLACE ×3
-  await single('MARKETPLACE', lEic[2], 3)
-  await single('MARKETPLACE', mEic[1], 1, { status: 'ACCEPTED', adminState: 'TREATED' })
-  await single('MARKETPLACE', mEic[2], 2, { status: 'CANCELLED', adminState: 'REJECTED' })
+  await claimed('MARKETPLACE', lEic[2], 3, { open: true })
+  await claimed('MARKETPLACE', mEic[1], 1, {
+    cycleStatus: 'ACCEPTED',
+    adminState: 'TREATED',
+    accepted: true,
+  })
+  await claimed('MARKETPLACE', mEic[2], 2, { cycleStatus: 'CANCELLED', adminState: 'REJECTED' })
 
   // URGENT ×3
-  await single('URGENT', lEic[0], 4, {
+  await claimed('URGENT', lEic[0], 4, {
+    cycleStatus: 'PENDING',
     adminState: 'AWAITING_INFORMATION',
     message: 'Incompatibilidade de horário com outra unidade curricular.',
   })
-  await single('URGENT', lEic[1], 5, {
+  await claimed('URGENT', lEic[1], 5, {
+    cycleStatus: 'PENDING',
     adminState: 'TREATED',
     message: 'Sobreposição de avaliação no mesmo dia.',
   })
-  await single('URGENT', lEic[2], 1, {
-    status: 'CANCELLED',
+  await claimed('URGENT', lEic[2], 1, {
+    cycleStatus: 'CANCELLED',
     adminState: 'REJECTED',
     message: 'Pedido desnecessário após reorganização do horário.',
   })
@@ -413,7 +526,7 @@ async function seedDemo(tx: Tx): Promise<DemoSummary> {
     nmec: string,
     occurrences: Occurrence[],
     enrolling: boolean[],
-    status: ExchangeStatus,
+    status: EnrollmentRequestStatus,
     adminState: AdminValidationState,
   ) => {
     const req = await tx.orm.public.EnrollmentRequest.create({ userId: nmec, status, adminState })
@@ -456,7 +569,10 @@ async function seedDemo(tx: Tx): Promise<DemoSummary> {
     classes: classRows.length,
     enrollments: enrollRows.length,
     exchangePeriods: demoOccurrences.length,
-    exchangeRequests: 9,
+    exchangeOffers,
+    exchangeCycles,
+    exchangeParticipants,
+    exchangeSources,
     exchangeItems: exchangeItemRows.length,
     enrollmentRequests: 4,
     enrollmentRequestOptions: enrollmentRequestOptionRows.length,

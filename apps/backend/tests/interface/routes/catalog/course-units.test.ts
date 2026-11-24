@@ -57,6 +57,14 @@ describe('course-units routes', () => {
     expect(body).toEqual(COURSE_UNITS[0])
   })
 
+  it('a course unit carries its curricular year, distinct from the academic year', async () => {
+    const { body } = await get('/v1/course-units/42')
+
+    // BD is a 2nd-year unit in L.EIC's plan. Occurrence rows carry the
+    // academic `year` (2025); this is the plan position the picker tabulates.
+    expect(body).toMatchObject({ id: 42, courseUnitYear: 2 })
+  })
+
   it('an unknown course unit id answers 404 course-unit-not-found', async () => {
     const { status, body } = await get('/v1/course-units/99999')
 

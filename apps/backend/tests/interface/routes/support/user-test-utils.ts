@@ -1,32 +1,23 @@
-import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
+import type { ExchangeRepository } from '@/domain/ports/exchange.repository'
 import type { EligibleOccurrenceRepository } from '@/domain/ports/eligible-occurrence.repository'
+import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
 import { createApp } from '@/main'
+import type { App } from '@/main'
 
-import { TEST_SESSION_TOKEN, createFakeSessions } from './auth-test-utils'
+import { createFakeSessions } from './auth-test-utils'
+import { request } from './http-test-utils'
+import type { ApiResponse, RequestOptions } from './http-test-utils'
 
 // Shared harness for the `/v1/users/me/*` route tests. Like `catalog-test-utils`,
 // it drives the real app through `app.handle(request)` with fake repositories:
 // no listener and no database. `student-test-utils` builds on `createGet`.
+// The request itself is built by `http-test-utils`.
 
-type GetOptions = {
-  /** Cookie header to send. Defaults to the signed-in test session; `null` sends none. */
-  cookie?: string | null
-}
+type GetOptions = Pick<RequestOptions, 'cookie'>
 
 /** A `get(path)` bound to `app`, signed in as the test session unless told otherwise. */
-export function createGet(app: ReturnType<typeof createApp>) {
-  return async (path: string, { cookie = `session=${TEST_SESSION_TOKEN}` }: GetOptions = {}) => {
-    const response = await app.handle(new Request(`http://localhost${path}`, { headers: cookie ? { cookie } : {} }))
-    const contentType = response.headers.get('content-type')
-
-    return {
-      status: response.status,
-      contentType,
-      location: response.headers.get('location'),
-      // Redirects have no body, so only parse what says it is JSON.
-      body: contentType?.startsWith('application/json') ? ((await response.json()) as unknown) : null,
-    }
-  }
+export function createGet(app: App) {
+  return async (path: string, options: GetOptions = {}): Promise<ApiResponse> => request(app, path, options)
 }
 
 /**
@@ -37,12 +28,26 @@ export function createUsersApp(
   enrollmentRepository: Pick<EnrollmentRepository, 'findByUserId'> & Partial<EnrollmentRepository> = {
     findByUserId: async () => [],
   },
-  eligibleOccurrenceRepository: EligibleOccurrenceRepository = { findByUserId: async () => [] },
+  eligibleOccurrenceRepository: Partial<EligibleOccurrenceRepository> = { findByUserId: async () => [] },
+  exchangeRepository: Partial<ExchangeRepository> = {
+    findForUser: async () => ({ current: 1, hasNext: false, hasPrevious: false, data: [] }),
+  },
 ) {
   const app = createApp({
     repositories: {
-      enrollmentRepository: { sharesOccurrence: async () => false, ...enrollmentRepository },
-      eligibleOccurrenceRepository,
+      enrollmentRepository: {
+        sharesOccurrence: async () => false,
+        isEnrolledInOccurrence: async () => false,
+        ...enrollmentRepository,
+      },
+      eligibleOccurrenceRepository: {
+        findByUserId: async () => [],
+        ...eligibleOccurrenceRepository,
+      },
+      exchangeRepository: {
+        findForUser: async () => ({ current: 1, hasNext: false, hasPrevious: false, data: [] }),
+        ...exchangeRepository,
+      },
       sessionRepository: createFakeSessions(),
     },
   })

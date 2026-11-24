@@ -25,6 +25,8 @@ export type Major = {
 
 export type CourseInfo = {
   id: number
+  /** Academic year the occurrence belongs to. Distinct from `course_unit_year`. */
+  occurrenceYear: number
   course: number
   course_unit_year: number
   course_unit_id: number
@@ -53,7 +55,7 @@ export type SlotInfo = {
   start_time: number
   duration: number
   location: string
-  professors_link: string
+  professors_link?: string
   professors: Array<ProfessorInfo>
 }
 

@@ -26,6 +26,8 @@ export const slotDetailsSchema = t.Composite([slotSchema, t.Object({ classes: t.
 export const occurrenceSchema = t.Object({
   id: t.Number(),
   year: t.Number(),
+  // Sigarra occurrence page; the planner links the course unit name to it.
+  url: t.String(),
   courseUnit: t.Object({
     id: t.Number(),
     acronym: t.String(),

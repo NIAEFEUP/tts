@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'bun:test'
 
+import type { OccurrenceWithUnit } from '@/domain/ports/occurrence.repository'
+
 import { TEST_USER } from '../support/auth-test-utils'
 import { UNAUTHORIZED_BODY } from '../support/catalog-test-utils'
 import { createUsersApp } from '../support/user-test-utils'
 
 const PATH = '/v1/users/me/eligible-occurrences'
 
-const occurrences = [
+const occurrences: OccurrenceWithUnit[] = [
   {
     id: 12345,
     courseUnitId: 42,
@@ -17,6 +19,7 @@ const occurrences = [
     hash: 'occurrence-hash',
     acronym: 'BD',
     name: 'Bases de Dados',
+    courseUnitYear: 2,
   },
 ]
 

@@ -6,7 +6,7 @@
 // where a course unit is actually taught. It owns the classes, schedule,
 // exchange periods, and admin scope that the abstract `CourseUnit` does not.
 
-import type { CourseUnitSemester } from './course-unit.repository'
+import type { CourseUnitSemester, CourseUnitYear } from './course-unit.repository'
 
 /**
  * A concrete offering of a course unit. `id` is the Sigarra occurrence id and
@@ -23,13 +23,16 @@ export type Occurrence = {
 }
 
 /**
- * An occurrence joined with the fields of its abstract course unit. Returned
- * by `findById` so the single-occurrence endpoint can include the unit's
- * human-readable name and acronym without a separate round-trip.
+ * An occurrence joined with the fields of its abstract course unit. Returned by
+ * `findByCourse` and `findById` so the endpoints can include the unit's
+ * human-readable name, acronym, and curricular year without a separate
+ * round-trip.
  */
 export type OccurrenceWithUnit = Occurrence & {
   acronym: string
   name: string
+  /** Curricular year of the unit in its course plan — see `CourseUnit`. */
+  courseUnitYear: CourseUnitYear
 }
 
 /**
@@ -62,14 +65,17 @@ export type OccurrenceRepository = {
   /**
    * Occurrences for a course, optionally narrowed by academic year and/or
    * semester. Ordered by year (newest first). An empty list is not an error.
+   * Each row includes the course unit's `acronym`, `name`, and
+   * `courseUnitYear` so the picker needs no second round-trip.
    */
-  findByCourse(courseId: number, filter?: OccurrenceFilter): Promise<Occurrence[]>
+  findByCourse(courseId: number, filter?: OccurrenceFilter): Promise<OccurrenceWithUnit[]>
 
   /**
    * Single occurrence looked up by its composite primary key `(id, year)`.
    * Returns `null` when no row matches — the route turns this into a 404.
-   * The result includes the course unit's `acronym` and `name` so the
-   * endpoint can return the enriched shape without a separate query.
+   * The result includes the course unit's `acronym`, `name`, and
+   * `courseUnitYear` so the endpoint can return the enriched shape without a
+   * separate query.
    */
   findById(id: number, year: number): Promise<OccurrenceWithUnit | null>
 }

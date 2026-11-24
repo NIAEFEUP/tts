@@ -14,7 +14,7 @@ import { apiError } from '@/interface/middleware/error-handler'
 import { currentUserProfile } from '../session/current-user.handler'
 import { anonymous, sessionUser } from '../session/session.schemas'
 import { toSessionUser } from '../session/session.presenter'
-import { RETURN_TO_COOKIE, STATE_COOKIE, TRANSIENT_COOKIE_TTL_SECONDS } from './auth.utils'
+import { applyCookiePreferences, RETURN_TO_COOKIE, STATE_COOKIE, TRANSIENT_COOKIE_TTL_SECONDS } from './auth.utils'
 
 const OIDC_NOT_CONFIGURED = {
   error: 'Sigarra OIDC is not configured on this server',
@@ -60,18 +60,7 @@ export const authRoutes = ({ provider, users, sessions, sigarraDirect, config }:
   const logout = createLogout({ sessions })
 
   return (
-    new Elysia({
-      prefix: '/v1/auth',
-      // Every cookie this plugin writes (session + OIDC round-trip state) shares
-      // one attribute set; only maxAge differs per cookie. Elysia's `cookie`
-      // config applies it globally so call sites can't forget it.
-      cookie: {
-        httpOnly: true,
-        sameSite: 'lax' as const,
-        path: '/',
-        secure: config.secureCookies,
-      },
-    })
+    new Elysia({ prefix: '/v1/auth' })
       .use(createAuthMiddleware({ resolveSession: sessions.resolve }))
       // `response` schemas below reference this named model. Elysia resolves
       // model names per-instance, so it must be registered on this plugin too —
@@ -86,9 +75,9 @@ export const authRoutes = ({ provider, users, sessions, sigarraDirect, config }:
           const { url, state, returnTo } = beginLogin(query.return_to)
 
           cookie[STATE_COOKIE].value = state
-          cookie[STATE_COOKIE].maxAge = TRANSIENT_COOKIE_TTL_SECONDS
+          applyCookiePreferences(cookie[STATE_COOKIE], config, TRANSIENT_COOKIE_TTL_SECONDS)
           cookie[RETURN_TO_COOKIE].value = returnTo
-          cookie[RETURN_TO_COOKIE].maxAge = TRANSIENT_COOKIE_TTL_SECONDS
+          applyCookiePreferences(cookie[RETURN_TO_COOKIE], config, TRANSIENT_COOKIE_TTL_SECONDS)
 
           return redirect(url, 302)
         },
@@ -139,7 +128,7 @@ export const authRoutes = ({ provider, users, sessions, sigarraDirect, config }:
 
             clearTransient()
             cookie.session.value = token
-            cookie.session.maxAge = config.sessionTtlSeconds
+            applyCookiePreferences(cookie.session, config, config.sessionTtlSeconds)
 
             return redirect(redirectTo, 302)
           } catch (error) {
@@ -217,7 +206,7 @@ export const authRoutes = ({ provider, users, sessions, sigarraDirect, config }:
           }
 
           cookie.session.value = result.token
-          cookie.session.maxAge = config.sessionTtlSeconds
+          applyCookiePreferences(cookie.session, config, config.sessionTtlSeconds)
 
           return toSessionUser(result.user)
         },

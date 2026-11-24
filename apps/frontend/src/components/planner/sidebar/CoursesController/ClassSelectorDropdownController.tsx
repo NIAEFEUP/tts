@@ -5,6 +5,7 @@ import CourseContext from '../../../../contexts/CourseContext'
 import MultipleOptionsContext from '../../../../contexts/MultipleOptionsContext'
 import { teacherIdsFromCourseInfo, uniqueTeachersFromCourseInfo } from '../../../../utils'
 import { Desert } from '../../../svgs'
+import { Button } from '../../../ui/new/button'
 import { Tabs } from '../../../ui/new/tabs'
 import ClassItem from './ClassItem'
 import ProfessorItem from './ProfessorItem'
@@ -18,6 +19,8 @@ type Props = {
   contentRef: any
   triggerRef: any
   classesLoading: boolean
+  classesError: unknown
+  onRetry: () => void
   closeDropdown: () => void
 }
 
@@ -50,6 +53,18 @@ const NoOptionsFound = ({ mobile }: { mobile: boolean }) => {
   )
 }
 
+const ClassLoadError = ({ onRetry }: { onRetry: () => void }) => {
+  return (
+    <div className="mx-2 w-full">
+      <Desert className="w-full h-24" />
+      <p className="text-sm text-left my-4 w-full">Não foi possível carregar as turmas desta disciplina.</p>
+      <Button variant="outline" onClick={() => void onRetry()}>
+        Tentar novamente
+      </Button>
+    </div>
+  )
+}
+
 const ClassSelectorDropdownController = ({
   course,
   selectedClassIdHook,
@@ -59,6 +74,8 @@ const ClassSelectorDropdownController = ({
   contentRef,
   triggerRef,
   classesLoading,
+  classesError,
+  onRetry,
   closeDropdown,
 }: Props) => {
   const { multipleOptions, setMultipleOptions, selectedOption } = useContext(MultipleOptionsContext)
@@ -191,7 +208,9 @@ const ClassSelectorDropdownController = ({
               <Tabs.Panel>
                 {/* Removed max-h-96 and overflow-y-auto to fix the double scrollbar issue - Added back for Popover migration */}
                 <div className="pt-2 w-full max-h-[50vh] overflow-y-auto">
-                  {!course.classes || course.classes.length === 0 ? (
+                  {classesError && !course.classes ? (
+                    <ClassLoadError onRetry={onRetry} />
+                  ) : !course.classes || course.classes.length === 0 ? (
                     <NoOptionsFound mobile={false} />
                   ) : (
                     <>

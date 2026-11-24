@@ -14,14 +14,15 @@ const toMajor = (course: Course): Major => ({
   faculties: course.faculties,
 })
 
-const getCourses = async ({ year }: { year?: number } = {}): Promise<Major[]> => {
+/** Lists the catalog courses (majors) for a year — `GET /v1/courses`. */
+const listCourses = async ({ year }: { year?: number } = {}): Promise<Major[]> => {
   const { data, error } = await client.v1.courses.get({ query: { year } })
   if (error) throw error
   return data.map(toMajor)
 }
 
 const catalogService = {
-  getCourses,
+  listCourses,
 }
 
 export default catalogService
