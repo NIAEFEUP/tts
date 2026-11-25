@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 
 import { COURSE_UNITS, FORBIDDEN_BODY, OCCURRENCES, UNAUTHORIZED_BODY } from '../support/catalog-test-utils'
-import { ADMIN, TEST_USER } from '../support/auth-test-utils'
+import { TEST_USER } from '../support/auth-test-utils'
 import { fakeClassIds, fakeUserName } from '../support/admin-test-utils'
 import type { FakeEnrollment } from '../support/admin-test-utils'
 import {
@@ -230,6 +230,9 @@ describe('admin enrollment requests routes', () => {
 
       expect(await total('activeStates=UNTREATED')).toBe(1)
       expect(await total('activeStates=UNTREATED,AWAITING_INFORMATION')).toBe(2)
+      // The case does not matter, so the lowercase values of the admin UI work too.
+      expect(await total('activeStates=untreated')).toBe(1)
+      expect(await total('activeStates=untreated,Awaiting_Information')).toBe(2)
       expect(await total(`activeStates=REJECTED&activeCourse=${IN_SCOPE_COURSE + 1}`)).toBe(0)
 
       // Course and curricular year have to match on the same option, not on two different ones.
@@ -561,9 +564,5 @@ describe('admin enrollment requests routes', () => {
       expect(result.status).toBe(404)
       expect(errorCode(result.body)).toBe('enrollment-request-not-found')
     })
-  })
-
-  it('uses the admin fixture identity', () => {
-    expect(ADMIN.role).toBe('ADMIN')
   })
 })
