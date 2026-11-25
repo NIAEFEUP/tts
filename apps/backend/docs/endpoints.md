@@ -348,18 +348,18 @@ Every concrete occurrence of the unit, across the courses and academic years it 
 
 Occurrence is the concrete instance that carries classes, schedule, periods, and admin scope.
 
-| Method   | Path                                 | Auth  | Purpose                                                |
-| -------- | ------------------------------------ | ----- | ------------------------------------------------------ |
-| `GET`    | `/occurrences`                       | `?`   | List occurrences                                       |
-| `GET`    | `/occurrences/:id`                   | `?`   | Single occurrence                                      |
-| `GET`    | `/occurrences/:id/classes`           | `?`   | Classes for this occurrence                            |
-| `GET`    | `/occurrences/:id/slots`             | `?`   | Schedule slots for this occurrence                     |
-| `GET`    | `/occurrences/:id/periods`           | `?`   | Exchange periods for this occurrence (`year` required) |
-| `POST`   | `/occurrences/:id/periods`           | admin | Create exchange period for this occurrence (`year` required)               |
-| `PUT`    | `/occurrences/:id/periods/:periodId` | admin | Update period                                          |
-| `DELETE` | `/occurrences/:id/periods/:periodId` | admin | Delete period                                          |
-| `GET`    | `/occurrences/:id/exchange-metadata` | `?`   | Metadata for the exchange request card                 |
-| `GET`    | `/occurrences/hashes`                | `?`   | Hashes for a list of occurrence IDs                    |
+| Method   | Path                                 | Auth  | Purpose                                                      |
+| -------- | ------------------------------------ | ----- | ------------------------------------------------------------ |
+| `GET`    | `/occurrences`                       | `?`   | List occurrences                                             |
+| `GET`    | `/occurrences/:id`                   | `?`   | Single occurrence                                            |
+| `GET`    | `/occurrences/:id/classes`           | `?`   | Classes for this occurrence                                  |
+| `GET`    | `/occurrences/:id/slots`             | `?`   | Schedule slots for this occurrence                           |
+| `GET`    | `/occurrences/:id/periods`           | `?`   | Exchange periods for this occurrence (`year` required)       |
+| `POST`   | `/occurrences/:id/periods`           | admin | Create exchange period for this occurrence (`year` required) |
+| `PUT`    | `/occurrences/:id/periods/:periodId` | admin | Update period                                                |
+| `DELETE` | `/occurrences/:id/periods/:periodId` | admin | Delete period                                                |
+| `GET`    | `/occurrences/:id/exchange-metadata` | `?`   | Metadata for the exchange request card                       |
+| `GET`    | `/occurrences/hashes`                | `?`   | Hashes for a list of occurrence IDs                          |
 
 ### `GET /occurrences` — query params
 

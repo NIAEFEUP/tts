@@ -1,4 +1,5 @@
 import { and } from '@prisma/orm-postgres/orm-client'
+import { Temporal } from 'temporal-polyfill'
 
 import type {
   CourseExchangePeriod,
@@ -26,6 +27,19 @@ function toExchangePeriod(row: PeriodRow): ExchangePeriod {
     occurrenceYear: row.occurrenceYear,
     startsAt: new Date(row.startsAt.epochMilliseconds),
     endsAt: new Date(row.endsAt.epochMilliseconds),
+  }
+}
+
+function toInstant(date: Date): Temporal.Instant {
+  return Temporal.Instant.fromEpochMilliseconds(date.getTime())
+}
+
+function toDbPeriodInput(input: { occurrenceId: number; occurrenceYear: number; startsAt: Date; endsAt: Date }) {
+  return {
+    occurrenceId: input.occurrenceId,
+    occurrenceYear: input.occurrenceYear,
+    startsAt: toInstant(input.startsAt),
+    endsAt: toInstant(input.endsAt),
   }
 }
 
@@ -65,7 +79,9 @@ async function hasOverlap(
     excludingId?: string
   },
 ): Promise<boolean> {
-  const { occurrenceId, occurrenceYear, startsAt, endsAt, excludingId } = input
+  const { occurrenceId, occurrenceYear, excludingId } = input
+  const startsAt = toInstant(input.startsAt)
+  const endsAt = toInstant(input.endsAt)
 
   const query = client.orm.public.ExchangePeriod.where({ occurrenceId, occurrenceYear }).where((period) =>
     and(period.startsAt.lt(endsAt), period.endsAt.gt(startsAt)),
@@ -93,8 +109,8 @@ async function hasPendingRequestBackedByPeriod(client: OrmClient, period: Period
   const requestIds = [...new Set(options.map((option) => option.requestId))]
   if (requestIds.length === 0) return false
 
-  const startsAt = new Date(period.startsAt.epochMilliseconds)
-  const endsAt = new Date(period.endsAt.epochMilliseconds)
+  const startsAt = Temporal.Instant.fromEpochMilliseconds(period.startsAt.epochMilliseconds)
+  const endsAt = Temporal.Instant.fromEpochMilliseconds(period.endsAt.epochMilliseconds)
 
   const pendingRequest = await client.orm.public.EnrollmentRequest.where((request) =>
     and(
@@ -162,7 +178,7 @@ export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePer
         if (!occurrence) return { kind: 'not-found' }
         if (await hasOverlap(tx, input)) return { kind: 'overlap' }
 
-        const row = await tx.orm.public.ExchangePeriod.select(...PERIOD_COLUMNS).create(input)
+        const row = await tx.orm.public.ExchangePeriod.select(...PERIOD_COLUMNS).create(toDbPeriodInput(input))
         return { kind: 'created', period: toExchangePeriod(row) }
       })
     },
@@ -195,7 +211,7 @@ export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePer
           occurrenceYear: input.occurrenceYear,
         })
           .select(...PERIOD_COLUMNS)
-          .update({ startsAt: input.startsAt, endsAt: input.endsAt })
+          .update({ startsAt: toInstant(input.startsAt), endsAt: toInstant(input.endsAt) })
 
         if (!updated) return { kind: 'not-found' }
         return { kind: 'updated', period: toExchangePeriod(updated) }
@@ -251,12 +267,14 @@ export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePer
 
         const periods: ExchangePeriod[] = []
         for (const occurrence of occurrences) {
-          const row = await tx.orm.public.ExchangePeriod.select(...PERIOD_COLUMNS).create({
-            occurrenceId: occurrence.id,
-            occurrenceYear: occurrence.year,
-            startsAt,
-            endsAt,
-          })
+          const row = await tx.orm.public.ExchangePeriod.select(...PERIOD_COLUMNS).create(
+            toDbPeriodInput({
+              occurrenceId: occurrence.id,
+              occurrenceYear: occurrence.year,
+              startsAt,
+              endsAt,
+            }),
+          )
           periods.push(toExchangePeriod(row))
         }
 
