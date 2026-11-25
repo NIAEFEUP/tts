@@ -19,13 +19,17 @@ function isAdminState(value: string): value is EnrollmentRequestAdminState {
 }
 
 /**
- * Parses the comma-separated `activeStates` query value. Unknown values answer
- * 400 instead of silently matching nothing (e.g. `?activeStates=PENDNG`).
+ * Parses the comma-separated `activeStates` query value. The case does not
+ * matter, so `untreated` works like `UNTREATED`. Unknown values answer 400
+ * instead of silently matching nothing (e.g. `?activeStates=PENDNG`).
  */
 export function parseActiveStates(raw: string | undefined): EnrollmentRequestAdminState[] | undefined {
   if (raw === undefined) return undefined
 
-  const values = raw.split(',').filter((value) => value.length > 0)
+  const values = raw
+    .split(',')
+    .map((value) => value.trim().toUpperCase())
+    .filter((value) => value.length > 0)
   if (values.length === 0) return undefined
 
   const invalid = values.filter((value) => !isAdminState(value))

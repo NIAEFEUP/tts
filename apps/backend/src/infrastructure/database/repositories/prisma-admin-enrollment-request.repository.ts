@@ -73,19 +73,25 @@ export function createPrismaAdminEnrollmentRequestRepository({ db }: { db: Db })
         const unitIds = [...new Set(scopedOccurrences.map((occurrence) => occurrence.courseUnitId))]
         const units = await db.orm.public.CourseUnit.where((unit) => unit.id.in(unitIds)).all()
         const unitsById = new Map(units.map((unit) => [unit.id, unit] as const))
+
+        // Group the options by request once, so each request does not scan every option.
+        const optionsByRequestId = new Map<string, (typeof optionRows)[number][]>()
+        for (const option of optionRows) {
+          const list = optionsByRequestId.get(option.requestId)
+          if (list) list.push(option)
+          else optionsByRequestId.set(option.requestId, [option])
+        }
         rows = rows.filter((row) =>
-          optionRows
-            .filter((option) => option.requestId === row.id)
-            .some((option) => {
-              const occurrence = occurrencesByKey.get(`${option.occurrenceId}:${option.occurrenceYear}`)
-              if (!occurrence) return false
-              if (filters.activeCourse !== undefined && occurrence.courseId !== filters.activeCourse) return false
-              if (filters.activeCurricularYear !== undefined) {
-                const unit = unitsById.get(occurrence.courseUnitId)
-                if (!unit || unit.courseUnitYear !== filters.activeCurricularYear) return false
-              }
-              return true
-            }),
+          (optionsByRequestId.get(row.id) ?? []).some((option) => {
+            const occurrence = occurrencesByKey.get(`${option.occurrenceId}:${option.occurrenceYear}`)
+            if (!occurrence) return false
+            if (filters.activeCourse !== undefined && occurrence.courseId !== filters.activeCourse) return false
+            if (filters.activeCurricularYear !== undefined) {
+              const unit = unitsById.get(occurrence.courseUnitId)
+              if (!unit || unit.courseUnitYear !== filters.activeCurricularYear) return false
+            }
+            return true
+          }),
         )
       }
 
