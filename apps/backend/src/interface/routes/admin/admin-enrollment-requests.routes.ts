@@ -42,7 +42,11 @@ function toDecisionResponse(result: AdminEnrollmentRequestDecision, id: string) 
     case 'forbidden':
       throw httpError.forbidden()
     case 'not-pending':
-      throw new HttpError('enrollment-request-not-pending', 'Only pending enrollment requests can be decided', 409)
+      throw new HttpError(
+        'enrollment-request-not-pending',
+        `Enrollment request ${id} cannot be decided: it was already decided or withdrawn`,
+        409,
+      )
     case 'occurrence-has-no-classes':
       throw new HttpError(
         'occurrence-has-no-classes',
