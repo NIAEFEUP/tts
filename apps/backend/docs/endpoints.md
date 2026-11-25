@@ -880,8 +880,8 @@ shows its options that are inside the scope. Newest first. Query parameters:
 - `activeCurricularYear` — course-unit curricular year. Together with
   `activeCourse`, one option must match both.
 - `activeStates` — comma-separated list of `UNTREATED`, `TREATED`, `REJECTED`
-  or `AWAITING_INFORMATION`. Any other value answers
-  `400 invalid-active-states`.
+  or `AWAITING_INFORMATION`. The case does not matter, so `untreated` works
+  too. Any other value answers `400 invalid-active-states`.
 
 Every request in the response has the usual fields plus `userId` (the student
 number) and `userName`:
