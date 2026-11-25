@@ -869,13 +869,6 @@ id answers `404 enrollment-request-not-found`, another student's request
 answers `403 forbidden`, and a request that is already `ACCEPTED` or
 `CANCELLED` answers `409 enrollment-request-not-pending`.
 
----
-
-The four `/enrollment-requests` routes require a session (`401 unauthorized`
-otherwise) and are scoped to the session user. The three admin routes require
-an authenticated `ADMIN` or `SUPERUSER` account and are scoped to the
-occurrences in the admin's `AdminOccurrence` rows.
-
 ### `GET /admin/enrollment-requests`
 
 Lists enrollment requests that contain at least one occurrence in the signed-in
@@ -957,7 +950,9 @@ gives `403`, even when the other options are inside.
 Legacy mapping:
 
 - `POST /course_unit/enrollment/` → `POST /enrollment-requests` (implemented)
-- `GET /course_unit/enrollment/?page=&page_size=` → `GET /admin/enrollment-requests?page=&page_size=` (planned, #875)
+- `GET /course_unit/enrollment/?page=&page_size=` → `GET /admin/enrollment-requests?page=&page_size=` (implemented)
+- `PUT /exchange/admin/request/enrollment/:id/accept/` → `POST /admin/enrollment-requests/:id/accept` (implemented)
+- `PUT /exchange/admin/request/enrollment/:id/reject/` → `POST /admin/enrollment-requests/:id/reject` (implemented)
 
 ---
 
