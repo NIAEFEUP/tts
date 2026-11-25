@@ -14,6 +14,7 @@ import type { ExchangeRepository } from '@/domain/ports/exchange.repository'
 import type { ExchangePeriodsRepository } from '@/domain/ports/exchange-period.repository'
 import type { AdminRepository } from '@/domain/ports/admin.repository'
 import type { EnrollmentRequestRepository } from '@/domain/ports/enrollment-request.repository'
+import type { AdminEnrollmentRequestRepository } from '@/domain/ports/admin-enrollment-request.repository'
 
 import { createExchangePeriodsRepository } from './prisma-exchange-periods.repository'
 import { createCourseRepository } from './prisma-course.repository'
@@ -30,6 +31,7 @@ import { createSlotRepository } from './prisma-slot.repository'
 import { createExchangeRepository } from './prisma-exchange.repository'
 import { createAdminRepository } from './prisma-admin.repository'
 import { createEnrollmentRequestRepository } from './prisma-enrollment-request.repository'
+import { createPrismaAdminEnrollmentRequestRepository } from './prisma-admin-enrollment-request.repository'
 
 export type Repositories = {
   courseRepository: CourseRepository
@@ -47,6 +49,7 @@ export type Repositories = {
   exchangePeriodsRepository: ExchangePeriodsRepository
   adminRepository: AdminRepository
   enrollmentRequestRepository: EnrollmentRequestRepository
+  adminEnrollmentRequestRepository: AdminEnrollmentRequestRepository
 }
 
 export function createRepositories(db: Db): Repositories {
@@ -66,5 +69,6 @@ export function createRepositories(db: Db): Repositories {
     exchangePeriodsRepository: createExchangePeriodsRepository({ db }),
     adminRepository: createAdminRepository({ db }),
     enrollmentRequestRepository: createEnrollmentRequestRepository({ db }),
+    adminEnrollmentRequestRepository: createPrismaAdminEnrollmentRequestRepository({ db }),
   }
 }
