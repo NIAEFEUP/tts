@@ -1,3 +1,4 @@
+import type { AdminEnrollmentRequest } from '@/domain/ports/admin-enrollment-request.repository'
 import type { EnrollmentRequest } from '@/domain/ports/enrollment-request.repository'
 
 export type EnrollmentRequestResponse = {
@@ -10,6 +11,11 @@ export type EnrollmentRequestResponse = {
     occurrence: EnrollmentRequest['options'][number]['occurrence']
     enrolling: boolean
   }>
+}
+
+export type AdminEnrollmentRequestResponse = EnrollmentRequestResponse & {
+  userId: string
+  userName: string
 }
 
 /**
@@ -37,5 +43,17 @@ export function toEnrollmentRequestResponse(request: EnrollmentRequest): Enrollm
       },
       enrolling: option.enrolling,
     })),
+  }
+}
+
+/**
+ * Admin projection: same shape as the student one, plus who made the request
+ * (`userId` is the student number, `userName` the student name).
+ */
+export function toAdminEnrollmentRequestResponse(request: AdminEnrollmentRequest): AdminEnrollmentRequestResponse {
+  return {
+    ...toEnrollmentRequestResponse(request),
+    userId: request.userId,
+    userName: request.userName,
   }
 }

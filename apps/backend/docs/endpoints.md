@@ -403,6 +403,28 @@ Matches the frontend’s `CourseInfo` with embedded `ClassInfo`. The `id` here i
 }
 ```
 
+### `GET /occurrences/:id/slots` — query params and response
+
+`year` is required because Sigarra may reuse an occurrence id across academic
+years. Each slot appears once and includes all classes of this occurrence
+linked through `SlotClass`, so shared lectures remain represented as one slot
+with multiple class references.
+
+```json
+[
+  {
+    "id": 789,
+    "lessonType": "T",
+    "dayOfWeek": 1,
+    "startMinute": 570,
+    "durationMin": 90,
+    "location": "B001",
+    "classes": [{ "id": 456, "name": "1LEIC01" }],
+    "professors": [{ "id": 1, "acronym": "JAS", "name": "João Silva" }]
+  }
+]
+```
+
 Legacy mapping:
 
 - `GET /class/<int:course_unit_id>/` → `GET /occurrences/:id/classes`
@@ -420,6 +442,10 @@ Legacy mapping:
 | `GET`  | `/classes/:id/students` | admin | Students enrolled in this class  |
 | `GET`  | `/slots/:id`            | `?`   | Schedule slot detail             |
 | `GET`  | `/slots/:id/professors` | `?`   | Professors assigned to this slot |
+
+`GET /slots/:id` returns the slot's schedule fields, professors, and all
+classes linked to it. `GET /slots/:id/professors` returns only the assigned
+professor array. Both endpoints return `404 slot-not-found` for an unknown id.
 
 ---
 
@@ -829,8 +855,9 @@ Legacy mapping:
 | `POST`   | `/admin/enrollment-requests/:id/reject` | admin | Reject                           |
 
 The four `/enrollment-requests` routes require a session (`401 unauthorized`
-otherwise) and are scoped to the session user. The admin routes are tracked
-separately (#875) and are not part of this implementation.
+otherwise) and are scoped to the session user. The three admin routes require
+an authenticated `ADMIN` or `SUPERUSER` account and are scoped to the
+occurrences in the admin's `AdminOccurrence` rows.
 
 ### Response shape
 
@@ -924,16 +951,90 @@ id answers `404 enrollment-request-not-found`, another student's request
 answers `403 forbidden`, and a request that is already `ACCEPTED` or
 `CANCELLED` answers `409 enrollment-request-not-pending`.
 
-### `GET /admin/enrollment-requests` — not implemented yet (#875)
+### `GET /admin/enrollment-requests`
 
-The admin list, accept and reject routes are tracked separately in #875 and are
-not registered by this change. Their planned filters are `page` / `page_size`,
-`activeCourse`, `activeCurricularYear` and `activeStates`.
+Lists enrollment requests that contain at least one occurrence in the signed-in
+admin's occurrence scope. Cancelled requests are not listed. Each request only
+shows its options that are inside the scope. Newest first. Query parameters:
+
+- `page` (default `1`) and `page_size` (default `20`, maximum `100`)
+- `activeCourse` — occurrence course id
+- `activeCurricularYear` — course-unit curricular year. Together with
+  `activeCourse`, one option must match both.
+- `activeStates` — comma-separated list of `UNTREATED`, `TREATED`, `REJECTED`
+  or `AWAITING_INFORMATION`. The case does not matter, so `untreated` works
+  too. Any other value answers `400 invalid-active-states`.
+
+Every request in the response has the usual fields plus `userId` (the student
+number) and `userName`:
+
+```json
+{
+  "requests": [
+    {
+      "id": "…",
+      "userId": "202012345",
+      "userName": "Ana Silva",
+      "status": "PENDING",
+      "adminState": "UNTREATED",
+      "options": []
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "total": 1,
+  "totalPages": 1
+}
+```
+
+Anonymous callers receive `401 unauthorized`; signed-in non-admin callers
+receive `403 forbidden`.
+
+### `POST /admin/enrollment-requests/:id/accept`
+
+Accepts a request and applies every option in one transaction. Then it sets
+`status` to `ACCEPTED` and `adminState` to `TREATED`. The response is the
+updated request, with `userId` and `userName`.
+
+- `enrolling: true` enrolls the student in one class of the occurrence, the one
+  with the lowest id. If the student is already in a class of that occurrence,
+  nothing is added, so the schedule shows the course unit once.
+- `enrolling: false` removes the student from every class of the occurrence.
+
+If an enrolling option points to an occurrence with no classes, nothing is
+changed and the answer is `409 occurrence-has-no-classes`. A database failure
+leaves both the enrollments and the request unchanged.
+
+### `POST /admin/enrollment-requests/:id/reject`
+
+Keeps `status` as `PENDING` and sets `adminState` to `REJECTED`. Enrollments are
+not changed. The response is the updated request, with `userId` and `userName`.
+
+Rejection is final: a rejected request cannot be accepted or rejected again.
+Only a `PENDING` request with `adminState` `UNTREATED` or `AWAITING_INFORMATION`
+can be decided.
+
+### Errors for accept and reject
+
+The checks run in this order: unknown id, scope, state.
+
+| Status | Code                             | When                                                                                                            |
+| ------ | -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `401`  | `unauthorized`                   | No session                                                                                                      |
+| `403`  | `forbidden`                      | Not an admin, or any option of the request is outside the admin's scope, even if the request is already decided |
+| `404`  | `enrollment-request-not-found`   | Unknown id                                                                                                      |
+| `409`  | `enrollment-request-not-pending` | The request is in scope but is not `PENDING`, or its `adminState` is not `UNTREATED` or `AWAITING_INFORMATION`  |
+| `409`  | `occurrence-has-no-classes`      | Accept only: an enrolling option has an occurrence with no classes                                              |
+
+Every option must be inside the admin's scope. One option outside the scope
+gives `403`, even when the other options are inside.
 
 Legacy mapping:
 
 - `POST /course_unit/enrollment/` → `POST /enrollment-requests` (implemented)
-- `GET /course_unit/enrollment/?page=&page_size=` → `GET /admin/enrollment-requests?page=&page_size=` (planned, #875)
+- `GET /course_unit/enrollment/?page=&page_size=` → `GET /admin/enrollment-requests?page=&page_size=` (implemented)
+- `PUT /exchange/admin/request/enrollment/:id/accept/` → `POST /admin/enrollment-requests/:id/accept` (implemented)
+- `PUT /exchange/admin/request/enrollment/:id/reject/` → `POST /admin/enrollment-requests/:id/reject` (implemented)
 
 ---
 
