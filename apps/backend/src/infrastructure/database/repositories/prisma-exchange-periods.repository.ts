@@ -98,7 +98,7 @@ async function hasOverlap(
   return match !== null
 }
 
-async function hasPendingRequestBackedByPeriod(client: OrmClient, period: PeriodRow): Promise<boolean> {
+async function pendingRequestTimesBackedByPeriod(client: OrmClient, period: PeriodRow): Promise<number[]> {
   const options = await client.orm.public.EnrollmentRequestOption.where({
     occurrenceId: period.occurrenceId,
     occurrenceYear: period.occurrenceYear,
@@ -107,12 +107,12 @@ async function hasPendingRequestBackedByPeriod(client: OrmClient, period: Period
     .all()
 
   const requestIds = [...new Set(options.map((option) => option.requestId))]
-  if (requestIds.length === 0) return false
+  if (requestIds.length === 0) return []
 
   const startsAt = Temporal.Instant.fromEpochMilliseconds(period.startsAt.epochMilliseconds)
   const endsAt = Temporal.Instant.fromEpochMilliseconds(period.endsAt.epochMilliseconds)
 
-  const pendingRequest = await client.orm.public.EnrollmentRequest.where((request) =>
+  const pendingRequests = await client.orm.public.EnrollmentRequest.where((request) =>
     and(
       request.id.in(requestIds),
       request.status.eq('PENDING'),
@@ -120,10 +120,10 @@ async function hasPendingRequestBackedByPeriod(client: OrmClient, period: Period
       request.createdAt.lte(endsAt),
     ),
   )
-    .select('id')
-    .first()
+    .select('createdAt')
+    .all()
 
-  return pendingRequest !== null
+  return pendingRequests.map((request) => request.createdAt.epochMilliseconds)
 }
 
 export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePeriodsRepository {
@@ -205,6 +205,13 @@ export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePer
         if (!existing) return { kind: 'not-found' }
         if (await hasOverlap(tx, { ...input, excludingId: input.id })) return { kind: 'overlap' }
 
+        const pendingTimes = await pendingRequestTimesBackedByPeriod(tx, existing)
+        if (
+          pendingTimes.some((createdAt) => createdAt < input.startsAt.getTime() || createdAt > input.endsAt.getTime())
+        ) {
+          return { kind: 'pending-requests' }
+        }
+
         const updated = await tx.orm.public.ExchangePeriod.where({
           id: input.id,
           occurrenceId: input.occurrenceId,
@@ -234,7 +241,7 @@ export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePer
           .first()
 
         if (!period) return { kind: 'not-found' }
-        if (await hasPendingRequestBackedByPeriod(tx, period)) return { kind: 'pending-requests' }
+        if ((await pendingRequestTimesBackedByPeriod(tx, period)).length > 0) return { kind: 'pending-requests' }
 
         await tx.orm.public.ExchangePeriod.where(input).delete()
         return { kind: 'deleted', period: toExchangePeriod(period) }
