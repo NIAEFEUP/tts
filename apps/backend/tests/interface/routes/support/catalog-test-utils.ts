@@ -6,6 +6,7 @@ import type { Course, CourseRepository } from '@/domain/ports/course.repository'
 import type { ClassRepository, EnrolledStudent, ClassWithSlots } from '@/domain/ports/class.repository'
 import type { CourseUnit, CourseUnitRepository } from '@/domain/ports/course-unit.repository'
 import type { Faculty, FacultyRepository } from '@/domain/ports/faculty.repository'
+import type { EnrollmentRequestStatus } from '@/domain/ports/enrollment-request.repository'
 import type { Occurrence, OccurrenceWithUnit, OccurrenceRepository } from '@/domain/ports/occurrence.repository'
 import type {
   CourseExchangePeriod,
@@ -218,6 +219,32 @@ export const EXCHANGE_PERIODS: ExchangePeriod[] = [
   },
 ]
 
+export type EnrollmentRequestFixture = {
+  id: string
+  occurrenceId: number
+  occurrenceYear: number
+  status: EnrollmentRequestStatus
+  createdAt: Date
+}
+
+export const PENDING_PERIOD: ExchangePeriod = {
+  id: 'period-587177-2026-11',
+  occurrenceId: 587177,
+  occurrenceYear: 2025,
+  startsAt: new Date('2026-11-01T00:00:00Z'),
+  endsAt: new Date('2026-12-01T00:00:00Z'),
+}
+
+export const PENDING_ENROLLMENT_REQUESTS: EnrollmentRequestFixture[] = [
+  {
+    id: 'request-pending-587177-2025',
+    occurrenceId: 587177,
+    occurrenceYear: 2025,
+    status: 'PENDING',
+    createdAt: new Date('2026-11-10T00:00:00Z'),
+  },
+]
+
 /** Error bodies shared by every catalog route, so tests assert shapes, not literals. */
 export { FORBIDDEN_BODY, UNAUTHORIZED_BODY, VALIDATION_ERROR_BODY } from './http-test-utils'
 
@@ -230,15 +257,27 @@ export type CatalogFixtures = {
   classes?: ClassWithSlots[]
   classStudents?: Record<number, EnrolledStudent[]>
   exchangePeriods?: ExchangePeriod[]
+  enrollmentRequests?: EnrollmentRequestFixture[]
 }
 
 /** In-memory `ExchangePeriodsRepository` over `exchangePeriods` (defaults to `EXCHANGE_PERIODS`). */
 export function createFakeExchangePeriodsRepository({
   exchangePeriods = EXCHANGE_PERIODS,
   occurrences = OCCURRENCES,
+  enrollmentRequests = [],
 }: CatalogFixtures = {}): ExchangePeriodsRepository {
   const periods = [...exchangePeriods]
   let nextId = 1
+
+  const pendingBackedBy = (period: Pick<ExchangePeriod, 'occurrenceId' | 'occurrenceYear' | 'startsAt' | 'endsAt'>) =>
+    enrollmentRequests.filter(
+      (request) =>
+        request.status === 'PENDING' &&
+        request.occurrenceId === period.occurrenceId &&
+        request.occurrenceYear === period.occurrenceYear &&
+        request.createdAt >= period.startsAt &&
+        request.createdAt <= period.endsAt,
+    )
 
   const overlaps = (occurrenceId: number, occurrenceYear: number, startsAt: Date, endsAt: Date, excludingId?: string) =>
     periods.some(
@@ -308,6 +347,14 @@ export function createFakeExchangePeriodsRepository({
         return { kind: 'overlap' }
       }
 
+      if (
+        pendingBackedBy(periods[index]!).some(
+          (request) => request.createdAt < input.startsAt || request.createdAt > input.endsAt,
+        )
+      ) {
+        return { kind: 'pending-requests' }
+      }
+
       const period = {
         id: input.id,
         occurrenceId: input.occurrenceId,
@@ -326,6 +373,7 @@ export function createFakeExchangePeriodsRepository({
           period.occurrenceYear === input.occurrenceYear,
       )
       if (index === -1) return { kind: 'not-found' }
+      if (pendingBackedBy(periods[index]!).length > 0) return { kind: 'pending-requests' }
 
       const [period] = periods.splice(index, 1)
       return { kind: 'deleted', period: period! }
@@ -573,6 +621,7 @@ export function createCatalogApp({
   classes,
   classStudents,
   exchangePeriods,
+  enrollmentRequests,
   courseScopes,
   occurrenceScopes,
   courseRepository,
@@ -593,6 +642,7 @@ export function createCatalogApp({
     classes,
     classStudents,
     exchangePeriods,
+    enrollmentRequests,
   }
   const app = createApp({
     repositories: {

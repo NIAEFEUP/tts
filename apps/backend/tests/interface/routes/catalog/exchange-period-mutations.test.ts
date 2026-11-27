@@ -2,6 +2,9 @@ import { describe, expect, it } from 'bun:test'
 
 import { ADMIN } from '../support/auth-test-utils'
 import {
+  EXCHANGE_PERIODS,
+  PENDING_ENROLLMENT_REQUESTS,
+  PENDING_PERIOD,
   VALIDATION_ERROR_BODY,
   createCatalogApp,
   registerAdminGuard,
@@ -13,12 +16,22 @@ const OVERLAPPING_RANGE = { startsAt: '2025-09-05T00:00:00.000Z', endsAt: '2025-
 
 const OCCURRENCE_PATH = '/v1/occurrences/587177/periods?year=2025'
 const PERIOD_PATH = '/v1/occurrences/587177/periods/period-587177-2025-02'
+const PENDING_PERIOD_PATH = `/v1/occurrences/587177/periods/${PENDING_PERIOD.id}`
 const COURSE_PATH = '/v1/courses/22841/periods'
 
 function scopedApp() {
   return createCatalogApp({
     user: ADMIN,
     courseScopes: { [ADMIN.id]: [22841] },
+    occurrenceScopes: { [ADMIN.id]: [{ id: 587177, year: 2025 }] },
+  })
+}
+
+function pendingRequestApp() {
+  return createCatalogApp({
+    user: ADMIN,
+    exchangePeriods: [...EXCHANGE_PERIODS, PENDING_PERIOD],
+    enrollmentRequests: PENDING_ENROLLMENT_REQUESTS,
     occurrenceScopes: { [ADMIN.id]: [{ id: 587177, year: 2025 }] },
   })
 }
@@ -129,6 +142,51 @@ describe('exchange period mutations', () => {
 
     const listed = await get(OCCURRENCE_PATH)
     expect((listed.body as { id: string }[]).some((period) => period.id === 'period-587177-2025-02')).toBe(false)
+  })
+
+  it('rejects a PUT that would leave a pending request outside the new window', async () => {
+    const { put, get } = pendingRequestApp()
+
+    const update = await put(PENDING_PERIOD_PATH, {
+      body: { startsAt: '2026-11-20T00:00:00.000Z', endsAt: '2026-12-01T00:00:00.000Z' },
+    })
+
+    expect(update.status).toBe(409)
+    expect(update.body).toMatchObject({ code: 'exchange-period-has-pending-requests' })
+
+    const listed = await get(OCCURRENCE_PATH)
+    expect(
+      (listed.body as { id: string; startsAt: string }[]).some(
+        (period) => period.id === PENDING_PERIOD.id && period.startsAt === PENDING_PERIOD.startsAt.toISOString(),
+      ),
+    ).toBe(true)
+  })
+
+  it('allows a PUT that still covers the pending request', async () => {
+    const { put } = pendingRequestApp()
+
+    const { status, body } = await put(PENDING_PERIOD_PATH, {
+      body: { startsAt: '2026-11-05T00:00:00.000Z', endsAt: '2026-12-15T00:00:00.000Z' },
+    })
+
+    expect(status).toBe(200)
+    expect(body).toMatchObject({
+      id: PENDING_PERIOD.id,
+      startsAt: '2026-11-05T00:00:00.000Z',
+      endsAt: '2026-12-15T00:00:00.000Z',
+    })
+  })
+
+  it('refuses to delete a period that backs a pending request', async () => {
+    const { del, get } = pendingRequestApp()
+
+    const removal = await del(PENDING_PERIOD_PATH)
+
+    expect(removal.status).toBe(409)
+    expect(removal.body).toMatchObject({ code: 'exchange-period-has-pending-requests' })
+
+    const listed = await get(OCCURRENCE_PATH)
+    expect((listed.body as { id: string }[]).some((period) => period.id === PENDING_PERIOD.id)).toBe(true)
   })
 
   it('opens one period per occurrence of a course', async () => {
