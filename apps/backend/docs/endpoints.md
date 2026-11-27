@@ -426,7 +426,7 @@ No `year` query param: the period is looked up by `periodId` and its `occurrence
 }
 ```
 
-`200` returns the updated period in the same shape as the `POST` response.
+`200` returns the updated period in the same shape as the `POST` response. A `409 exchange-period-has-pending-requests` answers a window that would leave a pending enrollment request outside it.
 
 ### `DELETE /occurrences/:id/periods/:periodId`
 
@@ -436,16 +436,16 @@ No body and no `year` query param; the year comes from the period row. `204` wit
 
 Applies to `POST`, `PUT`, and `DELETE` above:
 
-| Status | Code                                   | Meaning                                                                                                    |
-| ------ | -------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `400`  | `invalid-period-range`                 | `startsAt` is not earlier than `endsAt` (POST/PUT).                                                        |
-| `401`  | `unauthorized`                         | No valid session.                                                                                          |
-| `403`  | `forbidden`                            | Not an admin, or no `AdminOccurrence` scope for the resolved occurrence.                                   |
-| `404`  | `occurrence-not-found`                 | No occurrence for `(id, year)`, or the scoped occurrence no longer exists.                                 |
-| `404`  | `exchange-period-not-found`            | Unknown `periodId`, or it belongs to a different occurrence than `:id`.                                    |
-| `409`  | `exchange-period-overlap`              | The window overlaps an existing period of the occurrence (POST/PUT).                                       |
-| `409`  | `exchange-period-has-pending-requests` | DELETE: pending exchange requests depend on the period.                                                    |
-| `422`  | `validation-error`                     | Invalid path params, missing/invalid `year` on POST, missing/invalid body, or dates that are not ISO 8601. |
+| Status | Code                                   | Meaning                                                                                                      |
+| ------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `400`  | `invalid-period-range`                 | `startsAt` is not earlier than `endsAt` (POST/PUT).                                                          |
+| `401`  | `unauthorized`                         | No valid session.                                                                                            |
+| `403`  | `forbidden`                            | Not an admin, or no `AdminOccurrence` scope for the resolved occurrence.                                     |
+| `404`  | `occurrence-not-found`                 | No occurrence for `(id, year)`, or the scoped occurrence no longer exists.                                   |
+| `404`  | `exchange-period-not-found`            | Unknown `periodId`, or it belongs to a different occurrence than `:id`.                                      |
+| `409`  | `exchange-period-overlap`              | The window overlaps an existing period of the occurrence (POST/PUT).                                         |
+| `409`  | `exchange-period-has-pending-requests` | PUT: the new window would leave a pending request outside it; DELETE: pending requests depend on the period. |
+| `422`  | `validation-error`                     | Invalid path params, missing/invalid `year` on POST, missing/invalid body, or dates that are not ISO 8601.   |
 
 ### `GET /occurrences/:id/classes` — response shape
 

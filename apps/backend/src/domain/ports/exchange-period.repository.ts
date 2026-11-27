@@ -52,7 +52,8 @@ export type ExchangePeriodsRepository = {
 
   /**
    * Updates a period only when its id belongs to the supplied occurrence pair.
-   * Returns `overlap` if the new range conflicts with another period there.
+   * Returns `overlap` if the new range conflicts with another period there, or
+   * `pending-requests` if it would leave a pending request outside the new range.
    */
   update(input: {
     id: string
