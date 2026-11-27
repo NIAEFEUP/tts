@@ -99,31 +99,32 @@ async function hasOverlap(
 }
 
 async function pendingRequestTimesBackedByPeriod(client: OrmClient, period: PeriodRow): Promise<number[]> {
-  const options = await client.orm.public.EnrollmentRequestOption.where({
-    occurrenceId: period.occurrenceId,
-    occurrenceYear: period.occurrenceYear,
-  })
-    .select('requestId')
-    .all()
-
-  const requestIds = [...new Set(options.map((option) => option.requestId))]
-  if (requestIds.length === 0) return []
-
   const startsAt = Temporal.Instant.fromEpochMilliseconds(period.startsAt.epochMilliseconds)
   const endsAt = Temporal.Instant.fromEpochMilliseconds(period.endsAt.epochMilliseconds)
 
   const pendingRequests = await client.orm.public.EnrollmentRequest.where((request) =>
-    and(
-      request.id.in(requestIds),
-      request.status.eq('PENDING'),
-      request.createdAt.gte(startsAt),
-      request.createdAt.lte(endsAt),
-    ),
+    and(request.status.eq('PENDING'), request.createdAt.gte(startsAt), request.createdAt.lte(endsAt)),
   )
-    .select('createdAt')
+    .select('id', 'createdAt')
     .all()
 
-  return pendingRequests.map((request) => request.createdAt.epochMilliseconds)
+  if (pendingRequests.length === 0) return []
+
+  const requestIds = pendingRequests.map((request) => request.id)
+  const options = await client.orm.public.EnrollmentRequestOption.where((option) =>
+    and(
+      option.requestId.in(requestIds),
+      option.occurrenceId.eq(period.occurrenceId),
+      option.occurrenceYear.eq(period.occurrenceYear),
+    ),
+  )
+    .select('requestId')
+    .all()
+
+  const backedIds = new Set(options.map((option) => option.requestId))
+  return pendingRequests
+    .filter((request) => backedIds.has(request.id))
+    .map((request) => request.createdAt.epochMilliseconds)
 }
 
 export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePeriodsRepository {
