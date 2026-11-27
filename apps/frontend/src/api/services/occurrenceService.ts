@@ -1,6 +1,6 @@
 import { client } from '@/api/client'
-import type { ClassInfo, CourseInfo, SlotInfo } from '../../@types'
-import { getAcademicYear } from '../../utils'
+import type { ClassInfo, CourseInfo, SlotInfo } from '@/@types'
+import { getAcademicYear } from '@/utils'
 
 type Occurrence = NonNullable<
   Awaited<ReturnType<ReturnType<typeof client.v1.courses>['occurrences']['get']>>['data']

@@ -1,18 +1,21 @@
-import { MajorSearchCombobox, CourseYearTabs, PickedCoursesList, Ects } from './course-picker'
+import {
+  MajorSearchCombobox,
+  CourseYearTabs,
+  PickedCoursesList,
+  Ects,
+} from '@/components/planner/sidebar/sessionController/course-picker'
 import { AlertCircle, PenSquare } from 'lucide-react'
 import { useContext, useEffect } from 'react'
 import { X } from 'lucide-react'
-import { Desert } from '../../../svgs'
-import { Button } from '../../../ui/new/button'
-import { Dialog } from '../../../ui/new/dialog'
-import useCourseUnits from '../../../../hooks/useCourseUnits'
-import { Skeleton } from '../../../ui/skeleton'
-import { Alert, AlertDescription } from '../../../ui/alert'
-import { ClearAllCoursesButton } from './course-picker/ClearAllCoursesButton'
-import CoursePickerContext from '../../../../contexts/coursePicker/CoursePickerContext'
-import { Divider } from '../../../ui/new/divider'
-
-//TODO: absolute imports with @
+import { Desert } from '@/components/svgs'
+import { Button } from '@/components/ui/new/button'
+import { Dialog } from '@/components/ui/new/dialog'
+import useCourseUnits from '@/hooks/useCourseUnits'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { ClearAllCoursesButton } from '@/components/planner/sidebar/sessionController/course-picker/ClearAllCoursesButton'
+import CoursePickerContext from '@/contexts/coursePicker/CoursePickerContext'
+import { Divider } from '@/components/ui/new/divider'
 
 type Props = {
   allowedAcronyms?: string[]

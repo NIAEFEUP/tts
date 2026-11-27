@@ -1,6 +1,6 @@
-import { client } from '../client'
-import { toCourseInfo } from './occurrenceService'
-import type { CourseInfo, Major } from '../../@types'
+import { client } from '@/api/client'
+import { toCourseInfo } from '@/api/services/occurrenceService'
+import type { CourseInfo, Major } from '@/@types'
 
 type Course = NonNullable<Awaited<ReturnType<typeof client.v1.courses.get>>['data']>[number]
 
