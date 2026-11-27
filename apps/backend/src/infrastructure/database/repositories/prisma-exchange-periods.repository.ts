@@ -1,4 +1,4 @@
-import { and } from '@prisma/orm-postgres/orm-client'
+import { and, or } from '@prisma/orm-postgres/orm-client'
 import { Temporal } from 'temporal-polyfill'
 
 import type {
@@ -69,33 +69,47 @@ export function selectCourseWindows(
   return [...windows.values()]
 }
 
-async function hasOverlap(
+type OccurrenceKey = { id: number; year: number }
+
+async function findOverlappingPeriod(
   client: OrmClient,
-  input: {
-    occurrenceId: number
-    occurrenceYear: number
-    startsAt: Date
-    endsAt: Date
-    excludingId?: string
-  },
-): Promise<boolean> {
-  const { occurrenceId, occurrenceYear, excludingId } = input
+  input: { occurrences: OccurrenceKey[]; startsAt: Date; endsAt: Date; excludingId?: string },
+): Promise<OccurrenceKey | null> {
+  const { occurrences, excludingId } = input
+  if (occurrences.length === 0) return null
+
   const startsAt = toInstant(input.startsAt)
   const endsAt = toInstant(input.endsAt)
 
-  const query = client.orm.public.ExchangePeriod.where({ occurrenceId, occurrenceYear }).where((period) =>
-    and(period.startsAt.lt(endsAt), period.endsAt.gt(startsAt)),
+  const query = client.orm.public.ExchangePeriod.where((period) =>
+    and(
+      or(...occurrences.map(({ id, year }) => and(period.occurrenceId.eq(id), period.occurrenceYear.eq(year)))),
+      period.startsAt.lt(endsAt),
+      period.endsAt.gt(startsAt),
+    ),
   )
+  const filtered = excludingId === undefined ? query : query.where((period) => period.id.neq(excludingId))
 
-  const match =
-    excludingId === undefined
-      ? await query.select('id').first()
-      : await query
-          .where((period) => period.id.neq(excludingId))
-          .select('id')
-          .first()
+  const conflict = await filtered
+    .orderBy([(period) => period.occurrenceId.asc(), (period) => period.occurrenceYear.asc()])
+    .select('occurrenceId', 'occurrenceYear')
+    .first()
 
-  return match !== null
+  return conflict ? { id: conflict.occurrenceId, year: conflict.occurrenceYear } : null
+}
+
+async function hasOverlap(
+  client: OrmClient,
+  input: { occurrenceId: number; occurrenceYear: number; startsAt: Date; endsAt: Date; excludingId?: string },
+): Promise<boolean> {
+  return (
+    (await findOverlappingPeriod(client, {
+      occurrences: [{ id: input.occurrenceId, year: input.occurrenceYear }],
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+      excludingId: input.excludingId,
+    })) !== null
+  )
 }
 
 async function pendingRequestTimesBackedByPeriod(client: OrmClient, period: PeriodRow): Promise<number[]> {
@@ -256,37 +270,23 @@ export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePer
           .select('id', 'year')
           .all()
 
-        for (const occurrence of occurrences) {
-          if (
-            await hasOverlap(tx, {
-              occurrenceId: occurrence.id,
-              occurrenceYear: occurrence.year,
-              startsAt,
-              endsAt,
-            })
-          ) {
-            return {
-              kind: 'overlap',
-              occurrenceId: occurrence.id,
-              occurrenceYear: occurrence.year,
-            }
-          }
-        }
+        if (occurrences.length === 0) return { kind: 'created', periods: [] }
 
-        const periods: ExchangePeriod[] = []
-        for (const occurrence of occurrences) {
-          const row = await tx.orm.public.ExchangePeriod.select(...PERIOD_COLUMNS).create(
+        const conflict = await findOverlappingPeriod(tx, { occurrences, startsAt, endsAt })
+        if (conflict) return { kind: 'overlap', occurrenceId: conflict.id, occurrenceYear: conflict.year }
+
+        const rows = await tx.orm.public.ExchangePeriod.select(...PERIOD_COLUMNS).createAll(
+          occurrences.map((occurrence) =>
             toDbPeriodInput({
               occurrenceId: occurrence.id,
               occurrenceYear: occurrence.year,
               startsAt,
               endsAt,
             }),
-          )
-          periods.push(toExchangePeriod(row))
-        }
+          ),
+        )
 
-        return { kind: 'created', periods }
+        return { kind: 'created', periods: rows.map(toExchangePeriod) }
       })
     },
   }
