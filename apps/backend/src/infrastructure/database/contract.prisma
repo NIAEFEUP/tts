@@ -66,6 +66,8 @@ model User {
   adminOccurrences       AdminOccurrence[]
   courseMetadata         StudentCourseMetadata[]
   plannerStates          PlannerState[]
+
+  exchangeCycleAdminActions ExchangeCycleAdminAction[]
 }
 
 // Opaque random token in an httpOnly cookie. Chosen over JWT so sessions are
@@ -549,6 +551,7 @@ model ExchangeCycle {
   participants ExchangeParticipant[]
   items        ExchangeItem[]
   sources      ExchangeCycleSource[]
+  adminActions ExchangeCycleAdminAction[]
 
   @@index([status, createdAt])
   @@index([adminState, createdAt])
@@ -584,6 +587,33 @@ model ExchangeCycleSource {
 
   @@id([cycleId, requestId])
   @@index([requestId])
+}
+
+// Append-only audit trail for cycle-level admin decisions. Every admin state
+// change on an ExchangeCycle writes one immutable row in the same transaction
+// as the cycle update (#991); transitions are stored on both sides because
+// `fromState -> toState` IS the action — there is no `action` column. Rows are
+// never updated or deleted. Both FKs are Restrict: an audit row must not
+// silently lose its actor (`adminId`) or its subject (`cycleId`). Cycles end at
+// CANCELLED rather than being hard-deleted; if deletion becomes necessary,
+// soft-delete the cycle (#1018) instead of reintroducing Cascade. If user
+// deletion has to remain possible, replace `adminId` with a nullable column
+// plus an `adminName` snapshot. Reads order by (createdAt, id).
+model ExchangeCycleAdminAction {
+  id        String @id @default(uuid())
+  cycleId   String
+  cycle     ExchangeCycle @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+
+  adminId   String
+  admin     User @relation(fields: [adminId], references: [id], onDelete: Restrict)
+
+  fromState AdminValidationState
+  toState   AdminValidationState
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([cycleId, createdAt])
+  @@index([adminId, createdAt])
 }
 
 // ===========================================================================

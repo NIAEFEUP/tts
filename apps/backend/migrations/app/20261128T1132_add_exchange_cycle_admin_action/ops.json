@@ -1,0 +1,245 @@
+[
+  {
+    "id": "table.ExchangeCycleAdminAction",
+    "label": "Create table \"ExchangeCycleAdminAction\"",
+    "summary": "Creates table \"ExchangeCycleAdminAction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ExchangeCycleAdminAction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ExchangeCycleAdminAction\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeCycleAdminAction\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ExchangeCycleAdminAction\"",
+        "sql": "CREATE TABLE \"public\".\"ExchangeCycleAdminAction\" (\n  \"adminId\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"cycleId\" text NOT NULL,\n  \"fromState\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"note\" text,\n  \"toState\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"ExchangeCycleAdminAction_fromState_check_b8f510ef\" CHECK (\"fromState\" IN ('UNTREATED', 'TREATED', 'REJECTED', 'AWAITING_INFORMATION')),\n  CONSTRAINT \"ExchangeCycleAdminAction_toState_check_99abb6fe\" CHECK (\"toState\" IN ('UNTREATED', 'TREATED', 'REJECTED', 'AWAITING_INFORMATION'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ExchangeCycleAdminAction\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeCycleAdminAction\""]
+      }
+    ]
+  },
+  {
+    "id": "index.ExchangeCycleAdminAction.ExchangeCycleAdminAction_adminId_createdAt_idx_5015ed56",
+    "label": "Create index \"ExchangeCycleAdminAction_adminId_createdAt_idx_5015ed56\" on \"ExchangeCycleAdminAction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ExchangeCycleAdminAction_adminId_createdAt_idx_5015ed56",
+        "table": "ExchangeCycleAdminAction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ExchangeCycleAdminAction_adminId_createdAt_idx_5015ed56\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeCycleAdminAction_adminId_createdAt_idx_5015ed56\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ExchangeCycleAdminAction_adminId_createdAt_idx_5015ed56\"",
+        "sql": "CREATE INDEX \"ExchangeCycleAdminAction_adminId_createdAt_idx_5015ed56\" ON \"public\".\"ExchangeCycleAdminAction\" (\"adminId\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ExchangeCycleAdminAction_adminId_createdAt_idx_5015ed56\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeCycleAdminAction_adminId_createdAt_idx_5015ed56\""]
+      }
+    ]
+  },
+  {
+    "id": "index.ExchangeCycleAdminAction.ExchangeCycleAdminAction_adminId_idx_530179db",
+    "label": "Create index \"ExchangeCycleAdminAction_adminId_idx_530179db\" on \"ExchangeCycleAdminAction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ExchangeCycleAdminAction_adminId_idx_530179db",
+        "table": "ExchangeCycleAdminAction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ExchangeCycleAdminAction_adminId_idx_530179db\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeCycleAdminAction_adminId_idx_530179db\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ExchangeCycleAdminAction_adminId_idx_530179db\"",
+        "sql": "CREATE INDEX \"ExchangeCycleAdminAction_adminId_idx_530179db\" ON \"public\".\"ExchangeCycleAdminAction\" (\"adminId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ExchangeCycleAdminAction_adminId_idx_530179db\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeCycleAdminAction_adminId_idx_530179db\""]
+      }
+    ]
+  },
+  {
+    "id": "index.ExchangeCycleAdminAction.ExchangeCycleAdminAction_cycleId_createdAt_idx_e886fe67",
+    "label": "Create index \"ExchangeCycleAdminAction_cycleId_createdAt_idx_e886fe67\" on \"ExchangeCycleAdminAction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ExchangeCycleAdminAction_cycleId_createdAt_idx_e886fe67",
+        "table": "ExchangeCycleAdminAction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ExchangeCycleAdminAction_cycleId_createdAt_idx_e886fe67\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeCycleAdminAction_cycleId_createdAt_idx_e886fe67\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ExchangeCycleAdminAction_cycleId_createdAt_idx_e886fe67\"",
+        "sql": "CREATE INDEX \"ExchangeCycleAdminAction_cycleId_createdAt_idx_e886fe67\" ON \"public\".\"ExchangeCycleAdminAction\" (\"cycleId\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ExchangeCycleAdminAction_cycleId_createdAt_idx_e886fe67\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeCycleAdminAction_cycleId_createdAt_idx_e886fe67\""]
+      }
+    ]
+  },
+  {
+    "id": "index.ExchangeCycleAdminAction.ExchangeCycleAdminAction_cycleId_idx_75f87b79",
+    "label": "Create index \"ExchangeCycleAdminAction_cycleId_idx_75f87b79\" on \"ExchangeCycleAdminAction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ExchangeCycleAdminAction_cycleId_idx_75f87b79",
+        "table": "ExchangeCycleAdminAction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ExchangeCycleAdminAction_cycleId_idx_75f87b79\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeCycleAdminAction_cycleId_idx_75f87b79\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ExchangeCycleAdminAction_cycleId_idx_75f87b79\"",
+        "sql": "CREATE INDEX \"ExchangeCycleAdminAction_cycleId_idx_75f87b79\" ON \"public\".\"ExchangeCycleAdminAction\" (\"cycleId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ExchangeCycleAdminAction_cycleId_idx_75f87b79\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"ExchangeCycleAdminAction_cycleId_idx_75f87b79\""]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ExchangeCycleAdminAction.ExchangeCycleAdminAction_cycleId_fkey",
+    "label": "Add foreign key \"ExchangeCycleAdminAction_cycleId_fkey\" on \"ExchangeCycleAdminAction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ExchangeCycleAdminAction_cycleId_fkey",
+        "table": "ExchangeCycleAdminAction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ExchangeCycleAdminAction_cycleId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeCycleAdminAction_cycleId_fkey", "public", "\"public\".\"ExchangeCycleAdminAction\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ExchangeCycleAdminAction_cycleId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeCycleAdminAction\"\nADD CONSTRAINT \"ExchangeCycleAdminAction_cycleId_fkey\"\nFOREIGN KEY (\"cycleId\")\nREFERENCES \"public\".\"ExchangeCycle\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ExchangeCycleAdminAction_cycleId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeCycleAdminAction_cycleId_fkey", "public", "\"public\".\"ExchangeCycleAdminAction\""]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ExchangeCycleAdminAction.ExchangeCycleAdminAction_adminId_fkey",
+    "label": "Add foreign key \"ExchangeCycleAdminAction_adminId_fkey\" on \"ExchangeCycleAdminAction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ExchangeCycleAdminAction_adminId_fkey",
+        "table": "ExchangeCycleAdminAction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ExchangeCycleAdminAction_adminId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeCycleAdminAction_adminId_fkey", "public", "\"public\".\"ExchangeCycleAdminAction\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ExchangeCycleAdminAction_adminId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ExchangeCycleAdminAction\"\nADD CONSTRAINT \"ExchangeCycleAdminAction_adminId_fkey\"\nFOREIGN KEY (\"adminId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ExchangeCycleAdminAction_adminId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["ExchangeCycleAdminAction_adminId_fkey", "public", "\"public\".\"ExchangeCycleAdminAction\""]
+      }
+    ]
+  }
+]
