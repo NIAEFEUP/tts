@@ -41,8 +41,7 @@ const CoursePicker = ({ allowedAcronyms }: Props) => {
   const showContent = selectedMajor || coursesStorage.length > 0
 
   useEffect(() => {
-    if (!courseUnits) return
-    setCoursesInfo(courseUnits)
+    setCoursesInfo(courseUnits ?? [])
   }, [courseUnits, setCoursesInfo])
 
   const handleOpenChange = (open: boolean) => {
