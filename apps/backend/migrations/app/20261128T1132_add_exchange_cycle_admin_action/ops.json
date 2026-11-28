@@ -197,7 +197,7 @@
     "execute": [
       {
         "description": "add FK \"ExchangeCycleAdminAction_cycleId_fkey\"",
-        "sql": "ALTER TABLE \"public\".\"ExchangeCycleAdminAction\"\nADD CONSTRAINT \"ExchangeCycleAdminAction_cycleId_fkey\"\nFOREIGN KEY (\"cycleId\")\nREFERENCES \"public\".\"ExchangeCycle\" (\"id\")\nON DELETE CASCADE"
+        "sql": "ALTER TABLE \"public\".\"ExchangeCycleAdminAction\"\nADD CONSTRAINT \"ExchangeCycleAdminAction_cycleId_fkey\"\nFOREIGN KEY (\"cycleId\")\nREFERENCES \"public\".\"ExchangeCycle\" (\"id\")\nON DELETE RESTRICT"
       }
     ],
     "postcheck": [

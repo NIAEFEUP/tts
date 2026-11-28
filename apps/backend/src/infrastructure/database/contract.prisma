@@ -593,14 +593,16 @@ model ExchangeCycleSource {
 // change on an ExchangeCycle writes one immutable row in the same transaction
 // as the cycle update (#991); transitions are stored on both sides because
 // `fromState -> toState` IS the action — there is no `action` column. Rows are
-// never updated or deleted. `adminId` is Restrict, not Cascade: an audit row
-// must not silently lose its actor. If user deletion has to remain possible,
-// replace it with a nullable `adminId` plus an `adminName` snapshot. Reads
-// order by (createdAt, id).
+// never updated or deleted. Both FKs are Restrict: an audit row must not
+// silently lose its actor (`adminId`) or its subject (`cycleId`). Cycles end at
+// CANCELLED rather than being hard-deleted; if deletion becomes necessary,
+// soft-delete the cycle (#1018) instead of reintroducing Cascade. If user
+// deletion has to remain possible, replace `adminId` with a nullable column
+// plus an `adminName` snapshot. Reads order by (createdAt, id).
 model ExchangeCycleAdminAction {
   id        String @id @default(uuid())
   cycleId   String
-  cycle     ExchangeCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  cycle     ExchangeCycle @relation(fields: [cycleId], references: [id], onDelete: Restrict)
 
   adminId   String
   admin     User @relation(fields: [adminId], references: [id], onDelete: Restrict)

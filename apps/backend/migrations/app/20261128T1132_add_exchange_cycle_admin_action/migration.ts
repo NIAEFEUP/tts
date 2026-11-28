@@ -1,8 +1,8 @@
 #!/usr/bin/env -S node
 import type { Contract as Start } from '../../snapshots/2f8c5ac898706fdaf0e017c0dc3ed69571cc2166d29f3f385ec34faf02aedff3/contract'
 import startContract from '../../snapshots/2f8c5ac898706fdaf0e017c0dc3ed69571cc2166d29f3f385ec34faf02aedff3/contract.json' with { type: 'json' }
-import type { Contract as End } from '../../snapshots/3ae3c9cdebf32ced8267bf3de2400015dca15bd2aeedf6249adebda2dd5e6b8b/contract'
-import endContract from '../../snapshots/3ae3c9cdebf32ced8267bf3de2400015dca15bd2aeedf6249adebda2dd5e6b8b/contract.json' with { type: 'json' }
+import type { Contract as End } from '../../snapshots/71b00e7b7906404008b30d1d10ef74875ae74f6d6d1e22eaf66878053fc96c5f/contract'
+import endContract from '../../snapshots/71b00e7b7906404008b30d1d10ef74875ae74f6d6d1e22eaf66878053fc96c5f/contract.json' with { type: 'json' }
 import { Migration, MigrationCLI, checkExpression, col, fn, primaryKey } from '@prisma/orm-postgres/migration'
 
 export default class M extends Migration<Start, End> {
@@ -70,7 +70,7 @@ export default class M extends Migration<Start, End> {
           name: 'ExchangeCycleAdminAction_cycleId_fkey',
           columns: ['cycleId'],
           references: { schema: 'public', table: 'ExchangeCycle', columns: ['id'] },
-          onDelete: 'cascade',
+          onDelete: 'restrict',
         },
       }),
       this.addForeignKey({

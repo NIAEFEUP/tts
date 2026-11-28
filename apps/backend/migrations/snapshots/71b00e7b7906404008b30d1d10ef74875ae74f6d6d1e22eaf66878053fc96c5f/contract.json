@@ -1842,7 +1842,7 @@
               "foreignKeys": [
                 {
                   "index": { "name": "ExchangeCycleAdminAction_cycleId_idx_75f87b79" },
-                  "onDelete": "cascade",
+                  "onDelete": "restrict",
                   "source": {
                     "columns": ["cycleId"],
                     "namespaceId": "public",
@@ -2644,7 +2644,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "3ae3c9cdebf32ced8267bf3de2400015dca15bd2aeedf6249adebda2dd5e6b8b"
+    "storageHash": "71b00e7b7906404008b30d1d10ef74875ae74f6d6d1e22eaf66878053fc96c5f"
   },
   "target": "postgres",
   "targetFamily": "sql"
