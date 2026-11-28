@@ -168,7 +168,12 @@
               "occurrenceId": { "nullable": false, "type": { "codecId": "pg/int4@1", "kind": "scalar" } },
               "occurrenceYear": { "nullable": false, "type": { "codecId": "pg/int4@1", "kind": "scalar" } },
               "updatedAt": { "nullable": false, "type": { "codecId": "pg/timestamptz-temporal@1", "kind": "scalar" } },
-              "vacancies": { "nullable": true, "type": { "codecId": "pg/int4@1", "kind": "scalar" } }
+              "vacancies": { "nullable": true, "type": { "codecId": "pg/int4@1", "kind": "scalar" } },
+              "vacanciesSource": { "nullable": true, "type": { "codecId": "pg/text@1", "kind": "scalar" } },
+              "vacanciesUpdatedAt": {
+                "nullable": true,
+                "type": { "codecId": "pg/timestamptz-temporal@1", "kind": "scalar" }
+              }
             },
             "relations": {
               "enrollments": {
@@ -228,7 +233,9 @@
                 "occurrenceId": { "column": "occurrenceId" },
                 "occurrenceYear": { "column": "occurrenceYear" },
                 "updatedAt": { "column": "updatedAt" },
-                "vacancies": { "column": "vacancies" }
+                "vacancies": { "column": "vacancies" },
+                "vacanciesSource": { "column": "vacanciesSource" },
+                "vacanciesUpdatedAt": { "column": "vacanciesUpdatedAt" }
               },
               "namespaceId": "public",
               "table": "Class"
@@ -478,11 +485,6 @@
               "updatedAt": { "nullable": false, "type": { "codecId": "pg/timestamptz-temporal@1", "kind": "scalar" } }
             },
             "relations": {
-              "adminActions": {
-                "cardinality": "1:N",
-                "on": { "localFields": ["id"], "targetFields": ["cycleId"] },
-                "to": { "model": "ExchangeCycleAdminAction", "namespace": "public" }
-              },
               "items": {
                 "cardinality": "1:N",
                 "on": { "localFields": ["id"], "targetFields": ["cycleId"] },
@@ -512,62 +514,6 @@
               },
               "namespaceId": "public",
               "table": "ExchangeCycle"
-            }
-          },
-          "ExchangeCycleAdminAction": {
-            "fields": {
-              "adminId": { "nullable": false, "type": { "codecId": "pg/text@1", "kind": "scalar" } },
-              "createdAt": { "nullable": false, "type": { "codecId": "pg/timestamptz-temporal@1", "kind": "scalar" } },
-              "cycleId": { "nullable": false, "type": { "codecId": "pg/text@1", "kind": "scalar" } },
-              "fromState": {
-                "nullable": false,
-                "type": { "codecId": "pg/text@1", "kind": "scalar" },
-                "valueSet": {
-                  "entityKind": "enum",
-                  "entityName": "AdminValidationState",
-                  "namespaceId": "public",
-                  "plane": "domain"
-                }
-              },
-              "id": { "nullable": false, "type": { "codecId": "pg/text@1", "kind": "scalar" } },
-              "note": { "nullable": true, "type": { "codecId": "pg/text@1", "kind": "scalar" } },
-              "toState": {
-                "nullable": false,
-                "type": { "codecId": "pg/text@1", "kind": "scalar" },
-                "valueSet": {
-                  "entityKind": "enum",
-                  "entityName": "AdminValidationState",
-                  "namespaceId": "public",
-                  "plane": "domain"
-                }
-              }
-            },
-            "relations": {
-              "admin": {
-                "cardinality": "N:1",
-                "nullable": false,
-                "on": { "localFields": ["adminId"], "targetFields": ["id"] },
-                "to": { "model": "User", "namespace": "public" }
-              },
-              "cycle": {
-                "cardinality": "N:1",
-                "nullable": false,
-                "on": { "localFields": ["cycleId"], "targetFields": ["id"] },
-                "to": { "model": "ExchangeCycle", "namespace": "public" }
-              }
-            },
-            "storage": {
-              "fields": {
-                "adminId": { "column": "adminId" },
-                "createdAt": { "column": "createdAt" },
-                "cycleId": { "column": "cycleId" },
-                "fromState": { "column": "fromState" },
-                "id": { "column": "id" },
-                "note": { "column": "note" },
-                "toState": { "column": "toState" }
-              },
-              "namespaceId": "public",
-              "table": "ExchangeCycleAdminAction"
             }
           },
           "ExchangeCycleSource": {
@@ -1166,11 +1112,6 @@
                 "on": { "localFields": ["id"], "targetFields": ["userId"] },
                 "to": { "model": "Enrollment", "namespace": "public" }
               },
-              "exchangeCycleAdminActions": {
-                "cardinality": "1:N",
-                "on": { "localFields": ["id"], "targetFields": ["adminId"] },
-                "to": { "model": "ExchangeCycleAdminAction", "namespace": "public" }
-              },
               "exchangeItems": {
                 "cardinality": "1:N",
                 "on": { "localFields": ["id"], "targetFields": ["userId"] },
@@ -1219,7 +1160,7 @@
     }
   },
   "execution": {
-    "executionHash": "f97853d64be260df697eda7ea1f9ecebcd71f6663da734f11f109d7fade58bad",
+    "executionHash": "d8d8aef4f36acf5d95230ba35eb1c722a94c5d75b1a7abb58a4863bdd327d18f",
     "mutations": {
       "defaults": [
         {
@@ -1254,10 +1195,6 @@
           "onCreate": { "id": "instantNow", "kind": "generator" },
           "onUpdate": { "id": "instantNow", "kind": "generator" },
           "ref": { "entry": "ExchangeCycle", "field": "updatedAt", "namespace": "public" }
-        },
-        {
-          "onCreate": { "id": "uuidv4", "kind": "generator" },
-          "ref": { "entry": "ExchangeCycleAdminAction", "field": "id", "namespace": "public" }
         },
         {
           "onCreate": { "id": "instantNow", "kind": "generator" },
@@ -1298,7 +1235,6 @@
     "EnrollmentRequest": { "model": "EnrollmentRequest", "namespace": "public" },
     "EnrollmentRequestOption": { "model": "EnrollmentRequestOption", "namespace": "public" },
     "ExchangeCycle": { "model": "ExchangeCycle", "namespace": "public" },
-    "ExchangeCycleAdminAction": { "model": "ExchangeCycleAdminAction", "namespace": "public" },
     "ExchangeCycleSource": { "model": "ExchangeCycleSource", "namespace": "public" },
     "ExchangeItem": { "model": "ExchangeItem", "namespace": "public" },
     "ExchangeParticipant": { "model": "ExchangeParticipant", "namespace": "public" },
@@ -1421,7 +1357,13 @@
                   "dataType": "pg/timestamptz",
                   "nullable": false
                 },
-                "vacancies": { "codecId": "pg/int4@1", "dataType": "pg/int4", "nullable": true }
+                "vacancies": { "codecId": "pg/int4@1", "dataType": "pg/int4", "nullable": true },
+                "vacanciesSource": { "codecId": "pg/text@1", "dataType": "pg/text", "nullable": true },
+                "vacanciesUpdatedAt": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                }
               },
               "foreignKeys": [
                 {
@@ -1773,104 +1715,6 @@
                   "columns": ["status", "createdAt"],
                   "name": "ExchangeCycle_status_createdAt_idx_58610442",
                   "prefix": "ExchangeCycle_status_createdAt_idx",
-                  "unique": false
-                }
-              ],
-              "primaryKey": { "columns": ["id"] },
-              "uniques": []
-            },
-            "ExchangeCycleAdminAction": {
-              "checks": [
-                {
-                  "expression": "\"fromState\" IN ('UNTREATED', 'TREATED', 'REJECTED', 'AWAITING_INFORMATION')",
-                  "name": "ExchangeCycleAdminAction_fromState_check_b8f510ef",
-                  "prefix": "ExchangeCycleAdminAction_fromState_check"
-                },
-                {
-                  "expression": "\"toState\" IN ('UNTREATED', 'TREATED', 'REJECTED', 'AWAITING_INFORMATION')",
-                  "name": "ExchangeCycleAdminAction_toState_check_99abb6fe",
-                  "prefix": "ExchangeCycleAdminAction_toState_check"
-                }
-              ],
-              "columns": {
-                "adminId": { "codecId": "pg/text@1", "dataType": "pg/text", "nullable": false },
-                "createdAt": {
-                  "codecId": "pg/timestamptz-temporal@1",
-                  "dataType": "pg/timestamptz",
-                  "default": { "expression": "now()", "kind": "function" },
-                  "nullable": false
-                },
-                "cycleId": { "codecId": "pg/text@1", "dataType": "pg/text", "nullable": false },
-                "fromState": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "nullable": false,
-                  "valueSet": {
-                    "entityKind": "valueSet",
-                    "entityName": "AdminValidationState",
-                    "namespaceId": "public",
-                    "plane": "storage"
-                  }
-                },
-                "id": { "codecId": "pg/text@1", "dataType": "pg/text", "nullable": false },
-                "note": { "codecId": "pg/text@1", "dataType": "pg/text", "nullable": true },
-                "toState": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
-                  "nullable": false,
-                  "valueSet": {
-                    "entityKind": "valueSet",
-                    "entityName": "AdminValidationState",
-                    "namespaceId": "public",
-                    "plane": "storage"
-                  }
-                }
-              },
-              "foreignKeys": [
-                {
-                  "index": { "name": "ExchangeCycleAdminAction_cycleId_idx_75f87b79" },
-                  "onDelete": "cascade",
-                  "source": {
-                    "columns": ["cycleId"],
-                    "namespaceId": "public",
-                    "tableName": "ExchangeCycleAdminAction"
-                  },
-                  "target": { "columns": ["id"], "namespaceId": "public", "tableName": "ExchangeCycle" }
-                },
-                {
-                  "index": { "name": "ExchangeCycleAdminAction_adminId_idx_530179db" },
-                  "onDelete": "restrict",
-                  "source": {
-                    "columns": ["adminId"],
-                    "namespaceId": "public",
-                    "tableName": "ExchangeCycleAdminAction"
-                  },
-                  "target": { "columns": ["id"], "namespaceId": "public", "tableName": "User" }
-                }
-              ],
-              "indexes": [
-                {
-                  "columns": ["adminId", "createdAt"],
-                  "name": "ExchangeCycleAdminAction_adminId_createdAt_idx_5015ed56",
-                  "prefix": "ExchangeCycleAdminAction_adminId_createdAt_idx",
-                  "unique": false
-                },
-                {
-                  "columns": ["adminId"],
-                  "name": "ExchangeCycleAdminAction_adminId_idx_530179db",
-                  "prefix": "ExchangeCycleAdminAction_adminId_idx",
-                  "unique": false
-                },
-                {
-                  "columns": ["cycleId", "createdAt"],
-                  "name": "ExchangeCycleAdminAction_cycleId_createdAt_idx_e886fe67",
-                  "prefix": "ExchangeCycleAdminAction_cycleId_createdAt_idx",
-                  "unique": false
-                },
-                {
-                  "columns": ["cycleId"],
-                  "name": "ExchangeCycleAdminAction_cycleId_idx_75f87b79",
-                  "prefix": "ExchangeCycleAdminAction_cycleId_idx",
                   "unique": false
                 }
               ],
@@ -2631,7 +2475,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "e3247dcc2cec972220caa5a51bb09c7074cbe8748eb8012d2dd26a52963de815"
+    "storageHash": "2f8c5ac898706fdaf0e017c0dc3ed69571cc2166d29f3f385ec34faf02aedff3"
   },
   "target": "postgres",
   "targetFamily": "sql"

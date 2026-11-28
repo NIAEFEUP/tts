@@ -2,9 +2,9 @@ import { describe, expect, it } from 'bun:test'
 
 import type { AdminRepository } from '@/domain/ports/admin.repository'
 
-import { ADMIN } from './support/auth-test-utils'
-import { COURSES, OCCURRENCES, registerAdminGuard, registerCatalogAuthGuard } from './support/catalog-test-utils'
-import { createAdminApp } from './support/admin-test-utils'
+import { ADMIN } from '../support/auth-test-utils'
+import { COURSES, OCCURRENCES, registerAdminGuard, registerCatalogAuthGuard } from '../support/catalog-test-utils'
+import { createAdminApp } from '../support/admin-test-utils'
 
 const COURSES_PATH = '/v1/admin/courses'
 const OCCURRENCES_PATH = '/v1/admin/occurrences'

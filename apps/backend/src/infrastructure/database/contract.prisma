@@ -208,8 +208,10 @@ model Class {
   occurrenceYear  Int
   occurrence      Occurrence @relation(fields: [occurrenceId, occurrenceYear], references: [id, year])
 
-  name      String // "1LEIC01"
-  vacancies Int?
+  name               String // "1LEIC01"
+  vacancies          Int? // null = unknown, not zero
+  vacanciesUpdatedAt DateTime?
+  vacanciesSource    String?
 
   createdAt DateTime @default(now())
   updatedAt temporal.updatedAt()

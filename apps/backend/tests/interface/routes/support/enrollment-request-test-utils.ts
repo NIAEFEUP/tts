@@ -1,14 +1,16 @@
 import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
+import type { UserRole } from '@/core/auth/user'
 import type {
   EnrollmentRequest,
   EnrollmentRequestOption,
   EnrollmentRequestRepository,
-  NewEnrollmentRequestOption,
 } from '@/domain/ports/enrollment-request.repository'
 import type { ExchangePeriod } from '@/domain/ports/exchange-period.repository'
 import { createApp } from '@/main'
 import type { App } from '@/main'
 
+import { createFakeAdminEnrollmentRequestRepository } from './admin-test-utils'
+import type { FakeEnrollment, OccurrenceKey } from './admin-test-utils'
 import { TEST_USER, createFakeSessions } from './auth-test-utils'
 import { request } from './http-test-utils'
 import type { ApiResponse, HttpMethod, RequestOptions } from './http-test-utils'
@@ -19,13 +21,8 @@ import {
   createFakeOccurrenceRepository,
 } from './catalog-test-utils'
 
-// Harness for the `/v1/enrollment-requests` route tests. Like the other
-// `support/` modules it drives the real app through `app.handle(request)` with
-// in-memory repositories: no listener and no database.
-
 export const OTHER_USER_ID = '202054321'
 
-/** Looks up an occurrence and its course unit to build a request option view. */
 export function occurrenceOption(
   occurrenceId: number,
   occurrenceYear: number,
@@ -52,7 +49,6 @@ export function occurrenceOption(
   }
 }
 
-/** Builds a domain request with stable timestamps for deterministic responses. */
 export function makeRequest({
   id,
   userId,
@@ -95,7 +91,6 @@ export const CANCELLED_REQUEST = makeRequest({
 
 export const DEFAULT_REQUESTS = [MY_REQUEST, OTHER_REQUEST, CANCELLED_REQUEST]
 
-/** A wide open window for every occurrence fixture, independent of test runtime. */
 export const OPEN_PERIODS: ExchangePeriod[] = OCCURRENCES.map((occurrence) => ({
   id: `open-${occurrence.id}-${occurrence.year}`,
   occurrenceId: occurrence.id,
@@ -104,7 +99,6 @@ export const OPEN_PERIODS: ExchangePeriod[] = OCCURRENCES.map((occurrence) => ({
   endsAt: new Date('2100-01-01T00:00:00.000Z'),
 }))
 
-/** The same occurrences, but every window is far in the past. */
 export const CLOSED_PERIODS: ExchangePeriod[] = OCCURRENCES.map((occurrence) => ({
   id: `closed-${occurrence.id}-${occurrence.year}`,
   occurrenceId: occurrence.id,
@@ -113,35 +107,35 @@ export const CLOSED_PERIODS: ExchangePeriod[] = OCCURRENCES.map((occurrence) => 
   endsAt: new Date('1991-01-01T00:00:00.000Z'),
 }))
 
-/**
- * A stateful in-memory `EnrollmentRequestRepository`. Creation assigns
- * `req-created-N` ids, `withdraw` flips PENDING to CANCELLED, and duplicate
- * detection mirrors the real repository: same occurrence, any direction,
- * ignoring cancelled requests.
- */
-export function createFakeEnrollmentRequestRepository({
+/** By default the signed-in admin (`TEST_USER`) has every occurrence fixture in scope. */
+export const DEFAULT_OCCURRENCE_SCOPES: Record<string, OccurrenceKey[]> = {
+  [TEST_USER.id]: OCCURRENCES.map((occurrence) => ({ id: occurrence.id, year: occurrence.year })),
+}
+
+export function createSharedEnrollmentRequestRepositories({
   requests = DEFAULT_REQUESTS,
-}: { requests?: EnrollmentRequest[] } = {}): {
-  repository: EnrollmentRequestRepository
-  requests: Map<string, EnrollmentRequest>
-} {
+  occurrenceScopes = DEFAULT_OCCURRENCE_SCOPES,
+  occurrencesWithoutClasses = [],
+  adminEnrollments = [],
+}: {
+  requests?: EnrollmentRequest[]
+  occurrenceScopes?: Record<string, OccurrenceKey[]>
+  occurrencesWithoutClasses?: OccurrenceKey[]
+  adminEnrollments?: FakeEnrollment[]
+} = {}) {
   const store = new Map(requests.map((request) => [request.id, structuredClone(request)]))
   let nextId = 1
 
-  const repository: EnrollmentRequestRepository = {
+  const enrollmentRequestRepository: EnrollmentRequestRepository = {
     async findByUserId(userId) {
       return [...store.values()]
         .filter((request) => request.userId === userId)
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     },
-
     async findById(id) {
       return store.get(id) ?? null
     },
-
-    async create({ userId, options }: { userId: string; options: NewEnrollmentRequestOption[] }) {
-      // Mirror the repository: the duplicate check runs at write time, so the
-      // tests exercise the transactional path rather than a pre-check.
+    async create({ userId, options }) {
       for (const option of options) {
         const duplicate = [...store.values()].some(
           (request) =>
@@ -177,7 +171,6 @@ export function createFakeEnrollmentRequestRepository({
       store.set(request.id, request)
       return { kind: 'created' as const, request }
     },
-
     async withdraw(id) {
       const request = store.get(id)
       if (!request || request.status !== 'PENDING') return false
@@ -188,10 +181,16 @@ export function createFakeEnrollmentRequestRepository({
     },
   }
 
-  return { repository, requests: store }
+  // Same store as the student repository, so a withdrawal is visible to the admin.
+  const adminEnrollmentRequestRepository = createFakeAdminEnrollmentRequestRepository(store, {
+    occurrenceScopes,
+    occurrencesWithoutClasses,
+    enrollments: adminEnrollments,
+  })
+
+  return { enrollmentRequestRepository, adminEnrollmentRequestRepository, store }
 }
 
-/** An enrollment repository that only answers `isEnrolledInOccurrence`. */
 export function createFakeEnrollmentRepository(
   enrolled: Array<{ userId: string; occurrenceId: number; occurrenceYear: number }> = [],
 ): EnrollmentRepository {
@@ -205,19 +204,10 @@ export function createFakeEnrollmentRepository(
   }
 }
 
-/** The methods this route group exposes (alias of the shared `HttpMethod`). */
 export type RouteMethod = HttpMethod
-
 export type RouteResponse = ApiResponse
-
 export type RouteRequestOptions = RequestOptions
 
-/**
- * A `request(method, path)` bound to `app`, signed in unless told otherwise.
- * Thin adapter over `http-test-utils` so these tests keep their method-first
- * call shape while sharing the request/response plumbing with every other
- * route group.
- */
 export function createRouteRequest(app: App) {
   return (method: HttpMethod, path: string, options: RequestOptions = {}): Promise<ApiResponse> =>
     request(app, path, { ...options, method })
@@ -227,26 +217,38 @@ export type EnrollmentRequestsAppOptions = {
   requests?: EnrollmentRequest[]
   exchangePeriods?: ExchangePeriod[]
   enrolledOccurrences?: Array<{ userId: string; occurrenceId: number; occurrenceYear: number }>
+  /** `AdminOccurrence` rows: admin user id → pairs. Defaults to every occurrence for the signed-in user. */
+  occurrenceScopes?: Record<string, OccurrenceKey[]>
+  /** Occurrences with no classes: accepting an enroll option on them answers `occurrence-has-no-classes`. */
+  occurrencesWithoutClasses?: OccurrenceKey[]
+  /** The `Enrollment` table seen by the admin decisions. Mutated by accept, so tests can assert on it. */
+  adminEnrollments?: FakeEnrollment[]
+  role?: UserRole
 }
 
-/**
- * Builds the app with the enrollment-request fakes. `requests` seeds the
- * repository, `exchangePeriods` controls which occurrences are open, and
- * `enrolledOccurrences` feeds the already-enrolled rule.
- */
 export function createEnrollmentRequestsApp({
   requests = DEFAULT_REQUESTS,
   exchangePeriods = OPEN_PERIODS,
   enrolledOccurrences = [],
+  occurrenceScopes = DEFAULT_OCCURRENCE_SCOPES,
+  occurrencesWithoutClasses = [],
+  adminEnrollments = [],
+  role,
 }: EnrollmentRequestsAppOptions = {}) {
-  const { repository } = createFakeEnrollmentRequestRepository({ requests })
+  const { enrollmentRequestRepository, adminEnrollmentRequestRepository } = createSharedEnrollmentRequestRepositories({
+    requests,
+    occurrenceScopes,
+    occurrencesWithoutClasses,
+    adminEnrollments,
+  })
   const app = createApp({
     repositories: {
-      enrollmentRequestRepository: repository,
+      enrollmentRequestRepository,
       enrollmentRepository: createFakeEnrollmentRepository(enrolledOccurrences),
       occurrenceRepository: createFakeOccurrenceRepository(),
       exchangePeriodsRepository: createFakeExchangePeriodsRepository({ exchangePeriods }),
-      sessionRepository: createFakeSessions(),
+      sessionRepository: createFakeSessions(role ? { ...TEST_USER, role } : undefined),
+      adminEnrollmentRequestRepository,
     },
   })
 

@@ -55,6 +55,16 @@ export const enrollmentRequestSchema = t.Object({
   options: t.Array(enrollmentRequestOptionSchema),
 })
 
+/**
+ * A request as the admin endpoints expose it: the student request plus who made
+ * it. `userId` is the student number.
+ */
+export const adminEnrollmentRequestSchema = t.Object({
+  ...enrollmentRequestSchema.properties,
+  userId: t.String(),
+  userName: t.String(),
+})
+
 /** Body of `POST /v1/enrollment-requests`. Between 1 and 20 options. */
 export const createEnrollmentRequestSchema = t.Object({
   options: t.Array(

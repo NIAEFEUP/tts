@@ -403,6 +403,28 @@ Matches the frontend’s `CourseInfo` with embedded `ClassInfo`. The `id` here i
 }
 ```
 
+### `GET /occurrences/:id/slots` — query params and response
+
+`year` is required because Sigarra may reuse an occurrence id across academic
+years. Each slot appears once and includes all classes of this occurrence
+linked through `SlotClass`, so shared lectures remain represented as one slot
+with multiple class references.
+
+```json
+[
+  {
+    "id": 789,
+    "lessonType": "T",
+    "dayOfWeek": 1,
+    "startMinute": 570,
+    "durationMin": 90,
+    "location": "B001",
+    "classes": [{ "id": 456, "name": "1LEIC01" }],
+    "professors": [{ "id": 1, "acronym": "JAS", "name": "João Silva" }]
+  }
+]
+```
+
 Legacy mapping:
 
 - `GET /class/<int:course_unit_id>/` → `GET /occurrences/:id/classes`
@@ -421,22 +443,26 @@ Legacy mapping:
 | `GET`  | `/slots/:id`            | `?`   | Schedule slot detail             |
 | `GET`  | `/slots/:id/professors` | `?`   | Professors assigned to this slot |
 
+`GET /slots/:id` returns the slot's schedule fields, professors, and all
+classes linked to it. `GET /slots/:id/professors` returns only the assigned
+professor array. Both endpoints return `404 slot-not-found` for an unknown id.
+
 ---
 
 ## 7. Users / students
 
-| Method | Path                                         | Auth                | Purpose                                         |
-| ------ | -------------------------------------------- | ------------------- | ----------------------------------------------- |
-| `GET`  | `/users/me`                                  | `?`                 | Current user (same as `/auth/me`)               |
-| `GET`  | `/users/me/schedule`                         | `?`                 | My current schedule                             |
-| `PUT`  | `/users/me/schedule/refresh`                 | `?`                 | Resync my schedule and enrollments from Sigarra |
-| `GET`  | `/users/me/enrollments`                      | `?`                 | My class enrollments                            |
-| `GET`  | `/users/me/exchanges`                        | `?`                 | My exchange requests                            |
-| `GET`  | `/users/me/eligible-occurrences`             | `?`                 | Occurrences I am eligible to take / exchange    |
-| `GET`  | `/students/:nmec`                            | `?`                 | Public student profile (name only)              |
-| `GET`  | `/students/:nmec/schedule`                   | admin / participant | Another student’s schedule                      |
-| `GET`  | `/students/:nmec/photo`                      | `?`                 | Redirect to the student photo                   |
-| `GET`  | `/students/:nmec/courses/:courseId/metadata` | admin               | `fest_id` metadata for a student in a course    |
+| Method | Path                                         | Auth                | Purpose                                                        |
+| ------ | -------------------------------------------- | ------------------- | -------------------------------------------------------------- |
+| `GET`  | `/users/me`                                  | `?`                 | Current user (same as `/auth/me`)                              |
+| `GET`  | `/users/me/schedule`                         | `?`                 | My current schedule                                            |
+| `PUT`  | `/users/me/schedule/refresh`                 | `?`                 | Resync my schedule and enrollments from Sigarra                |
+| `GET`  | `/users/me/enrollments`                      | `?`                 | My class enrollments                                           |
+| `GET`  | `/users/me/exchanges`                        | `?`                 | My exchange requests (role, status, type, page, limit filters) |
+| `GET`  | `/users/me/eligible-occurrences`             | `?`                 | Occurrences I am eligible to take / exchange                   |
+| `GET`  | `/students/:nmec`                            | `?`                 | Public student profile (name only)                             |
+| `GET`  | `/students/:nmec/schedule`                   | admin / participant | Another student’s schedule                                     |
+| `GET`  | `/students/:nmec/photo`                      | `?`                 | Redirect to the student photo                                  |
+| `GET`  | `/students/:nmec/courses/:courseId/metadata` | admin               | `fest_id` metadata for a student in a course                   |
 
 ### `GET /users/me` — response
 
@@ -591,8 +617,64 @@ item; this returns the item itself.
 ### `GET /users/me/exchanges` — query params
 
 - `role` — `sent` | `received` | `all` (default `all`)
-- `status` — `PENDING` | `ACCEPTED` | `CANCELLED`
+- `status` — offer lifecycle: `OPEN` | `MATCHED` | `CANCELLED` | `EXPIRED`
 - `type` — `DIRECT` | `MARKETPLACE` | `URGENT`
+- `page` — positive page number (default `1`)
+- `limit` — number of requests per page, from `1` to `100` (default `10`)
+
+`status` filters the offer, not the swap. Since #966 an `ExchangeRequest` is an
+offer (one proposed move), so `PENDING` / `ACCEPTED` no longer exist at this
+level; that lifecycle belongs to `cycle.status`.
+
+The response is `{ page: { current, has_next, has_previous }, data }`. Requests
+are ordered newest first (`createdAt`, then `id`), and a request is included when
+the user is the creator (`sent`), the target (`received`), or either (`all`).
+
+```json
+{
+  "page": { "current": 1, "has_next": false, "has_previous": false },
+  "data": [
+    {
+      "id": "3f0f2a5e-1c4b-4a4e-9a3e-0f5b6c7d8e9f",
+      "creatorId": "202301234",
+      "targetUserId": "202301235",
+      "type": "DIRECT",
+      "status": "MATCHED",
+      "message": null,
+      "occurrenceId": 587177,
+      "occurrenceYear": 2025,
+      "fromClassId": 456,
+      "toClassId": 457,
+      "createdAt": "2025-01-02T00:00:00.000Z",
+      "updatedAt": "2025-01-02T00:00:00.000Z",
+      "cycle": {
+        "id": "8c9d0e1f-2a3b-4c5d-8e9f-0a1b2c3d4e5f",
+        "status": "PENDING",
+        "adminState": "UNTREATED",
+        "origin": "DIRECT",
+        "createdAt": "2025-01-02T00:00:00.000Z",
+        "updatedAt": "2025-01-02T00:00:00.000Z",
+        "items": [
+          {
+            "userId": "202301234",
+            "occurrenceId": 587177,
+            "occurrenceYear": 2025,
+            "fromClassId": 456,
+            "toClassId": 457,
+            "status": "PENDING",
+            "acceptedAt": null
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+`cycle` is `null` for an unclaimed offer (`OPEN`), which has no swap and no
+items. Each item carries its own `status` (`PENDING` | `ACCEPTED` | `CANCELLED` |
+`INVALID`) and `acceptedAt` (ISO 8601 or `null`); the admin decision is
+`cycle.adminState`.
 
 Legacy mapping:
 
@@ -773,8 +855,9 @@ Legacy mapping:
 | `POST`   | `/admin/enrollment-requests/:id/reject` | admin | Reject                           |
 
 The four `/enrollment-requests` routes require a session (`401 unauthorized`
-otherwise) and are scoped to the session user. The admin routes are tracked
-separately (#875) and are not part of this implementation.
+otherwise) and are scoped to the session user. The three admin routes require
+an authenticated `ADMIN` or `SUPERUSER` account and are scoped to the
+occurrences in the admin's `AdminOccurrence` rows.
 
 ### Response shape
 
@@ -868,16 +951,90 @@ id answers `404 enrollment-request-not-found`, another student's request
 answers `403 forbidden`, and a request that is already `ACCEPTED` or
 `CANCELLED` answers `409 enrollment-request-not-pending`.
 
-### `GET /admin/enrollment-requests` — not implemented yet (#875)
+### `GET /admin/enrollment-requests`
 
-The admin list, accept and reject routes are tracked separately in #875 and are
-not registered by this change. Their planned filters are `page` / `page_size`,
-`activeCourse`, `activeCurricularYear` and `activeStates`.
+Lists enrollment requests that contain at least one occurrence in the signed-in
+admin's occurrence scope. Cancelled requests are not listed. Each request only
+shows its options that are inside the scope. Newest first. Query parameters:
+
+- `page` (default `1`) and `page_size` (default `20`, maximum `100`)
+- `activeCourse` — occurrence course id
+- `activeCurricularYear` — course-unit curricular year. Together with
+  `activeCourse`, one option must match both.
+- `activeStates` — comma-separated list of `UNTREATED`, `TREATED`, `REJECTED`
+  or `AWAITING_INFORMATION`. The case does not matter, so `untreated` works
+  too. Any other value answers `400 invalid-active-states`.
+
+Every request in the response has the usual fields plus `userId` (the student
+number) and `userName`:
+
+```json
+{
+  "requests": [
+    {
+      "id": "…",
+      "userId": "202012345",
+      "userName": "Ana Silva",
+      "status": "PENDING",
+      "adminState": "UNTREATED",
+      "options": []
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "total": 1,
+  "totalPages": 1
+}
+```
+
+Anonymous callers receive `401 unauthorized`; signed-in non-admin callers
+receive `403 forbidden`.
+
+### `POST /admin/enrollment-requests/:id/accept`
+
+Accepts a request and applies every option in one transaction. Then it sets
+`status` to `ACCEPTED` and `adminState` to `TREATED`. The response is the
+updated request, with `userId` and `userName`.
+
+- `enrolling: true` enrolls the student in one class of the occurrence, the one
+  with the lowest id. If the student is already in a class of that occurrence,
+  nothing is added, so the schedule shows the course unit once.
+- `enrolling: false` removes the student from every class of the occurrence.
+
+If an enrolling option points to an occurrence with no classes, nothing is
+changed and the answer is `409 occurrence-has-no-classes`. A database failure
+leaves both the enrollments and the request unchanged.
+
+### `POST /admin/enrollment-requests/:id/reject`
+
+Keeps `status` as `PENDING` and sets `adminState` to `REJECTED`. Enrollments are
+not changed. The response is the updated request, with `userId` and `userName`.
+
+Rejection is final: a rejected request cannot be accepted or rejected again.
+Only a `PENDING` request with `adminState` `UNTREATED` or `AWAITING_INFORMATION`
+can be decided.
+
+### Errors for accept and reject
+
+The checks run in this order: unknown id, scope, state.
+
+| Status | Code                             | When                                                                                                            |
+| ------ | -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `401`  | `unauthorized`                   | No session                                                                                                      |
+| `403`  | `forbidden`                      | Not an admin, or any option of the request is outside the admin's scope, even if the request is already decided |
+| `404`  | `enrollment-request-not-found`   | Unknown id                                                                                                      |
+| `409`  | `enrollment-request-not-pending` | The request is in scope but is not `PENDING`, or its `adminState` is not `UNTREATED` or `AWAITING_INFORMATION`  |
+| `409`  | `occurrence-has-no-classes`      | Accept only: an enrolling option has an occurrence with no classes                                              |
+
+Every option must be inside the admin's scope. One option outside the scope
+gives `403`, even when the other options are inside.
 
 Legacy mapping:
 
 - `POST /course_unit/enrollment/` → `POST /enrollment-requests` (implemented)
-- `GET /course_unit/enrollment/?page=&page_size=` → `GET /admin/enrollment-requests?page=&page_size=` (planned, #875)
+- `GET /course_unit/enrollment/?page=&page_size=` → `GET /admin/enrollment-requests?page=&page_size=` (implemented)
+- `PUT /exchange/admin/request/enrollment/:id/accept/` → `POST /admin/enrollment-requests/:id/accept` (implemented)
+- `PUT /exchange/admin/request/enrollment/:id/reject/` → `POST /admin/enrollment-requests/:id/reject` (implemented)
 
 ---
 

@@ -17,7 +17,7 @@ import type {
   StorageHashBase,
 } from '@prisma/orm-postgres/contract/types'
 
-export type StorageHash = StorageHashBase<'e3247dcc2cec972220caa5a51bb09c7074cbe8748eb8012d2dd26a52963de815'>
+export type StorageHash = StorageHashBase<'3ae3c9cdebf32ced8267bf3de2400015dca15bd2aeedf6249adebda2dd5e6b8b'>
 export type ExecutionHash = ExecutionHashBase<'f97853d64be260df697eda7ea1f9ecebcd71f6663da734f11f109d7fade58bad'>
 export type ProfileHash = ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>
 
@@ -248,6 +248,8 @@ export type FieldOutputTypes = {
       readonly occurrenceYear: CodecTypes['pg/int4@1']['output']
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output']
       readonly vacancies: CodecTypes['pg/int4@1']['output'] | null
+      readonly vacanciesSource: CodecTypes['pg/text@1']['output'] | null
+      readonly vacanciesUpdatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null
     }
     readonly Course: {
       readonly acronym: CodecTypes['pg/text@1']['output']
@@ -433,6 +435,8 @@ export type FieldInputTypes = {
       readonly occurrenceYear: CodecTypes['pg/int4@1']['input']
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input']
       readonly vacancies: CodecTypes['pg/int4@1']['input'] | null
+      readonly vacanciesSource: CodecTypes['pg/text@1']['input'] | null
+      readonly vacanciesUpdatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null
     }
     readonly Course: {
       readonly acronym: CodecTypes['pg/text@1']['input']
@@ -618,6 +622,8 @@ export type StorageColumnTypes = {
       readonly occurrenceYear: CodecTypes['pg/int4@1']['output']
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output']
       readonly vacancies: CodecTypes['pg/int4@1']['output'] | null
+      readonly vacanciesSource: CodecTypes['pg/text@1']['output'] | null
+      readonly vacanciesUpdatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null
     }
     readonly Course: {
       readonly acronym: CodecTypes['pg/text@1']['output']
@@ -803,6 +809,8 @@ export type StorageColumnInputTypes = {
       readonly occurrenceYear: CodecTypes['pg/int4@1']['input']
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input']
       readonly vacancies: CodecTypes['pg/int4@1']['input'] | null
+      readonly vacanciesSource: CodecTypes['pg/text@1']['input'] | null
+      readonly vacanciesUpdatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null
     }
     readonly Course: {
       readonly acronym: CodecTypes['pg/text@1']['input']
@@ -994,6 +1002,8 @@ export namespace Models {
     occurrenceYear: CodecTypes['pg/int4@1']['output']
     updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output']
     vacancies: CodecTypes['pg/int4@1']['output'] | null
+    vacanciesSource: CodecTypes['pg/text@1']['output'] | null
+    vacanciesUpdatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null
     enrollments: public_Enrollment[]
     exchangeItemsFrom: public_ExchangeItem[]
     exchangeItemsTo: public_ExchangeItem[]
@@ -1505,6 +1515,18 @@ type ContractBase = Omit<
                 readonly vacancies: {
                   readonly dataType: 'pg/int4'
                   readonly codecId: 'pg/int4@1'
+                  readonly nullable: true
+                  readonly many: false
+                }
+                readonly vacanciesSource: {
+                  readonly dataType: 'pg/text'
+                  readonly codecId: 'pg/text@1'
+                  readonly nullable: true
+                  readonly many: false
+                }
+                readonly vacanciesUpdatedAt: {
+                  readonly dataType: 'pg/timestamptz'
+                  readonly codecId: 'pg/timestamptz-temporal@1'
                   readonly nullable: true
                   readonly many: false
                 }
@@ -3479,6 +3501,17 @@ type ContractBase = Omit<
                 readonly nullable: true
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' }
               }
+              readonly vacanciesSource: {
+                readonly nullable: true
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' }
+              }
+              readonly vacanciesUpdatedAt: {
+                readonly nullable: true
+                readonly type: {
+                  readonly kind: 'scalar'
+                  readonly codecId: 'pg/timestamptz-temporal@1'
+                }
+              }
             }
             readonly relations: {
               readonly enrollments: {
@@ -3571,6 +3604,8 @@ type ContractBase = Omit<
                 readonly occurrenceYear: { readonly column: 'occurrenceYear' }
                 readonly updatedAt: { readonly column: 'updatedAt' }
                 readonly vacancies: { readonly column: 'vacancies' }
+                readonly vacanciesSource: { readonly column: 'vacanciesSource' }
+                readonly vacanciesUpdatedAt: { readonly column: 'vacanciesUpdatedAt' }
               }
             }
           }

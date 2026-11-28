@@ -15,7 +15,10 @@ import { enrollmentRequestRoutes } from './enrollment-requests/enrollment-reques
 import { studentRoutes } from './students/students.routes'
 import { meRoutes } from './users/me.routes'
 import { classRoutes } from './class.routes'
+import { slotRoutes } from './slots.routes'
+import { exchangeRoutes } from './users/exchanges.routes'
 import { adminScopeRoutes } from './admin/admin.routes'
+import { adminEnrollmentRequestRoutes } from './admin/admin-enrollment-requests.routes'
 
 export const createApiRoutes = (deps: AuthRoutesDeps) => {
   return new Elysia()
@@ -33,5 +36,8 @@ export const createApiRoutes = (deps: AuthRoutesDeps) => {
     .use(scheduleRoutes({ sessions: deps.sessions }))
     .use(studentRoutes({ sessions: deps.sessions }))
     .use(classRoutes({ sessions: deps.sessions }))
+    .use(slotRoutes({ sessions: deps.sessions }))
+    .use(exchangeRoutes(deps.sessions))
     .use(adminScopeRoutes({ sessions: deps.sessions }))
+    .use(adminEnrollmentRequestRoutes({ sessions: deps.sessions }))
 }
