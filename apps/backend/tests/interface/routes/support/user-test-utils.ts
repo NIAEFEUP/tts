@@ -1,5 +1,6 @@
-import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
+import type { ExchangeRepository } from '@/domain/ports/exchange.repository'
 import type { EligibleOccurrenceRepository } from '@/domain/ports/eligible-occurrence.repository'
+import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
 import { createApp } from '@/main'
 import type { App } from '@/main'
 
@@ -27,7 +28,10 @@ export function createUsersApp(
   enrollmentRepository: Pick<EnrollmentRepository, 'findByUserId'> & Partial<EnrollmentRepository> = {
     findByUserId: async () => [],
   },
-  eligibleOccurrenceRepository: EligibleOccurrenceRepository = { findByUserId: async () => [] },
+  eligibleOccurrenceRepository: Partial<EligibleOccurrenceRepository> = { findByUserId: async () => [] },
+  exchangeRepository: Partial<ExchangeRepository> = {
+    findForUser: async () => ({ current: 1, hasNext: false, hasPrevious: false, data: [] }),
+  },
 ) {
   const app = createApp({
     repositories: {
@@ -36,7 +40,14 @@ export function createUsersApp(
         isEnrolledInOccurrence: async () => false,
         ...enrollmentRepository,
       },
-      eligibleOccurrenceRepository,
+      eligibleOccurrenceRepository: {
+        findByUserId: async () => [],
+        ...eligibleOccurrenceRepository,
+      },
+      exchangeRepository: {
+        findForUser: async () => ({ current: 1, hasNext: false, hasPrevious: false, data: [] }),
+        ...exchangeRepository,
+      },
       sessionRepository: createFakeSessions(),
     },
   })

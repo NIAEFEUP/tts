@@ -1,0 +1,70 @@
+[
+  {
+    "id": "column.public.Class.vacanciesSource",
+    "label": "Add column \"vacanciesSource\" to \"Class\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "vacanciesSource",
+        "table": "Class"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"vacanciesSource\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "Class", "vacanciesSource"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"vacanciesSource\"",
+        "sql": "ALTER TABLE \"public\".\"Class\" ADD COLUMN \"vacanciesSource\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"vacanciesSource\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "Class", "vacanciesSource"]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Class.vacanciesUpdatedAt",
+    "label": "Add column \"vacanciesUpdatedAt\" to \"Class\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "vacanciesUpdatedAt",
+        "table": "Class"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"vacanciesUpdatedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "Class", "vacanciesUpdatedAt"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"vacanciesUpdatedAt\"",
+        "sql": "ALTER TABLE \"public\".\"Class\" ADD COLUMN \"vacanciesUpdatedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"vacanciesUpdatedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "Class", "vacanciesUpdatedAt"]
+      }
+    ]
+  }
+]

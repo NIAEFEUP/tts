@@ -16,6 +16,7 @@ import type {
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import type { ClassRepository } from '@/domain/ports/class.repository'
 import type { AdminRepository } from '@/domain/ports/admin.repository'
+import type { SlotRepository } from '@/domain/ports/slot.repository'
 import { isAdmin } from '@/core/auth/user'
 import { createCreateExchangeOccurrencePeriod } from '@/application/use-cases/exchange/create-exchange-period'
 import { createUpdateExchangeOccurrencePeriod } from '@/application/use-cases/exchange/update-exchange-occurrence-period'
@@ -30,7 +31,7 @@ import {
   occurrenceWithUnitSchema,
   updateExchangePeriodSchema,
 } from './catalog.schemas'
-import { classWithSlotsSchema } from './users/schemas'
+import { classWithSlotsSchema, slotDetailsSchema } from './users/schemas'
 
 const occurrenceWithClassesSchema = t.Composite([
   occurrenceWithUnitSchema,
@@ -98,13 +99,16 @@ function periodUseCases(repositories: OccurrenceRepositories) {
 }
 
 // Occurrences are the concrete (course unit, course, academic year) tuples —
-// the place where a course unit is actually taught. The read routes expose the
-// occurrence, its exchange periods, and its classes; the write routes let a
-// scoped admin manage those periods.
+// the place where a course unit is actually taught. The read routes expose
+// the occurrence, its exchange periods, its classes, and its schedule slots;
+// the write routes let a scoped admin manage those periods.
 //
 // All routes are behind a session (`?`): anonymous callers get a 401 before the
 // handler runs. Write routes additionally require an admin role and a scope
-// row for the occurrence or course they address.
+// row for the occurrence or course they address. `semester` is validated as
+// `t.Integer({ minimum: 1, maximum: 2 })` so the incoming URL string is coerced
+// to a number and range-checked before the handler runs — values outside {1, 2}
+// are rejected with a 422.
 
 // Elysia does not propagate a parent instance's `decorate` types into a
 // standalone plugin, so the dependency is declared on the instance's own type.
@@ -113,6 +117,7 @@ function periodUseCases(repositories: OccurrenceRepositories) {
 // available on the Elysia context."
 type OccurrenceRepositories = {
   classRepository: ClassRepository
+  slotRepository: SlotRepository
   occurrenceRepository: OccurrenceRepository
   exchangePeriodsRepository: ExchangePeriodsRepository
   adminRepository: AdminRepository
@@ -343,5 +348,20 @@ export const occurrenceRoutes = ({ sessions }: OccurrenceRoutesDeps) =>
           409: 'ApiError',
         },
         detail: { tags: ['occurrences'], summary: 'Delete an exchange period' },
+      },
+    )
+    .get(
+      '/:id/slots',
+      async ({ repositories, params, query }) => {
+        const occurrence = await repositories.occurrenceRepository.findById(params.id, query.year)
+        if (!occurrence) throw new HttpError('occurrence-not-found', `Occurrence ${params.id} not found`, 404)
+
+        return repositories.slotRepository.findByOccurrence(params.id, query.year)
+      },
+      {
+        response: { 200: t.Array(slotDetailsSchema), 404: 'ApiError' },
+        params: t.Object({ id: t.Integer() }),
+        query: t.Object({ year: t.Integer() }),
+        detail: { tags: ['occurrences'], summary: 'List occurrence schedule slots' },
       },
     )
