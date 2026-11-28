@@ -1,5 +1,6 @@
 import type { EnrollmentRepository } from '@/domain/ports/enrollment.repository'
 import type { Db } from '@/infrastructure/database/prisma'
+import { and } from '@prisma/orm-postgres/orm-client'
 
 export function createEnrollmentRepository({ db }: { db: Db }): EnrollmentRepository {
   return {
@@ -160,6 +161,29 @@ export function createEnrollmentRepository({ db }: { db: Db }): EnrollmentReposi
             }),
           },
         }
+      })
+    },
+
+    async replaceForUser(userId, enrollments) {
+      await db.transaction(async (tx) => {
+        await tx.orm.public.Enrollment.where({ userId }).delete()
+
+        const classIds = new Set<number>()
+        for (const enrollment of enrollments) {
+          const matching = await tx.orm.public.Class.where((row) =>
+            and(
+              row.occurrenceId.eq(enrollment.occurrenceId),
+              row.occurrenceYear.eq(enrollment.occurrenceYear),
+              row.name.eq(enrollment.className),
+            ),
+          )
+            .select('id')
+            .first()
+
+          if (matching) classIds.add(matching.id)
+        }
+
+        await tx.orm.public.Enrollment.createAll([...classIds].map((classId) => ({ userId, classId })))
       })
     },
   }
