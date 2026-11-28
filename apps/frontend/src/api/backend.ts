@@ -1,5 +1,4 @@
-import { Major, CourseInfo } from '../@types'
-import { dev_config, getSemester, getAcademicYear } from '../utils'
+import { dev_config } from '../utils'
 import Cookies from 'js-cookie'
 import { ENV } from 'varlock/env'
 
@@ -18,7 +17,6 @@ const V1 = '/v1/auth'
 const OIDC_LOGIN_URL = `${BACKEND_URL}${V1}/login`
 const OIDC_LOGOUT_URL = `${BACKEND_URL}${V1}/logout`
 const DEV_LOGIN_URL = `${BACKEND_URL}${V1}/dev-login`
-const SEMESTER = import.meta.env.VITE_APP_SEMESTER || getSemester()
 
 /**
  * Make a request to the backend server.
@@ -34,26 +32,6 @@ const apiRequest = async (route: string) => {
     .catch((error) => console.error(error))
 
   return data
-}
-
-/**
- * Retrieves all course units for a major in a given semester
- * @param major major to get course units from
- * @returns course units array
- */
-const getCourseUnits = async (major: Major) => {
-  if (major === null) return []
-  return getCoursesByMajorId(major.id)
-}
-
-const getCoursesByMajorId = async (id: number) => {
-  const year = getAcademicYear()
-  const courseUnits = await apiRequest(`/course_units/${id}/${year}/${SEMESTER}/`)
-  if (!Array.isArray(courseUnits)) return []
-
-  // The legacy endpoint has no per-row academic year; it was fetched for the
-  // current one, so tag each unit for the enrollment payload.
-  return courseUnits.map((courseUnit: CourseInfo) => ({ ...courseUnit, occurrenceYear: year }))
 }
 
 /**
@@ -91,8 +69,6 @@ const csrfTokenName = (): string => {
 }
 
 const api = {
-  getCourseUnits,
-  getCoursesByMajorId,
   getInfo,
   getCourseUnitHashes,
   getCSRFToken,

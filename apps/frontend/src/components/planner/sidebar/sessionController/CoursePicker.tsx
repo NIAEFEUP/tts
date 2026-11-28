@@ -1,17 +1,21 @@
-import { MajorSearchCombobox, CourseYearTabs, PickedCoursesList, Ects } from './course-picker'
-import { PenSquare } from 'lucide-react'
+import {
+  MajorSearchCombobox,
+  CourseYearTabs,
+  PickedCoursesList,
+  Ects,
+} from '@/components/planner/sidebar/sessionController/course-picker'
+import { AlertCircle, PenSquare } from 'lucide-react'
 import { useContext, useEffect } from 'react'
 import { X } from 'lucide-react'
-import { Desert } from '../../../svgs'
-import { Button } from '../../../ui/new/button'
-import { Dialog } from '../../../ui/new/dialog'
-import useCourseUnits from '../../../../hooks/useCourseUnits'
-import { Skeleton } from '../../../ui/skeleton'
-import { ClearAllCoursesButton } from './course-picker/ClearAllCoursesButton'
-import CoursePickerContext from '../../../../contexts/coursePicker/CoursePickerContext'
-import { Divider } from '../../../ui/new/divider'
-
-//TODO: absolute imports with @
+import { Desert } from '@/components/svgs'
+import { Button } from '@/components/ui/new/button'
+import { Dialog } from '@/components/ui/new/dialog'
+import useCourseUnits from '@/hooks/useCourseUnits'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { ClearAllCoursesButton } from '@/components/planner/sidebar/sessionController/course-picker/ClearAllCoursesButton'
+import CoursePickerContext from '@/contexts/coursePicker/CoursePickerContext'
+import { Divider } from '@/components/ui/new/divider'
 
 type Props = {
   allowedAcronyms?: string[]
@@ -28,12 +32,16 @@ const CoursePicker = ({ allowedAcronyms }: Props) => {
     setSelectedMajor,
   } = useContext(CoursePickerContext)
 
-  const { courseUnits, loading: loadingCourseUnits } = useCourseUnits(selectedMajor ? selectedMajor.id : null)
+  const {
+    courseUnits,
+    loading: loadingCourseUnits,
+    error: courseUnitsError,
+    mutate: retryCourseUnits,
+  } = useCourseUnits(selectedMajor ? selectedMajor.id : null)
   const showContent = selectedMajor || coursesStorage.length > 0
 
   useEffect(() => {
-    if (!courseUnits) return
-    setCoursesInfo(courseUnits)
+    setCoursesInfo(courseUnits ?? [])
   }, [courseUnits, setCoursesInfo])
 
   const handleOpenChange = (open: boolean) => {
@@ -82,7 +90,19 @@ const CoursePicker = ({ allowedAcronyms }: Props) => {
           <>
             <div className="flex flex-col lg:flex-row grow w-full lg:w-240 px-4 mb-6">
               <div className="w-full lg:w-1/2">
-                {!loadingCourseUnits ? (
+                {courseUnitsError ? (
+                  <div className="flex flex-col items-start gap-4">
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Não foi possível carregar as unidades curriculares deste curso.
+                      </AlertDescription>
+                    </Alert>
+                    <Button variant="outline" onClick={() => void retryCourseUnits()}>
+                      Tentar novamente
+                    </Button>
+                  </div>
+                ) : !loadingCourseUnits ? (
                   <CourseYearTabs />
                 ) : (
                   <div className="flex flex-col space-y-3">

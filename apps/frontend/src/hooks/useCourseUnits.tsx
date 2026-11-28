@@ -1,27 +1,28 @@
-import { useMemo } from 'react'
-import api from '../api/backend'
+import { useContext } from 'react'
 import useSWR from 'swr'
+import { ENV } from 'varlock/env'
+import SessionContext from '@/contexts/SessionContext'
+import catalogService from '@/api/services/catalogService'
+import { getAcademicYear, getSemester } from '@/utils'
 
+/** Course units a course offers this semester — `GET /v1/courses/:id/occurrences`. */
 export default (courseId: number | null) => {
-  const getCourseUnit = async () => {
-    try {
-      if (courseId) return await api.getCoursesByMajorId(Number(courseId))
-    } catch (error) {
-      console.error(error)
-    }
-  }
+  const { signedIn, isSessionLoading } = useContext(SessionContext)
+  const year = getAcademicYear()
+  const semester = Number(ENV.VITE_APP_SEMESTER) || getSemester()
+  const key = signedIn && courseId ? ['v1/courses', courseId, 'occurrences', year, semester] : null
 
-  const { data, error, mutate } = useSWR(`course-units-of-${String(courseId)}`, getCourseUnit, {
-    revalidateIfStale: false,
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-  })
-  const courseUnits = useMemo(() => (data ? data : null), [data])
+  const { data, error, mutate } = useSWR(
+    key,
+    ([, id, , requestYear, requestSemester]: [string, number, string, number, number]) =>
+      catalogService.getCourseOccurrences({ courseId: id, year: requestYear, semester: requestSemester }),
+    { revalidateIfStale: false, revalidateOnFocus: false, revalidateOnReconnect: false, shouldRetryOnError: false },
+  )
 
   return {
-    courseUnits,
-    error,
-    loading: !data,
+    courseUnits: data ?? null,
+    error: error ?? null,
+    loading: isSessionLoading || Boolean(key && !data && !error),
     mutate,
   }
 }

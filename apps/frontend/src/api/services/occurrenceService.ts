@@ -1,12 +1,16 @@
 import { client } from '@/api/client'
-import type { ClassInfo, CourseInfo, SlotInfo } from '../../@types'
-import { getAcademicYear } from '../../utils'
+import type { ClassInfo, CourseInfo, SlotInfo } from '@/@types'
+import { getAcademicYear } from '@/utils'
 
+type Occurrence = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof client.v1.courses>['occurrences']['get']>>['data']
+>[number]
 type OccurrenceWithClasses = NonNullable<
   Awaited<ReturnType<ReturnType<typeof client.v1.occurrences>['classes']['get']>>['data']
 >
 
-const toCourseInfo = (occurrence: OccurrenceWithClasses): CourseInfo => ({
+/** Maps an occurrence row (course unit fields joined in) to the planner's `CourseInfo`. */
+export const toCourseInfo = (occurrence: Occurrence): CourseInfo => ({
   id: occurrence.id,
   course: occurrence.courseId,
   occurrenceYear: occurrence.year,
@@ -17,6 +21,10 @@ const toCourseInfo = (occurrence: OccurrenceWithClasses): CourseInfo => ({
   name: occurrence.name,
   url: occurrence.url,
   hash: occurrence.hash,
+})
+
+const toCourseInfoWithClasses = (occurrence: OccurrenceWithClasses): CourseInfo => ({
+  ...toCourseInfo(occurrence),
   classes: occurrence.classes.map((classInfo): ClassInfo => ({
     id: classInfo.id,
     name: classInfo.name,
@@ -45,7 +53,7 @@ const getClasses = async (occurrenceId: number, year = getAcademicYear()): Promi
   })
 
   if (error) throw error
-  return toCourseInfo(data)
+  return toCourseInfoWithClasses(data)
 }
 
 const occurrenceService = { getClasses }
