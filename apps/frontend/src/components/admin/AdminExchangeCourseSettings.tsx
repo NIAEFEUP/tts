@@ -12,9 +12,20 @@ import { ExchangePeriodTable } from './AdminExchangePeriodTable'
 import { useEffect, useState } from 'react'
 
 export const AdminExchangeCourseSettings = () => {
-  const { data: courses = [] } = useAdminScopedCourses()
-  const [selectedCourse, setSelectedCourse] = useState<number | null>(null)
-  const { data: periods = [], mutate } = useCoursePeriods(selectedCourse)
+  const {
+    data: courses = [],
+    error: coursesError,
+    isLoading: coursesLoading,
+    mutate: retryCourses,
+  } = useAdminScopedCourses()
+  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null)
+  const selectedCourse = courses.find((course) => course.id === selectedCourseId)?.id ?? courses[0]?.id ?? null
+  const {
+    data: periods = [],
+    error: periodsError,
+    isLoading: periodsLoading,
+    mutate,
+  } = useCoursePeriods(selectedCourse)
   const [addingPeriod, setAddingPeriod] = useState<boolean>(false)
   const [startDate, setStartDate] = useState<Date>()
   const [endDate, setEndDate] = useState<Date>()
@@ -26,10 +37,6 @@ export const AdminExchangeCourseSettings = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false)
   const [periodToDelete, setPeriodToDelete] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!courses.some((course) => course.id === selectedCourse)) setSelectedCourse(courses[0]?.id ?? null)
-  }, [courses])
 
   useEffect(() => {
     if (!addingPeriod && editingPeriodId === null) {
@@ -99,6 +106,7 @@ export const AdminExchangeCourseSettings = () => {
       mutate()
     } catch (error) {
       console.error('Failed to delete exchange period:', error)
+      setErrorMessage('Erro de rede ao remover o período.')
     } finally {
       setIsLoading(false)
     }
@@ -182,6 +190,11 @@ export const AdminExchangeCourseSettings = () => {
               editingStartDate={editingStartDate}
               editingEndDate={editingEndDate}
               isLoading={isLoading}
+              isLoadingPeriods={coursesLoading || periodsLoading}
+              loadError={
+                coursesError ? 'Erro ao carregar os cursos.' : periodsError ? 'Erro ao carregar os períodos.' : null
+              }
+              onRetry={() => (coursesError ? retryCourses() : mutate())}
               onEditChange={onEditChange}
               onEditSubmit={handleEditPeriod}
               onCancelEdit={onCancelEdit}
@@ -200,7 +213,7 @@ export const AdminExchangeCourseSettings = () => {
                 key={course.id}
                 variant={selectedCourse === course.id ? 'primary' : 'ghost'}
                 className="w-full justify-start"
-                onClick={() => setSelectedCourse(course.id)}
+                onClick={() => setSelectedCourseId(course.id)}
               >
                 {course.name}
               </Button>

@@ -14,6 +14,9 @@ const getForOccurrence = async (occurrenceId: number, year: number) => {
   return data
 }
 
+// Both routes share the backend period schema, so one element type covers them.
+export type ExchangePeriod = Awaited<ReturnType<typeof getForCourse>>[number]
+
 const periodService = { getForCourse, getForOccurrence }
 
 export default periodService

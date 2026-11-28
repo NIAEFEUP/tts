@@ -6,12 +6,7 @@ import { Button } from '../ui/new/button'
 import { Edit2Icon, Trash2Icon, CheckIcon, XIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import * as React from 'react'
-
-export interface ExchangePeriod {
-  id: string
-  startsAt: string
-  endsAt: string
-}
+import type { ExchangePeriod } from '../../api/services/periodService'
 
 interface ExchangePeriodTableProps {
   periods: ExchangePeriod[]
@@ -19,8 +14,11 @@ interface ExchangePeriodTableProps {
   editingStartDate: Date | undefined
   editingEndDate: Date | undefined
   isLoading: boolean
+  isLoadingPeriods: boolean
+  loadError: string | null
+  onRetry: () => void
   onEditChange: (periodId: string, newStartDate: Date, newEndDate: Date) => void
-  onEditSubmit: (e) => void
+  onEditSubmit: (e: React.FormEvent) => void
   onCancelEdit: () => void
   onDelete: (periodId: string) => void
   formatDate?: (dateString: string) => string
@@ -32,6 +30,9 @@ export const ExchangePeriodTable: React.FC<ExchangePeriodTableProps> = ({
   editingStartDate,
   editingEndDate,
   isLoading,
+  isLoadingPeriods,
+  loadError,
+  onRetry,
   onEditChange,
   onEditSubmit,
   onCancelEdit,
@@ -49,7 +50,22 @@ export const ExchangePeriodTable: React.FC<ExchangePeriodTableProps> = ({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {periods.length > 0 ? (
+        {isLoadingPeriods ? (
+          <TableRow>
+            <TableCell colSpan={4} className="text-center text-muted-foreground py-4">
+              A carregar…
+            </TableCell>
+          </TableRow>
+        ) : loadError ? (
+          <TableRow>
+            <TableCell colSpan={4} className="text-center text-red-600 py-4">
+              {loadError}{' '}
+              <Button onClick={onRetry} size="sm" variant="ghost">
+                Tentar novamente
+              </Button>
+            </TableCell>
+          </TableRow>
+        ) : periods.length > 0 ? (
           periods.map((period, index) => (
             <TableRow key={period.id}>
               <TableCell className="text-center">{index + 1}</TableCell>

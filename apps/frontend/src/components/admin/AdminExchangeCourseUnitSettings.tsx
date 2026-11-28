@@ -12,9 +12,21 @@ import { ExchangePeriodForm } from './AdminExchangePeriodForm'
 import { ExchangePeriodTable } from './AdminExchangePeriodTable'
 
 export const AdminExchangeCourseUnitSettings = () => {
-  const { data: occurrences = [] } = useAdminScopedOccurrences()
-  const [selectedOccurrence, setSelectedOccurrence] = useState<{ id: number; year: number } | null>(null)
-  const { data: periods = [], mutate } = useOccurrencePeriods(selectedOccurrence)
+  const {
+    data: occurrences = [],
+    error: occurrencesError,
+    isLoading: occurrencesLoading,
+    mutate: retryOccurrences,
+  } = useAdminScopedOccurrences()
+  const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const keyOf = (o: { id: number; year: number }) => `${o.id}:${o.year}`
+  const selectedOccurrence = occurrences.find((o) => keyOf(o) === selectedKey) ?? occurrences[0] ?? null
+  const {
+    data: periods = [],
+    error: periodsError,
+    isLoading: periodsLoading,
+    mutate,
+  } = useOccurrencePeriods(selectedOccurrence)
   // shortcut: the legacy write calls below still take this id, replaced by /v1/occurrences/:id/periods in #954
   const selectedCourseUnit = selectedOccurrence?.id ?? null
 
@@ -31,11 +43,6 @@ export const AdminExchangeCourseUnitSettings = () => {
   const [periodToDelete, setPeriodToDelete] = useState<string | null>(null)
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
-  useEffect(() => {
-    const isSelected = (o) => o.id === selectedOccurrence?.id && o.year === selectedOccurrence.year
-    if (!occurrences.some(isSelected)) setSelectedOccurrence(occurrences[0] ?? null)
-  }, [occurrences])
 
   useEffect(() => {
     if (!addingPeriod && editingPeriodId === null) {
@@ -105,6 +112,7 @@ export const AdminExchangeCourseUnitSettings = () => {
       mutate()
     } catch (error) {
       console.error('Failed to delete exchange period:', error)
+      setErrorMessage('Erro de rede ao remover o período.')
     } finally {
       setIsLoading(false)
     }
@@ -186,6 +194,15 @@ export const AdminExchangeCourseUnitSettings = () => {
               editingStartDate={editingStartDate}
               editingEndDate={editingEndDate}
               isLoading={isLoading}
+              isLoadingPeriods={occurrencesLoading || periodsLoading}
+              loadError={
+                occurrencesError
+                  ? 'Erro ao carregar as cadeiras.'
+                  : periodsError
+                    ? 'Erro ao carregar os períodos.'
+                    : null
+              }
+              onRetry={() => (occurrencesError ? retryOccurrences() : mutate())}
               onEditChange={onEditChange}
               onEditSubmit={handleEditPeriod}
               onCancelEdit={onCancelEdit}
@@ -201,13 +218,9 @@ export const AdminExchangeCourseUnitSettings = () => {
             {occurrences.map((occurrence) => (
               <Button
                 key={`${occurrence.id}-${occurrence.year}`}
-                variant={
-                  selectedOccurrence?.id === occurrence.id && selectedOccurrence.year === occurrence.year
-                    ? 'primary'
-                    : 'ghost'
-                }
+                variant={selectedOccurrence === occurrence ? 'primary' : 'ghost'}
                 className="justify-start"
-                onClick={() => setSelectedOccurrence(occurrence)}
+                onClick={() => setSelectedKey(keyOf(occurrence))}
               >
                 {occurrence.name}
               </Button>
