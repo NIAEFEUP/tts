@@ -18,4 +18,12 @@ export type AdminRepository = {
    * The join uses both `id` and `year`, since Sigarra reuses ids across years.
    */
   findOccurrencesByAdmin(userId: string): Promise<OccurrenceWithUnit[]>
+
+  /** Whether the user has an `AdminCourse` row for this course. */
+  hasCourseScope(userId: string, courseId: number): Promise<boolean>
+
+  /**
+   * Whether the user has an `AdminOccurrence` row for this occurrence.
+   */
+  hasOccurrenceScope(userId: string, occurrenceId: number, occurrenceYear: number): Promise<boolean>
 }

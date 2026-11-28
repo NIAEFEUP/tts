@@ -69,3 +69,15 @@ export const exchangePeriodSchema = t.Object({
   startsAt: t.String({ format: 'date-time' }),
   endsAt: t.String({ format: 'date-time' }),
 })
+
+/** Request body for creating an exchange period. */
+export const createExchangePeriodSchema = t.Object({
+  startsAt: t.String({ format: 'date-time' }),
+  endsAt: t.String({ format: 'date-time' }),
+})
+
+/** Request body for updating an exchange period. */
+export const updateExchangePeriodSchema = t.Object({
+  startsAt: t.String({ format: 'date-time' }),
+  endsAt: t.String({ format: 'date-time' }),
+})

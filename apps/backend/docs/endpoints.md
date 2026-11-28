@@ -269,6 +269,33 @@ Each window carries the `id` of its representative period — the smallest id am
 
 Backend resolves all occurrences for the course, validates no overlap, and creates one `ExchangePeriod` per occurrence inside a transaction.
 
+### `POST /courses/:id/periods` — responses
+
+Requires an admin role and an `AdminCourse` row for the course. An anonymous caller answers `401 unauthorized`; a signed-in non-admin, or an admin without that course scope, answers `403 forbidden`.
+
+`201` returns one full `ExchangePeriod` per occurrence of the course:
+
+```json
+[
+  {
+    "id": "6f1c1b4e-4f3e-4c1a-9f5e-5f0f5a6b7c8d",
+    "occurrenceId": 587177,
+    "occurrenceYear": 2025,
+    "startsAt": "2025-09-15T00:00:00.000Z",
+    "endsAt": "2025-09-30T23:59:59.000Z"
+  }
+]
+```
+
+| Status | Code                      | Meaning                                                             |
+| ------ | ------------------------- | ------------------------------------------------------------------- |
+| `400`  | `invalid-period-range`    | `startsAt` is not earlier than `endsAt`.                            |
+| `401`  | `unauthorized`            | No valid session.                                                   |
+| `403`  | `forbidden`               | Not an admin, or no `AdminCourse` scope for this course.            |
+| `404`  | `course-not-found`        | No course with this id.                                             |
+| `409`  | `exchange-period-overlap` | The window overlaps an existing period of one of the occurrences.   |
+| `422`  | `validation-error`        | Invalid `id`, missing/invalid body, or dates that are not ISO 8601. |
+
 ---
 
 ## 4. Course units
@@ -321,18 +348,18 @@ Every concrete occurrence of the unit, across the courses and academic years it 
 
 Occurrence is the concrete instance that carries classes, schedule, periods, and admin scope.
 
-| Method   | Path                                 | Auth  | Purpose                                                |
-| -------- | ------------------------------------ | ----- | ------------------------------------------------------ |
-| `GET`    | `/occurrences`                       | `?`   | List occurrences                                       |
-| `GET`    | `/occurrences/:id`                   | `?`   | Single occurrence                                      |
-| `GET`    | `/occurrences/:id/classes`           | `?`   | Classes for this occurrence                            |
-| `GET`    | `/occurrences/:id/slots`             | `?`   | Schedule slots for this occurrence                     |
-| `GET`    | `/occurrences/:id/periods`           | `?`   | Exchange periods for this occurrence (`year` required) |
-| `POST`   | `/occurrences/:id/periods`           | admin | Create exchange period for this occurrence             |
-| `PUT`    | `/occurrences/:id/periods/:periodId` | admin | Update period                                          |
-| `DELETE` | `/occurrences/:id/periods/:periodId` | admin | Delete period                                          |
-| `GET`    | `/occurrences/:id/exchange-metadata` | `?`   | Metadata for the exchange request card                 |
-| `GET`    | `/occurrences/hashes`                | `?`   | Hashes for a list of occurrence IDs                    |
+| Method   | Path                                 | Auth  | Purpose                                                      |
+| -------- | ------------------------------------ | ----- | ------------------------------------------------------------ |
+| `GET`    | `/occurrences`                       | `?`   | List occurrences                                             |
+| `GET`    | `/occurrences/:id`                   | `?`   | Single occurrence                                            |
+| `GET`    | `/occurrences/:id/classes`           | `?`   | Classes for this occurrence                                  |
+| `GET`    | `/occurrences/:id/slots`             | `?`   | Schedule slots for this occurrence                           |
+| `GET`    | `/occurrences/:id/periods`           | `?`   | Exchange periods for this occurrence (`year` required)       |
+| `POST`   | `/occurrences/:id/periods`           | admin | Create exchange period for this occurrence (`year` required) |
+| `PUT`    | `/occurrences/:id/periods/:periodId` | admin | Update period                                                |
+| `DELETE` | `/occurrences/:id/periods/:periodId` | admin | Delete period                                                |
+| `GET`    | `/occurrences/:id/exchange-metadata` | `?`   | Metadata for the exchange request card                       |
+| `GET`    | `/occurrences/hashes`                | `?`   | Hashes for a list of occurrence IDs                          |
 
 ### `GET /occurrences` — query params
 
@@ -364,6 +391,61 @@ The exchange periods of the occurrence `(id, year)`, ordered by `startsAt`. An u
 `id` is the period's surrogate key; the admin edit/delete routes address a period by it.
 
 `startsAt` and `endsAt` are ISO 8601 strings in UTC.
+
+### `POST /occurrences/:id/periods` — query params and body
+
+- `year` — academic year, **required** (the occurrence key is `(id, year)`).
+
+```json
+{
+  "startsAt": "2025-09-15T00:00:00Z",
+  "endsAt": "2025-09-30T23:59:59Z"
+}
+```
+
+Requires an admin role and an `AdminOccurrence` row for `(id, year)`. `201` returns the created period:
+
+```json
+{
+  "id": "6f1c1b4e-4f3e-4c1a-9f5e-5f0f5a6b7c8d",
+  "occurrenceId": 587177,
+  "occurrenceYear": 2025,
+  "startsAt": "2025-09-15T00:00:00.000Z",
+  "endsAt": "2025-09-30T23:59:59.000Z"
+}
+```
+
+### `PUT /occurrences/:id/periods/:periodId` — body
+
+No `year` query param: the period is looked up by `periodId` and its `occurrenceYear` is used. A period belonging to a different occurrence than `:id` answers `404 exchange-period-not-found`. Both fields are required.
+
+```json
+{
+  "startsAt": "2025-10-01T00:00:00Z",
+  "endsAt": "2025-10-15T23:59:59Z"
+}
+```
+
+`200` returns the updated period in the same shape as the `POST` response. A `409 exchange-period-has-pending-requests` answers a window that would leave a pending enrollment request outside it.
+
+### `DELETE /occurrences/:id/periods/:periodId`
+
+No body and no `year` query param; the year comes from the period row. `204` with no body on success. The same `404 exchange-period-not-found` rule applies when `:periodId` belongs to another occurrence.
+
+### Exchange period mutation errors
+
+Applies to `POST`, `PUT`, and `DELETE` above:
+
+| Status | Code                                   | Meaning                                                                                                      |
+| ------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `400`  | `invalid-period-range`                 | `startsAt` is not earlier than `endsAt` (POST/PUT).                                                          |
+| `401`  | `unauthorized`                         | No valid session.                                                                                            |
+| `403`  | `forbidden`                            | Not an admin, or no `AdminOccurrence` scope for the resolved occurrence.                                     |
+| `404`  | `occurrence-not-found`                 | No occurrence for `(id, year)`, or the scoped occurrence no longer exists.                                   |
+| `404`  | `exchange-period-not-found`            | Unknown `periodId`, or it belongs to a different occurrence than `:id`.                                      |
+| `409`  | `exchange-period-overlap`              | The window overlaps an existing period of the occurrence (POST/PUT).                                         |
+| `409`  | `exchange-period-has-pending-requests` | PUT: the new window would leave a pending request outside it; DELETE: pending requests depend on the period. |
+| `422`  | `validation-error`                     | Invalid path params, missing/invalid `year` on POST, missing/invalid body, or dates that are not ISO 8601.   |
 
 ### `GET /occurrences/:id/classes` — response shape
 

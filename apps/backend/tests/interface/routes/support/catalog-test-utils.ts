@@ -1,15 +1,18 @@
 import { expect, it } from 'bun:test'
 
 import type { AuthUser } from '@/core/auth/user'
+import type { AdminRepository } from '@/domain/ports/admin.repository'
 import type { Course, CourseRepository } from '@/domain/ports/course.repository'
 import type { ClassRepository, EnrolledStudent, ClassWithSlots } from '@/domain/ports/class.repository'
 import type { CourseUnit, CourseUnitRepository } from '@/domain/ports/course-unit.repository'
 import type { Faculty, FacultyRepository } from '@/domain/ports/faculty.repository'
+import type { EnrollmentRequestStatus } from '@/domain/ports/enrollment-request.repository'
 import type { Occurrence, OccurrenceWithUnit, OccurrenceRepository } from '@/domain/ports/occurrence.repository'
 import type {
   CourseExchangePeriod,
   ExchangePeriod,
   ExchangePeriodsRepository,
+  NewExchangePeriod,
 } from '@/domain/ports/exchange-period.repository'
 import type { SessionRepository } from '@/domain/ports/session.repository'
 import type { ScheduleSlotDetails, SlotRepository } from '@/domain/ports/slot.repository'
@@ -217,6 +220,32 @@ export const EXCHANGE_PERIODS: ExchangePeriod[] = [
   },
 ]
 
+export type EnrollmentRequestFixture = {
+  id: string
+  occurrenceId: number
+  occurrenceYear: number
+  status: EnrollmentRequestStatus
+  createdAt: Date
+}
+
+export const PENDING_PERIOD: ExchangePeriod = {
+  id: 'period-587177-2026-11',
+  occurrenceId: 587177,
+  occurrenceYear: 2025,
+  startsAt: new Date('2026-11-01T00:00:00Z'),
+  endsAt: new Date('2026-12-01T00:00:00Z'),
+}
+
+export const PENDING_ENROLLMENT_REQUESTS: EnrollmentRequestFixture[] = [
+  {
+    id: 'request-pending-587177-2025',
+    occurrenceId: 587177,
+    occurrenceYear: 2025,
+    status: 'PENDING',
+    createdAt: new Date('2026-11-10T00:00:00Z'),
+  },
+]
+
 /** Error bodies shared by every catalog route, so tests assert shapes, not literals. */
 export { FORBIDDEN_BODY, UNAUTHORIZED_BODY, VALIDATION_ERROR_BODY } from './http-test-utils'
 
@@ -229,19 +258,52 @@ export type CatalogFixtures = {
   classes?: ClassWithSlots[]
   classStudents?: Record<number, EnrolledStudent[]>
   exchangePeriods?: ExchangePeriod[]
+  enrollmentRequests?: EnrollmentRequestFixture[]
 }
 
 /** In-memory `ExchangePeriodsRepository` over `exchangePeriods` (defaults to `EXCHANGE_PERIODS`). */
 export function createFakeExchangePeriodsRepository({
   exchangePeriods = EXCHANGE_PERIODS,
   occurrences = OCCURRENCES,
+  enrollmentRequests = [],
 }: CatalogFixtures = {}): ExchangePeriodsRepository {
+  const periods = [...exchangePeriods]
+  let nextId = 1
+
+  const pendingBackedBy = (period: Pick<ExchangePeriod, 'occurrenceId' | 'occurrenceYear' | 'startsAt' | 'endsAt'>) =>
+    enrollmentRequests.filter(
+      (request) =>
+        request.status === 'PENDING' &&
+        request.occurrenceId === period.occurrenceId &&
+        request.occurrenceYear === period.occurrenceYear &&
+        request.createdAt >= period.startsAt &&
+        request.createdAt <= period.endsAt,
+    )
+
+  const overlaps = (occurrenceId: number, occurrenceYear: number, startsAt: Date, endsAt: Date, excludingId?: string) =>
+    periods.some(
+      (period) =>
+        period.id !== excludingId &&
+        period.occurrenceId === occurrenceId &&
+        period.occurrenceYear === occurrenceYear &&
+        period.startsAt < endsAt &&
+        period.endsAt > startsAt,
+    )
+
+  const newPeriod = (input: NewExchangePeriod): ExchangePeriod => ({
+    id: `period-${input.occurrenceId}-${input.occurrenceYear}-created-${nextId++}`,
+    ...input,
+  })
+
   return {
+    async findById(id) {
+      return periods.find((period) => period.id === id) ?? null
+    },
     async findByOccurrence(occurrenceId, occurrenceYear) {
       // Same scope and order as the Prisma repository: occurrence
       // (id, year), chronological. `filter` returns a fresh array, so
       // sorting never mutates the fixture.
-      return exchangePeriods
+      return periods
         .filter((period) => period.occurrenceId === occurrenceId && period.occurrenceYear === occurrenceYear)
         .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
     },
@@ -250,7 +312,7 @@ export function createFakeExchangePeriodsRepository({
       // occurrences, then collapse repeated windows to the smallest id.
       const windows = new Map<string, CourseExchangePeriod>()
 
-      for (const period of exchangePeriods) {
+      for (const period of periods) {
         const belongsToCourse = occurrences.some(
           (o) => o.id === period.occurrenceId && o.year === period.occurrenceYear && o.courseId === courseId,
         )
@@ -264,6 +326,73 @@ export function createFakeExchangePeriodsRepository({
       }
 
       return [...windows.values()].sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+    },
+    async create(input) {
+      const exists = occurrences.some((o) => o.id === input.occurrenceId && o.year === input.occurrenceYear)
+      if (!exists) return { kind: 'not-found' }
+      if (overlaps(input.occurrenceId, input.occurrenceYear, input.startsAt, input.endsAt)) return { kind: 'overlap' }
+
+      const period = newPeriod(input)
+      periods.push(period)
+      return { kind: 'created', period }
+    },
+    async update(input) {
+      const index = periods.findIndex(
+        (period) =>
+          period.id === input.id &&
+          period.occurrenceId === input.occurrenceId &&
+          period.occurrenceYear === input.occurrenceYear,
+      )
+      if (index === -1) return { kind: 'not-found' }
+      if (overlaps(input.occurrenceId, input.occurrenceYear, input.startsAt, input.endsAt, input.id)) {
+        return { kind: 'overlap' }
+      }
+
+      if (
+        pendingBackedBy(periods[index]!).some(
+          (request) => request.createdAt < input.startsAt || request.createdAt > input.endsAt,
+        )
+      ) {
+        return { kind: 'pending-requests' }
+      }
+
+      const period = {
+        id: input.id,
+        occurrenceId: input.occurrenceId,
+        occurrenceYear: input.occurrenceYear,
+        startsAt: input.startsAt,
+        endsAt: input.endsAt,
+      }
+      periods[index] = period
+      return { kind: 'updated', period }
+    },
+    async delete(input) {
+      const index = periods.findIndex(
+        (period) =>
+          period.id === input.id &&
+          period.occurrenceId === input.occurrenceId &&
+          period.occurrenceYear === input.occurrenceYear,
+      )
+      if (index === -1) return { kind: 'not-found' }
+      if (pendingBackedBy(periods[index]!).length > 0) return { kind: 'pending-requests' }
+
+      const [period] = periods.splice(index, 1)
+      return { kind: 'deleted', period: period! }
+    },
+    async createForCourse({ courseId, startsAt, endsAt }) {
+      const courseOccurrences = occurrences.filter((occurrence) => occurrence.courseId === courseId)
+
+      for (const occurrence of courseOccurrences) {
+        if (overlaps(occurrence.id, occurrence.year, startsAt, endsAt)) {
+          return { kind: 'overlap', occurrenceId: occurrence.id, occurrenceYear: occurrence.year }
+        }
+      }
+
+      const created = courseOccurrences.map((occurrence) =>
+        newPeriod({ occurrenceId: occurrence.id, occurrenceYear: occurrence.year, startsAt, endsAt }),
+      )
+      periods.push(...created)
+      return { kind: 'created', periods: created }
     },
   }
 }
@@ -410,6 +539,18 @@ export function createFakeClassRepository({
   }
 }
 
+export type OccurrenceKey = { id: number; year: number }
+
+export type AdminScopeFixtures = {
+  /** `AdminCourse` rows: user id → course ids. */
+  courseScopes?: Record<string, number[]>
+  /** `AdminOccurrence` rows: user id → `(id, year)` pairs. */
+  occurrenceScopes?: Record<string, OccurrenceKey[]>
+  courses?: Course[]
+  occurrences?: Occurrence[]
+  courseUnits?: CourseUnit[]
+}
+
 export function createFakeSlotRepository({ classes = CLASSES }: CatalogFixtures = {}): SlotRepository {
   function findSlot(id: number, classRows: ClassWithSlots[]): ScheduleSlotDetails | null {
     const memberships = classRows.flatMap((classRow) =>
@@ -456,18 +597,59 @@ export function createFakeSlotRepository({ classes = CLASSES }: CatalogFixtures 
   }
 }
 
-export type CatalogRepositories = CatalogFixtures & {
-  courseRepository?: CourseRepository
-  courseUnitRepository?: CourseUnitRepository
-  facultyRepository?: FacultyRepository
-  occurrenceRepository?: OccurrenceRepository
-  classRepository?: ClassRepository
-  slotRepository?: SlotRepository
-  sessionRepository?: SessionRepository
-  exchangePeriodsRepository?: ExchangePeriodsRepository
-  /** Signed-in user for this app. Defaults to `TEST_USER`; pass `ADMIN` for admin-only routes. */
-  user?: AuthUser
+export function createFakeAdminRepository({
+  courseScopes = {},
+  occurrenceScopes = {},
+  courses = COURSES,
+  occurrences = OCCURRENCES,
+  courseUnits = COURSE_UNITS,
+}: AdminScopeFixtures = {}): AdminRepository {
+  return {
+    async findCoursesByAdmin(userId) {
+      const ids = courseScopes[userId] ?? []
+      return courses.filter((course) => ids.includes(course.id)).sort((a, b) => a.acronym.localeCompare(b.acronym))
+    },
+
+    async findOccurrencesByAdmin(userId) {
+      const scope = occurrenceScopes[userId] ?? []
+      const result: OccurrenceWithUnit[] = []
+
+      for (const occurrence of occurrences) {
+        if (!scope.some((key) => key.id === occurrence.id && key.year === occurrence.year)) continue
+
+        const unit = courseUnits.find((u) => u.id === occurrence.courseUnitId)
+        if (!unit) continue
+
+        result.push({ ...occurrence, acronym: unit.acronym, name: unit.name, courseUnitYear: unit.courseUnitYear })
+      }
+
+      return result.sort((a, b) => b.year - a.year || a.id - b.id)
+    },
+
+    async hasCourseScope(userId, courseId) {
+      return (courseScopes[userId] ?? []).includes(courseId)
+    },
+
+    async hasOccurrenceScope(userId, occurrenceId, occurrenceYear) {
+      return (occurrenceScopes[userId] ?? []).some((key) => key.id === occurrenceId && key.year === occurrenceYear)
+    },
+  }
 }
+
+export type CatalogRepositories = CatalogFixtures &
+  AdminScopeFixtures & {
+    courseRepository?: CourseRepository
+    courseUnitRepository?: CourseUnitRepository
+    facultyRepository?: FacultyRepository
+    occurrenceRepository?: OccurrenceRepository
+    classRepository?: ClassRepository
+    slotRepository?: SlotRepository
+    sessionRepository?: SessionRepository
+    exchangePeriodsRepository?: ExchangePeriodsRepository
+    adminRepository?: AdminRepository
+    /** Signed-in user for this app. Defaults to `TEST_USER`; pass `ADMIN` for admin-only routes. */
+    user?: AuthUser
+  }
 
 /**
  * Builds the app with the in-memory catalog and a signed-in session (as
@@ -487,6 +669,9 @@ export function createCatalogApp({
   classes,
   classStudents,
   exchangePeriods,
+  enrollmentRequests,
+  courseScopes,
+  occurrenceScopes,
   courseRepository,
   courseUnitRepository,
   facultyRepository,
@@ -495,6 +680,7 @@ export function createCatalogApp({
   slotRepository,
   sessionRepository,
   exchangePeriodsRepository,
+  adminRepository,
   user,
 }: CatalogRepositories = {}) {
   const fixtures: CatalogFixtures = {
@@ -505,6 +691,7 @@ export function createCatalogApp({
     classes,
     classStudents,
     exchangePeriods,
+    enrollmentRequests,
   }
   const app = createApp({
     repositories: {
@@ -516,6 +703,15 @@ export function createCatalogApp({
       slotRepository: slotRepository ?? createFakeSlotRepository(fixtures),
       sessionRepository: sessionRepository ?? createFakeSessions(user),
       exchangePeriodsRepository: exchangePeriodsRepository ?? createFakeExchangePeriodsRepository(fixtures),
+      adminRepository:
+        adminRepository ??
+        createFakeAdminRepository({
+          courseScopes,
+          occurrenceScopes,
+          courses: courses ?? COURSES,
+          occurrences: occurrences ?? OCCURRENCES,
+          courseUnits: courseUnits ?? COURSE_UNITS,
+        }),
     },
   })
 

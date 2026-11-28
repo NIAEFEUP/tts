@@ -1,8 +1,154 @@
-import type { CourseExchangePeriod, ExchangePeriodsRepository } from '@/domain/ports/exchange-period.repository'
+import { and, or } from '@prisma/orm-postgres/orm-client'
+import { Temporal } from 'temporal-polyfill'
+
+import type {
+  CourseExchangePeriod,
+  ExchangePeriodsRepository,
+  ExchangePeriod,
+} from '@/domain/ports/exchange-period.repository'
 import type { Db } from '@/infrastructure/database/prisma'
+
+type OrmClient = { orm: Db['orm'] }
+
+type PeriodRow = {
+  id: string
+  occurrenceId: number
+  occurrenceYear: number
+  startsAt: { epochMilliseconds: number }
+  endsAt: { epochMilliseconds: number }
+}
+
+const PERIOD_COLUMNS = ['id', 'occurrenceId', 'occurrenceYear', 'startsAt', 'endsAt'] as const
+
+function toExchangePeriod(row: PeriodRow): ExchangePeriod {
+  return {
+    id: row.id,
+    occurrenceId: row.occurrenceId,
+    occurrenceYear: row.occurrenceYear,
+    startsAt: new Date(row.startsAt.epochMilliseconds),
+    endsAt: new Date(row.endsAt.epochMilliseconds),
+  }
+}
+
+function toInstant(date: Date): Temporal.Instant {
+  return Temporal.Instant.fromEpochMilliseconds(date.getTime())
+}
+
+function toDbPeriodInput(input: { occurrenceId: number; occurrenceYear: number; startsAt: Date; endsAt: Date }) {
+  return {
+    occurrenceId: input.occurrenceId,
+    occurrenceYear: input.occurrenceYear,
+    startsAt: toInstant(input.startsAt),
+    endsAt: toInstant(input.endsAt),
+  }
+}
+
+// Pure so tests can run the real selection without a database. `periods` must already be ordered by `startsAt`.
+export function selectCourseWindows(
+  occurrences: { id: number; year: number }[],
+  periods: PeriodRow[],
+): CourseExchangePeriod[] {
+  const courseOccurences = new Set(occurrences.map((occurrence) => `${occurrence.id}:${occurrence.year}`))
+  // The same window is stored once per occurrence, so a course would repeat it.
+  // Collapse each window to one representative period. The smallest id wins so
+  // the answer does not depend on the order Postgres returns the tied rows in.
+  const windows = new Map<string, CourseExchangePeriod>()
+
+  for (const period of periods) {
+    if (!courseOccurences.has(`${period.occurrenceId}:${period.occurrenceYear}`)) continue
+
+    const startsAt = new Date(period.startsAt.epochMilliseconds)
+    const endsAt = new Date(period.endsAt.epochMilliseconds)
+    const key = `${startsAt.getTime()}:${endsAt.getTime()}`
+    const seen = windows.get(key)
+
+    if (seen === undefined || period.id < seen.id) {
+      windows.set(key, { id: period.id, startsAt, endsAt })
+    }
+  }
+  return [...windows.values()]
+}
+
+type OccurrenceKey = { id: number; year: number }
+
+async function findOverlappingPeriod(
+  client: OrmClient,
+  input: { occurrences: OccurrenceKey[]; startsAt: Date; endsAt: Date; excludingId?: string },
+): Promise<OccurrenceKey | null> {
+  const { occurrences, excludingId } = input
+  if (occurrences.length === 0) return null
+
+  const startsAt = toInstant(input.startsAt)
+  const endsAt = toInstant(input.endsAt)
+
+  const query = client.orm.public.ExchangePeriod.where((period) =>
+    and(
+      or(...occurrences.map(({ id, year }) => and(period.occurrenceId.eq(id), period.occurrenceYear.eq(year)))),
+      period.startsAt.lt(endsAt),
+      period.endsAt.gt(startsAt),
+    ),
+  )
+  const filtered = excludingId === undefined ? query : query.where((period) => period.id.neq(excludingId))
+
+  const conflict = await filtered
+    .orderBy([(period) => period.occurrenceId.asc(), (period) => period.occurrenceYear.asc()])
+    .select('occurrenceId', 'occurrenceYear')
+    .first()
+
+  return conflict ? { id: conflict.occurrenceId, year: conflict.occurrenceYear } : null
+}
+
+async function hasOverlap(
+  client: OrmClient,
+  input: { occurrenceId: number; occurrenceYear: number; startsAt: Date; endsAt: Date; excludingId?: string },
+): Promise<boolean> {
+  return (
+    (await findOverlappingPeriod(client, {
+      occurrences: [{ id: input.occurrenceId, year: input.occurrenceYear }],
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+      excludingId: input.excludingId,
+    })) !== null
+  )
+}
+
+async function pendingRequestTimesBackedByPeriod(client: OrmClient, period: PeriodRow): Promise<number[]> {
+  const startsAt = Temporal.Instant.fromEpochMilliseconds(period.startsAt.epochMilliseconds)
+  const endsAt = Temporal.Instant.fromEpochMilliseconds(period.endsAt.epochMilliseconds)
+
+  const pendingRequests = await client.orm.public.EnrollmentRequest.where((request) =>
+    and(request.status.eq('PENDING'), request.createdAt.gte(startsAt), request.createdAt.lte(endsAt)),
+  )
+    .select('id', 'createdAt')
+    .all()
+
+  if (pendingRequests.length === 0) return []
+
+  const requestIds = pendingRequests.map((request) => request.id)
+  const options = await client.orm.public.EnrollmentRequestOption.where((option) =>
+    and(
+      option.requestId.in(requestIds),
+      option.occurrenceId.eq(period.occurrenceId),
+      option.occurrenceYear.eq(period.occurrenceYear),
+    ),
+  )
+    .select('requestId')
+    .all()
+
+  const backedIds = new Set(options.map((option) => option.requestId))
+  return pendingRequests
+    .filter((request) => backedIds.has(request.id))
+    .map((request) => request.createdAt.epochMilliseconds)
+}
 
 export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePeriodsRepository {
   return {
+    async findById(id) {
+      const row = await db.orm.public.ExchangePeriod.where({ id })
+        .select(...PERIOD_COLUMNS)
+        .first()
+      return row ? toExchangePeriod(row) : null
+    },
     // Exchange periods of one occurrence. An occurrence is the
     // `(occurrenceId, occurrenceYear)` pair: Sigarra reuses the id across
     // academic years, so the id alone would return periods from other years.
@@ -35,39 +181,113 @@ export function createExchangePeriodsRepository({ db }: { db: Db }): ExchangePer
 
       return selectCourseWindows(occurrences, periods)
     },
+    async create(input) {
+      return db.transaction(async (tx) => {
+        const occurrence = await tx.orm.public.Occurrence.where((row) =>
+          and(row.id.eq(input.occurrenceId), row.year.eq(input.occurrenceYear)),
+        )
+          .forNoKeyUpdate()
+          .select('id')
+          .first()
+
+        if (!occurrence) return { kind: 'not-found' }
+        if (await hasOverlap(tx, input)) return { kind: 'overlap' }
+
+        const row = await tx.orm.public.ExchangePeriod.select(...PERIOD_COLUMNS).create(toDbPeriodInput(input))
+        return { kind: 'created', period: toExchangePeriod(row) }
+      })
+    },
+    async update(input) {
+      return db.transaction(async (tx) => {
+        const occurrence = await tx.orm.public.Occurrence.where((row) =>
+          and(row.id.eq(input.occurrenceId), row.year.eq(input.occurrenceYear)),
+        )
+          .forNoKeyUpdate()
+          .select('id')
+          .first()
+
+        if (!occurrence) return { kind: 'not-found' }
+
+        const existing = await tx.orm.public.ExchangePeriod.where({
+          id: input.id,
+          occurrenceId: input.occurrenceId,
+          occurrenceYear: input.occurrenceYear,
+        })
+          .forUpdate()
+          .select(...PERIOD_COLUMNS)
+          .first()
+
+        if (!existing) return { kind: 'not-found' }
+        if (await hasOverlap(tx, { ...input, excludingId: input.id })) return { kind: 'overlap' }
+
+        const pendingTimes = await pendingRequestTimesBackedByPeriod(tx, existing)
+        if (
+          pendingTimes.some((createdAt) => createdAt < input.startsAt.getTime() || createdAt > input.endsAt.getTime())
+        ) {
+          return { kind: 'pending-requests' }
+        }
+
+        const updated = await tx.orm.public.ExchangePeriod.where({
+          id: input.id,
+          occurrenceId: input.occurrenceId,
+          occurrenceYear: input.occurrenceYear,
+        })
+          .select(...PERIOD_COLUMNS)
+          .update({ startsAt: toInstant(input.startsAt), endsAt: toInstant(input.endsAt) })
+
+        if (!updated) return { kind: 'not-found' }
+        return { kind: 'updated', period: toExchangePeriod(updated) }
+      })
+    },
+    async delete(input) {
+      return db.transaction(async (tx) => {
+        const occurrence = await tx.orm.public.Occurrence.where((row) =>
+          and(row.id.eq(input.occurrenceId), row.year.eq(input.occurrenceYear)),
+        )
+          .forNoKeyUpdate()
+          .select('id')
+          .first()
+
+        if (!occurrence) return { kind: 'not-found' }
+
+        const period = await tx.orm.public.ExchangePeriod.where(input)
+          .forUpdate()
+          .select(...PERIOD_COLUMNS)
+          .first()
+
+        if (!period) return { kind: 'not-found' }
+        if ((await pendingRequestTimesBackedByPeriod(tx, period)).length > 0) return { kind: 'pending-requests' }
+
+        await tx.orm.public.ExchangePeriod.where(input).delete()
+        return { kind: 'deleted', period: toExchangePeriod(period) }
+      })
+    },
+    async createForCourse({ courseId, startsAt, endsAt }) {
+      return db.transaction(async (tx) => {
+        const occurrences = await tx.orm.public.Occurrence.where({ courseId })
+          .orderBy([(row) => row.id.asc(), (row) => row.year.asc()])
+          .forNoKeyUpdate()
+          .select('id', 'year')
+          .all()
+
+        if (occurrences.length === 0) return { kind: 'created', periods: [] }
+
+        const conflict = await findOverlappingPeriod(tx, { occurrences, startsAt, endsAt })
+        if (conflict) return { kind: 'overlap', occurrenceId: conflict.id, occurrenceYear: conflict.year }
+
+        const rows = await tx.orm.public.ExchangePeriod.select(...PERIOD_COLUMNS).createAll(
+          occurrences.map((occurrence) =>
+            toDbPeriodInput({
+              occurrenceId: occurrence.id,
+              occurrenceYear: occurrence.year,
+              startsAt,
+              endsAt,
+            }),
+          ),
+        )
+
+        return { kind: 'created', periods: rows.map(toExchangePeriod) }
+      })
+    },
   }
-}
-
-type PeriodRow = {
-  id: string
-  occurrenceId: number
-  occurrenceYear: number
-  startsAt: { epochMilliseconds: number }
-  endsAt: { epochMilliseconds: number }
-}
-
-// Pure so tests can run the real selection without a database. `periods` must already be ordered by `startsAt`.
-export function selectCourseWindows(
-  occurrences: { id: number; year: number }[],
-  periods: PeriodRow[],
-): CourseExchangePeriod[] {
-  const courseOccurences = new Set(occurrences.map((occurrence) => `${occurrence.id}:${occurrence.year}`))
-  // The same window is stored once per occurrence, so a course would repeat it.
-  // Collapse each window to one representative period. The smallest id wins so
-  // the answer does not depend on the order Postgres returns the tied rows in.
-  const windows = new Map<string, CourseExchangePeriod>()
-
-  for (const period of periods) {
-    if (!courseOccurences.has(`${period.occurrenceId}:${period.occurrenceYear}`)) continue
-
-    const startsAt = new Date(period.startsAt.epochMilliseconds)
-    const endsAt = new Date(period.endsAt.epochMilliseconds)
-    const key = `${startsAt.getTime()}:${endsAt.getTime()}`
-    const seen = windows.get(key)
-
-    if (seen === undefined || period.id < seen.id) {
-      windows.set(key, { id: period.id, startsAt, endsAt })
-    }
-  }
-  return [...windows.values()]
 }

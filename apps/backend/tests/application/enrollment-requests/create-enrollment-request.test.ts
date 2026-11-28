@@ -33,6 +33,19 @@ const occurrences: OccurrenceRepository = {
 }
 
 const periods: ExchangePeriodsRepository = {
+  findById: async () => null,
+  create: async () => {
+    throw new Error('create should not be called by this use case')
+  },
+  update: async () => {
+    throw new Error('update should not be called by this use case')
+  },
+  delete: async () => {
+    throw new Error('delete should not be called by this use case')
+  },
+  createForCourse: async () => {
+    throw new Error('createForCourse should not be called by this use case')
+  },
   findByOccurrence: async () => [
     {
       id: 'period-1',
@@ -60,7 +73,15 @@ describe('create enrollment request use case', () => {
       },
       enrollments: { findByUserId: fail, sharesOccurrence: fail, isEnrolledInOccurrence: fail },
       occurrences: { findByCourseUnit: fail, findByCourse: fail, findById: fail },
-      periods: { findByOccurrence: fail, findByCourse: fail },
+      periods: {
+        findById: fail,
+        findByOccurrence: fail,
+        findByCourse: fail,
+        create: fail,
+        update: fail,
+        delete: fail,
+        createForCourse: fail,
+      },
     })
 
     const result = await createEnrollmentRequest(USER_ID, [])
